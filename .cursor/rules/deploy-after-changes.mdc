@@ -1,15 +1,17 @@
 ---
-description: After editing project code, commit and push so Vercel deploys
+description: Push every code change to GitHub so Vercel deploys
 alwaysApply: true
 ---
 
-# GitHub / Vercel sync
+# Ship every update to GitHub (→ Vercel)
 
-When you **change any project source file** (not only when the user asks), do this before finishing:
+When the user asks for **any** change—feature, fix, tweak, or content update—and you edit project files:
 
-1. `git status` in the project root
-2. If there are changes: `git add` the affected files, `git commit` with a short message describing the change, `git push` to `origin` (usually `main`)
+1. **`git status`** in the project root.
+2. **`git add`** the files you changed (and any new files).
+3. **`git commit -m "..."`** with a short, clear message.
+4. **`git push`** to **`origin`** / **`main`**.
 
-This repo is connected to **Vercel**; pushing to GitHub triggers deployment. Do not leave fixes only local unless the user explicitly wants that.
+**Vercel** is wired to this repo: **pushing to GitHub is the deploy step**—no separate Vercel CLI step. Do not end the task with only local edits unless the user explicitly says not to push.
 
-If push fails (auth/network), tell the user clearly what failed.
+If push fails (auth, network, merge), say what failed and what they need to do.
