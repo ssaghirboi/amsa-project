@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
 import {
   fetchCurrentEventState,
@@ -75,8 +76,9 @@ export default function Audience() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950/35 to-slate-950 text-slate-100">
+    <div className="min-h-screen text-slate-100">
       <div className="mx-auto max-w-md px-4 py-8">
+        <EventBranding className="mb-8" />
         <div className="rounded-2xl border border-white/10 bg-slate-900/35 p-5 backdrop-blur">
           <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
             Audience Q&A

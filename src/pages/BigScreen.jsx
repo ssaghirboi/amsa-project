@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
 import {
   fetchCurrentEventState,
@@ -173,9 +174,12 @@ export default function BigScreen() {
   const showOverlay = introPhase === 'typing' || introPhase === 'shrinking'
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950/40 to-slate-950 text-slate-100">
+    <div className="relative min-h-screen text-slate-100">
+      <div className="mx-auto max-w-6xl px-4 pt-8">
+        <EventBranding className="mb-6" />
+      </div>
       <div
-        className={`mx-auto max-w-6xl px-4 py-8 transition-opacity duration-200 ${
+        className={`mx-auto max-w-6xl px-4 pb-8 transition-opacity duration-200 ${
           showOverlay ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
       >
@@ -228,7 +232,7 @@ export default function BigScreen() {
 
       {showOverlay ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/96 px-6 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#000821]/96 px-6 backdrop-blur-md"
           aria-live="polite"
           aria-busy={introPhase === 'typing'}
         >

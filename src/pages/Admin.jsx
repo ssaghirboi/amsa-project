@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
 import {
   DEFAULT_PROMPT_SEQUENCE,
@@ -173,8 +174,9 @@ export default function Admin() {
       : promptSequence[0] || 'None'
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950/30 to-slate-950 text-slate-100">
+    <div className="min-h-screen text-slate-100">
       <div className="mx-auto max-w-4xl px-4 py-8">
+        <EventBranding className="mb-8" />
         <div className="mb-6 rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
           <div className="flex items-start justify-between gap-4">
             <div>
