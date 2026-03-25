@@ -195,29 +195,55 @@ export default function BigScreen() {
   const presentationSlide = PRESENTATION_SLIDES[slideshowIndex] ?? PRESENTATION_SLIDES[0]
 
   if (slideshowActive) {
+    const dots = (
+      <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
+        {PRESENTATION_SLIDES.map((_, i) => (
+          <span
+            key={i}
+            className={`h-2.5 w-2.5 rounded-full transition-colors ${
+              i === slideshowIndex
+                ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+                : 'bg-white/20'
+            }`}
+            aria-hidden
+          />
+        ))}
+      </div>
+    )
+
+    if (presentationSlide.kind === 'recitation') {
+      return (
+        <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
+          <div className="absolute left-0 top-0 z-10 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:pt-6">
+            <EventBranding variant="presentationCorner" className="shrink-0" />
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center px-6 pb-8 pt-[max(5.5rem,env(safe-area-inset-top))] text-center sm:px-10 sm:pt-24">
+            <h2
+              className="max-w-4xl text-[clamp(1.35rem,4.5vw,3.75rem)] font-semibold leading-tight text-amber-100 drop-shadow-[0_0_28px_rgba(251,191,36,0.18)] sm:text-[clamp(1.75rem,4vw,4.5rem)]"
+              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+            >
+              {presentationSlide.title}
+            </h2>
+            <p className="mt-6 text-lg text-slate-300/95 sm:mt-8 sm:text-xl md:text-2xl">
+              {presentationSlide.subtitle}
+            </p>
+          </div>
+          {dots}
+        </div>
+      )
+    }
+
     return (
       <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
         <div className="flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
           <EventBranding centered variant="presentationHero" className="shrink-0" />
-          {!presentationSlide.logoOnly && presentationSlide.tagline ? (
+          {presentationSlide.tagline ? (
             <p className="mt-8 max-w-2xl text-center text-xl font-medium tracking-wide text-slate-200/95 sm:mt-12 sm:text-2xl md:text-3xl">
               {presentationSlide.tagline}
             </p>
           ) : null}
         </div>
-        <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
-          {PRESENTATION_SLIDES.map((_, i) => (
-            <span
-              key={i}
-              className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                i === slideshowIndex
-                  ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
-                  : 'bg-white/20'
-              }`}
-              aria-hidden
-            />
-          ))}
-        </div>
+        {dots}
       </div>
     )
   }
