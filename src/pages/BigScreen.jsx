@@ -294,7 +294,7 @@ export default function BigScreen() {
 
       {showOverlay ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#000821]/96 px-6 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#030202]/97 px-6 backdrop-blur-md"
           aria-live="polite"
           aria-busy={introPhase === 'typing'}
         >

@@ -5,7 +5,12 @@ body {
   min-height: 100vh;
   font-family: Inter, system-ui, sans-serif;
   color: #f1f5f9;
-  background: linear-gradient(to bottom, #000821, #051c5e, #000821);
+  /* Deep black with subtle cinematic red (theater / spotlight undertone) */
+  background-color: #010101;
+  background-image:
+    radial-gradient(ellipse 110% 55% at 50% 105%, rgba(72, 8, 14, 0.28) 0%, transparent 52%),
+    radial-gradient(ellipse 70% 40% at 50% -5%, rgba(32, 4, 8, 0.2) 0%, transparent 48%),
+    linear-gradient(180deg, #000000 0%, #050303 38%, #080204 72%, #000000 100%);
   background-attachment: fixed;
 }
 
