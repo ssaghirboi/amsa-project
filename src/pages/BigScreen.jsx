@@ -200,10 +200,10 @@ export default function BigScreen() {
         {PRESENTATION_SLIDES.map((_, i) => (
           <span
             key={i}
-            className={`h-2.5 w-2.5 rounded-full transition-colors ${
+            className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${
               i === slideshowIndex
-                ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
-                : 'bg-white/20'
+                ? 'scale-110 bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+                : 'scale-100 bg-white/20'
             }`}
             aria-hidden
           />
@@ -214,12 +214,17 @@ export default function BigScreen() {
     return (
       <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
         <div className="flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
-          <EventBranding centered variant="presentationHero" className="shrink-0" />
-          {presentationSlide.tagline ? (
-            <p className="mt-8 max-w-2xl text-center text-xl font-medium tracking-wide text-slate-200/95 sm:mt-12 sm:text-2xl md:text-3xl">
-              {presentationSlide.tagline}
-            </p>
-          ) : null}
+          <div
+            key={slideshowIndex}
+            className="presentation-slide-content flex w-full flex-col items-center justify-center"
+          >
+            <EventBranding centered variant="presentationHero" className="shrink-0" />
+            {presentationSlide.tagline ? (
+              <p className="mt-8 max-w-2xl text-center text-xl font-medium tracking-wide text-slate-200/95 sm:mt-12 sm:text-2xl md:text-3xl">
+                {presentationSlide.tagline}
+              </p>
+            ) : null}
+          </div>
         </div>
         {dots}
       </div>

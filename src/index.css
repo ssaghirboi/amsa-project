@@ -32,3 +32,25 @@ body {
   animation: bigscreen-prompt-handoff 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: transform, opacity;
 }
+
+/* Presentation slideshow: slide change (BigScreen.jsx) */
+@keyframes presentation-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.presentation-slide-content {
+  animation: presentation-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .presentation-slide-content {
+    animation: none;
+  }
+}
