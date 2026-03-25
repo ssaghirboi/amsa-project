@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
+import { PRESENTATION_SLIDES } from '../constants/presentationSlides'
 import { supabase } from '../supabaseClient'
 import {
   fetchCurrentEventState,
@@ -70,6 +71,8 @@ function PanelSliderIcon({ value, index }) {
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
+  const [slideshowActive, setSlideshowActive] = useState(false)
+  const [slideshowIndex, setSlideshowIndex] = useState(0)
   const title = useMemo(() => 'Event Screen', [])
   const [error, setError] = useState('')
 
@@ -93,6 +96,8 @@ export default function BigScreen() {
       if (current) {
         setPrompt(current.prompt)
         setPanelists(current.panelists)
+        setSlideshowActive(Boolean(current.slideshowActive))
+        setSlideshowIndex(current.slideshowIndex ?? 0)
         setError('')
       } else {
         setError('Waiting for the event state...')
@@ -102,6 +107,8 @@ export default function BigScreen() {
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt)
       setPanelists(next.panelists)
+      setSlideshowActive(Boolean(next.slideshowActive))
+      setSlideshowIndex(next.slideshowIndex ?? 0)
     })
 
     return () => {
@@ -111,6 +118,8 @@ export default function BigScreen() {
 
   /** When prompt changes (after first non-empty sync), run intro sequence */
   useEffect(() => {
+    if (slideshowActive) return
+
     const next = (prompt ?? '').trim()
     const prev = (prevPromptRef.current ?? '').trim()
 
@@ -132,10 +141,19 @@ export default function BigScreen() {
       setIntroText('')
       setIntroPhase('typing')
     })
-  }, [prompt])
+  }, [prompt, slideshowActive])
+
+  /** Cancel debate intro when presentation mode is on */
+  useEffect(() => {
+    if (!slideshowActive) return
+    setIntroPhase('idle')
+    setHandoffActive(false)
+    setIntroText('')
+  }, [slideshowActive])
 
   /** Typewriter */
   useEffect(() => {
+    if (slideshowActive) return
     if (introPhase !== 'typing') return
 
     const full = prompt ?? ''
@@ -158,7 +176,7 @@ export default function BigScreen() {
     }, TYPE_MS)
 
     return () => clearInterval(id)
-  }, [introPhase, prompt])
+  }, [introPhase, prompt, slideshowActive])
 
   /** After shrink animation, return to normal layout */
   useEffect(() => {
@@ -171,7 +189,51 @@ export default function BigScreen() {
     return () => clearTimeout(t)
   }, [introPhase])
 
-  const showOverlay = introPhase === 'typing' || introPhase === 'shrinking'
+  const showOverlay =
+    !slideshowActive && (introPhase === 'typing' || introPhase === 'shrinking')
+
+  const presentationSlide = PRESENTATION_SLIDES[slideshowIndex] ?? PRESENTATION_SLIDES[0]
+
+  if (slideshowActive) {
+    return (
+      <div className="relative min-h-screen text-slate-100">
+        <div className="flex min-h-screen flex-col px-6 pb-12 pt-10 sm:px-10">
+          <EventBranding className="mb-10 shrink-0" />
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <p className="text-xs font-medium uppercase tracking-[0.35em] text-amber-200/70 sm:text-sm">
+              Presentation
+            </p>
+            <p
+              className="mt-4 text-sm text-sky-200/90 sm:text-base"
+              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+            >
+              {presentationSlide.subtitle}
+            </p>
+            <h2
+              className="mt-6 max-w-4xl text-[clamp(1.75rem,5vw,3.5rem)] font-semibold leading-tight text-amber-100 drop-shadow-[0_0_28px_rgba(251,191,36,0.2)]"
+              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+            >
+              {presentationSlide.title}
+            </h2>
+            <p className="mt-10 max-w-2xl text-base leading-relaxed text-slate-200/95 sm:text-lg">
+              {presentationSlide.body}
+            </p>
+            <div className="mt-14 flex items-center gap-2">
+              {PRESENTATION_SLIDES.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                    i === slideshowIndex ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]' : 'bg-white/20'
+                  }`}
+                  aria-hidden
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-h-screen text-slate-100">

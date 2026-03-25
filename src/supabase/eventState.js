@@ -1,23 +1,50 @@
+import { PRESENTATION_SLIDE_COUNT } from '../constants/presentationSlides.js'
+
 const DEFAULT_SCHEMA = 'public'
 
-/** Set after first fetch/write: DB has `prompt_sequence` column (run migration if false). */
+/** Set after fetch: DB has `prompt_sequence` column. */
 let promptSequenceColumnAvailable = null
+/** Set after fetch: DB has slideshow columns. */
+let slideshowColumnsAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
-const SELECT_FULL = `${SELECT_BASE},prompt_sequence`
+
+const SELECT_VARIANTS = [
+  `${SELECT_BASE},prompt_sequence,slideshow_active,slideshow_index`,
+  `${SELECT_BASE},prompt_sequence`,
+  `${SELECT_BASE},slideshow_active,slideshow_index`,
+  SELECT_BASE,
+]
+
+function isMissingColumnError(error) {
+  if (!error) return false
+  const code = error.code
+  if (code === '42703') return true
+  const msg = String(error.message || '')
+  return /does not exist/i.test(msg) && /column/i.test(msg)
+}
 
 function isMissingPromptSequenceColumnError(error) {
   if (!error) return false
-  const code = error.code
-  if (code === '42703') return true // PostgreSQL undefined_column
   const msg = String(error.message || '')
   return /prompt_sequence/i.test(msg) && /does not exist/i.test(msg)
 }
 
-/** `false` after a fetch/write detected no `prompt_sequence` column — run SQL migration to persist the slideshow list. */
+function isMissingSlideshowColumnError(error) {
+  if (!error) return false
+  const msg = String(error.message || '')
+  return /(slideshow_active|slideshow_index)/i.test(msg) && /does not exist/i.test(msg)
+}
+
+/** `false` after fetch detected no `prompt_sequence` column. */
 export function shouldPromptSequenceMigrate() {
   return promptSequenceColumnAvailable === false
+}
+
+/** `false` after fetch detected no slideshow columns. */
+export function shouldSlideshowMigrate() {
+  return slideshowColumnsAvailable === false
 }
 
 // Matches your provided SQL:
@@ -58,8 +85,13 @@ function normalizePromptSequence(raw) {
 function clampPos(value) {
   const n = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(n)) return 1
-  // Your SQL comment says 1..5
   return Math.max(1, Math.min(5, Math.round(n)))
+}
+
+function clampSlideIndex(raw) {
+  const n = Math.floor(Number(raw))
+  if (!Number.isFinite(n)) return 0
+  return Math.max(0, Math.min(PRESENTATION_SLIDE_COUNT - 1, n))
 }
 
 export function deriveEventStateFromRow(row) {
@@ -70,10 +102,15 @@ export function deriveEventStateFromRow(row) {
   const fromDb = normalizePromptSequence(row.prompt_sequence)
   const promptSequence = fromDb ?? DEFAULT_PROMPT_SEQUENCE
 
+  const slideshowActive = row.slideshow_active === true
+  const slideshowIndex = clampSlideIndex(row.slideshow_index ?? 0)
+
   return {
     prompt: String(prompt),
     panelists,
     promptSequence,
+    slideshowActive,
+    slideshowIndex,
     meta: {
       id: row.id,
     },
@@ -81,36 +118,37 @@ export function deriveEventStateFromRow(row) {
 }
 
 export async function fetchCurrentEventState(supabase) {
-  let res = await supabase
-    .from('event_state')
-    .select(SELECT_FULL)
-    .eq('id', EVENT_STATE_ID)
-    .maybeSingle()
+  let lastError = null
 
-  if (res.error && isMissingPromptSequenceColumnError(res.error)) {
-    promptSequenceColumnAvailable = false
-    res = await supabase
+  for (const cols of SELECT_VARIANTS) {
+    const { data, error } = await supabase
       .from('event_state')
-      .select(SELECT_BASE)
+      .select(cols)
       .eq('id', EVENT_STATE_ID)
       .maybeSingle()
-  } else if (!res.error) {
-    promptSequenceColumnAvailable = true
+
+    if (!error) {
+      promptSequenceColumnAvailable = cols.includes('prompt_sequence')
+      slideshowColumnsAvailable = cols.includes('slideshow_active')
+
+      const row = Array.isArray(data) ? data[0] : data
+      return (
+        deriveEventStateFromRow(row) ?? {
+          prompt: '',
+          panelists: [3, 3, 3, 3],
+          promptSequence: DEFAULT_PROMPT_SEQUENCE,
+          slideshowActive: false,
+          slideshowIndex: 0,
+          meta: { id: EVENT_STATE_ID },
+        }
+      )
+    }
+
+    if (!isMissingColumnError(error)) throw error
+    lastError = error
   }
 
-  const { data, error } = res
-  if (error) throw error
-
-  // If the row somehow doesn't exist, fall back to defaults.
-  const row = Array.isArray(data) ? data[0] : data
-  return (
-    deriveEventStateFromRow(row) ?? {
-      prompt: '',
-      panelists: [3, 3, 3, 3],
-      promptSequence: DEFAULT_PROMPT_SEQUENCE,
-      meta: { id: EVENT_STATE_ID },
-    }
-  )
+  throw lastError
 }
 
 export function subscribeToEventState(supabase, onUpdate) {
@@ -122,7 +160,6 @@ export function subscribeToEventState(supabase, onUpdate) {
       (payload) => {
         const row = payload.new ?? payload.old
         if (!row) return
-        // Realtime payloads can return numeric IDs as strings depending on transport.
         if (Number(row.id) !== EVENT_STATE_ID) return
 
         const derived = deriveEventStateFromRow(row)
@@ -136,7 +173,10 @@ export function subscribeToEventState(supabase, onUpdate) {
   }
 }
 
-export async function writeEventState(supabase, { prompt, panelists, promptSequence }) {
+export async function writeEventState(
+  supabase,
+  { prompt, panelists, promptSequence, slideshowActive = false, slideshowIndex = 0 },
+) {
   const sequence =
     Array.isArray(promptSequence) && promptSequence.length > 0
       ? promptSequence.map((s) => String(s))
@@ -155,6 +195,11 @@ export async function writeEventState(supabase, { prompt, panelists, promptSeque
     payload.prompt_sequence = sequence
   }
 
+  if (slideshowColumnsAvailable !== false) {
+    payload.slideshow_active = Boolean(slideshowActive)
+    payload.slideshow_index = clampSlideIndex(slideshowIndex)
+  }
+
   let { error } = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
 
   if (error && isMissingPromptSequenceColumnError(error) && promptSequenceColumnAvailable !== false) {
@@ -164,6 +209,13 @@ export async function writeEventState(supabase, { prompt, panelists, promptSeque
     error = second.error
   }
 
+  if (error && isMissingSlideshowColumnError(error) && slideshowColumnsAvailable !== false) {
+    slideshowColumnsAvailable = false
+    delete payload.slideshow_active
+    delete payload.slideshow_index
+    const third = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = third.error
+  }
+
   if (error) throw error
 }
-

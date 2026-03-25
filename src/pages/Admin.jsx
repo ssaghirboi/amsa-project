@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
+import { PRESENTATION_SLIDE_COUNT } from '../constants/presentationSlides'
 import { supabase } from '../supabaseClient'
 import {
   DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
   shouldPromptSequenceMigrate,
+  shouldSlideshowMigrate,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
@@ -16,9 +18,12 @@ export default function Admin() {
   const [promptSequenceDraft, setPromptSequenceDraft] = useState(
     () => [...DEFAULT_PROMPT_SEQUENCE],
   )
+  const [slideshowActive, setSlideshowActive] = useState(false)
+  const [slideshowIndex, setSlideshowIndex] = useState(0)
   const [status, setStatus] = useState('Connecting...')
   const [error, setError] = useState('')
   const [showMigrateBanner, setShowMigrateBanner] = useState(false)
+  const [showSlideshowMigrateBanner, setShowSlideshowMigrateBanner] = useState(false)
 
   const panelLabels = useMemo(() => ['P1', 'P2', 'P3', 'P4'], [])
 
@@ -36,6 +41,8 @@ export default function Admin() {
         if (current) {
           setPrompt(current.prompt)
           setPanelists(current.panelists)
+          setSlideshowActive(Boolean(current.slideshowActive))
+          setSlideshowIndex(current.slideshowIndex ?? 0)
           if (current.promptSequence?.length) {
             setPromptSequence(current.promptSequence)
             setPromptSequenceDraft([...current.promptSequence])
@@ -44,16 +51,20 @@ export default function Admin() {
         setError('')
         setStatus('Live')
         setShowMigrateBanner(shouldPromptSequenceMigrate())
+        setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
         setShowMigrateBanner(false)
+        setShowSlideshowMigrateBanner(false)
       }
     })()
 
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt)
       setPanelists(next.panelists)
+      setSlideshowActive(Boolean(next.slideshowActive))
+      setSlideshowIndex(next.slideshowIndex ?? 0)
       if (!next.promptSequence?.length) return
       const remote = next.promptSequence.map((s) => String(s))
       setPromptSequence((prev) => {
@@ -78,6 +89,8 @@ export default function Admin() {
         prompt: nextPrompt,
         panelists: nextPanelists,
         promptSequence: sequenceToSave,
+        slideshowActive,
+        slideshowIndex,
       })
       setStatus('Live')
     } catch (e) {
@@ -155,7 +168,52 @@ export default function Admin() {
         prompt,
         panelists,
         promptSequence: next,
+        slideshowActive,
+        slideshowIndex,
       })
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const handleToggleSlideshow = async () => {
+    const next = !slideshowActive
+    const idx = next ? 0 : slideshowIndex
+    setStatus('Updating...')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        promptSequence,
+        slideshowActive: next,
+        slideshowIndex: idx,
+      })
+      setSlideshowActive(next)
+      setSlideshowIndex(idx)
+      setStatus('Live')
+      setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const handlePresentationSlide = async (delta) => {
+    if (!slideshowActive) return
+    const len = PRESENTATION_SLIDE_COUNT
+    const next = (slideshowIndex + delta + len) % len
+    setStatus('Updating...')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        promptSequence,
+        slideshowActive: true,
+        slideshowIndex: next,
+      })
+      setSlideshowIndex(next)
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
@@ -242,6 +300,66 @@ export default function Admin() {
             </div>
           ) : null}
         </div>
+
+        <div className="mb-6 rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-medium text-slate-200">Event screen — presentation</h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Toggle to show pre-event slides (intros, housekeeping) on <code className="text-slate-300">/screen</code>.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleSlideshow}
+              disabled={status === 'Updating...'}
+              className={
+                slideshowActive
+                  ? 'rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_20px_rgba(251,191,36,0.25)] transition hover:bg-amber-400 disabled:opacity-60'
+                  : 'rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:opacity-60'
+              }
+            >
+              {slideshowActive ? 'Slideshow ON' : 'Slideshow OFF'}
+            </button>
+          </div>
+          {slideshowActive ? (
+            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-black/20 p-3">
+              <span className="text-sm text-slate-300">
+                Slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT}
+              </span>
+              <button
+                type="button"
+                onClick={() => handlePresentationSlide(-1)}
+                disabled={status === 'Updating...'}
+                className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10 disabled:opacity-60"
+              >
+                Previous slide
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresentationSlide(1)}
+                disabled={status === 'Updating...'}
+                className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:opacity-60"
+              >
+                Next slide
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        {showSlideshowMigrateBanner ? (
+          <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+            <p className="font-medium text-amber-50">Presentation mode is not saved to the database yet</p>
+            <p className="mt-1 text-amber-100/90">
+              In Supabase → SQL Editor, run:{' '}
+              <code className="rounded bg-black/30 px-1.5 py-0.5 text-xs text-amber-200">
+                alter table public.event_state add column if not exists slideshow_active boolean default
+                false; alter table public.event_state add column if not exists slideshow_index int default 0;
+              </code>{' '}
+              Then refresh. The toggle will sync to the event screen.
+            </p>
+          </div>
+        ) : null}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
