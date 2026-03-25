@@ -28,16 +28,23 @@ export function EventBranding({
   const isCentered =
     centered || variant === 'presentationHero'
 
+  /** Centered layouts: object-center + mx-auto so the graphic isn’t biased up/left vs the tagline */
+  const imgAlignClass = isCentered
+    ? 'mx-auto object-contain object-center'
+    : 'object-contain object-top'
+
   return (
     <div
       className={`select-none leading-none ${
-        isCentered ? 'flex w-full flex-col items-center' : 'flex w-fit max-w-full flex-col'
+        isCentered
+          ? 'flex w-full flex-col items-center justify-center'
+          : 'flex w-fit max-w-full flex-col'
       } ${className}`}
     >
       <img
         src={eventLogoSvg}
         alt="Event logo"
-        className={`block h-auto w-auto object-contain object-top ${sizeClass}`}
+        className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
         decoding="async"
         fetchPriority="high"
         width={736}
