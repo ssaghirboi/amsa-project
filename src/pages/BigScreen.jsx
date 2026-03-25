@@ -196,40 +196,27 @@ export default function BigScreen() {
 
   if (slideshowActive) {
     return (
-      <div className="relative min-h-screen text-slate-100">
-        <div className="flex min-h-screen flex-col px-6 pb-12 pt-10 sm:px-10">
-          <EventBranding variant="presentation" className="mb-6 shrink-0 sm:mb-8" />
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <p className="text-xs font-medium uppercase tracking-[0.35em] text-amber-200/70 sm:text-sm">
-              Presentation
+      <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
+        <div className="flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
+          <EventBranding centered variant="presentationHero" className="shrink-0" />
+          {!presentationSlide.logoOnly && presentationSlide.tagline ? (
+            <p className="mt-8 max-w-2xl text-center text-xl font-medium tracking-wide text-slate-200/95 sm:mt-12 sm:text-2xl md:text-3xl">
+              {presentationSlide.tagline}
             </p>
-            <p
-              className="mt-4 text-sm text-sky-200/90 sm:text-base"
-              style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-            >
-              {presentationSlide.subtitle}
-            </p>
-            <h2
-              className="mt-6 max-w-4xl text-[clamp(1.75rem,5vw,3.5rem)] font-semibold leading-tight text-amber-100 drop-shadow-[0_0_28px_rgba(251,191,36,0.2)]"
-              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-            >
-              {presentationSlide.title}
-            </h2>
-            <p className="mt-10 max-w-2xl text-base leading-relaxed text-slate-200/95 sm:text-lg">
-              {presentationSlide.body}
-            </p>
-            <div className="mt-14 flex items-center gap-2">
-              {PRESENTATION_SLIDES.map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-2.5 w-2.5 rounded-full transition-colors ${
-                    i === slideshowIndex ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]' : 'bg-white/20'
-                  }`}
-                  aria-hidden
-                />
-              ))}
-            </div>
-          </div>
+          ) : null}
+        </div>
+        <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
+          {PRESENTATION_SLIDES.map((_, i) => (
+            <span
+              key={i}
+              className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                i === slideshowIndex
+                  ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+                  : 'bg-white/20'
+              }`}
+              aria-hidden
+            />
+          ))}
         </div>
       </div>
     )
