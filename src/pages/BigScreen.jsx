@@ -215,16 +215,11 @@ export default function BigScreen() {
       <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
         <div className="flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
           <EventBranding centered variant="presentationHero" className="shrink-0" />
-          <p
-            className={`mt-8 max-w-2xl text-center text-xl font-medium tracking-wide sm:mt-12 sm:text-2xl md:text-3xl ${
-              presentationSlide.tagline
-                ? 'text-slate-200/95'
-                : 'invisible text-slate-200/95'
-            }`}
-            aria-hidden={!presentationSlide.tagline}
-          >
-            {presentationSlide.tagline ?? 'We will begin shortly'}
-          </p>
+          {presentationSlide.tagline ? (
+            <p className="mt-8 max-w-2xl text-center text-xl font-medium tracking-wide text-slate-200/95 sm:mt-12 sm:text-2xl md:text-3xl">
+              {presentationSlide.tagline}
+            </p>
+          ) : null}
         </div>
         {dots}
       </div>
