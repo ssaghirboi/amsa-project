@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+}
+
+/* Event screen: prompt intro → header handoff (used by BigScreen.jsx) */
+@keyframes bigscreen-prompt-handoff {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translateY(calc(-1 * min(36vh, 15rem))) scale(0.48);
+    opacity: 0.92;
+    filter: blur(0.2px);
+  }
+}
+
+.bigscreen-prompt-handoff {
+  animation: bigscreen-prompt-handoff 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
