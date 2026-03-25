@@ -13,6 +13,28 @@ const PANEL_POS_COLUMNS = [
   'panelist_4_pos',
 ]
 
+/** Default slideshow when `prompt_sequence` is null or empty in DB. */
+export const DEFAULT_PROMPT_SEQUENCE = [
+  'Does God Exist?',
+  'Religion is Good.',
+  'Faith and reason can coexist.',
+  'Morality requires religion.',
+]
+
+function normalizePromptSequence(raw) {
+  if (raw == null) return null
+  let arr = raw
+  if (typeof raw === 'string') {
+    try {
+      arr = JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  if (!Array.isArray(arr) || arr.length === 0) return null
+  return arr.map((s) => String(s))
+}
+
 function clampPos(value) {
   const n = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(n)) return 1
@@ -25,10 +47,13 @@ export function deriveEventStateFromRow(row) {
 
   const prompt = row.current_prompt ?? ''
   const panelists = PANEL_POS_COLUMNS.map((col) => clampPos(row[col]))
+  const fromDb = normalizePromptSequence(row.prompt_sequence)
+  const promptSequence = fromDb ?? DEFAULT_PROMPT_SEQUENCE
 
   return {
     prompt: String(prompt),
     panelists,
+    promptSequence,
     meta: {
       id: row.id,
     },
@@ -38,7 +63,9 @@ export function deriveEventStateFromRow(row) {
 export async function fetchCurrentEventState(supabase) {
   const { data, error } = await supabase
     .from('event_state')
-    .select('id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos')
+    .select(
+      'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos,prompt_sequence',
+    )
     .eq('id', EVENT_STATE_ID)
     .maybeSingle()
 
@@ -50,6 +77,7 @@ export async function fetchCurrentEventState(supabase) {
     deriveEventStateFromRow(row) ?? {
       prompt: '',
       panelists: [3, 3, 3, 3],
+      promptSequence: DEFAULT_PROMPT_SEQUENCE,
       meta: { id: EVENT_STATE_ID },
     }
   )
@@ -78,7 +106,12 @@ export function subscribeToEventState(supabase, onUpdate) {
   }
 }
 
-export async function writeEventState(supabase, { prompt, panelists }) {
+export async function writeEventState(supabase, { prompt, panelists, promptSequence }) {
+  const sequence =
+    Array.isArray(promptSequence) && promptSequence.length > 0
+      ? promptSequence.map((s) => String(s))
+      : DEFAULT_PROMPT_SEQUENCE
+
   const payload = {
     id: EVENT_STATE_ID,
     current_prompt: prompt,
@@ -86,6 +119,7 @@ export async function writeEventState(supabase, { prompt, panelists }) {
     panelist_2_pos: panelists?.[1] ?? 3,
     panelist_3_pos: panelists?.[2] ?? 3,
     panelist_4_pos: panelists?.[3] ?? 3,
+    prompt_sequence: sequence,
   }
 
   const { error } = await supabase

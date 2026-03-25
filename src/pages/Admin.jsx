@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import {
+  DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
-
-const DEFAULT_PROMPT_SEQUENCE = [
-  'Does God Exist?',
-  'Religion is Good.',
-  'Faith and reason can coexist.',
-  'Morality requires religion.',
-]
 
 export default function Admin() {
   const [prompt, setPrompt] = useState('')
@@ -39,6 +33,10 @@ export default function Admin() {
         if (current) {
           setPrompt(current.prompt)
           setPanelists(current.panelists)
+          if (current.promptSequence?.length) {
+            setPromptSequence(current.promptSequence)
+            setPromptSequenceDraft([...current.promptSequence])
+          }
         }
         setStatus('Live')
       } catch (e) {
@@ -50,6 +48,16 @@ export default function Admin() {
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt)
       setPanelists(next.panelists)
+      if (!next.promptSequence?.length) return
+      const remote = next.promptSequence.map((s) => String(s))
+      setPromptSequence((prev) => {
+        const same =
+          prev.length === remote.length &&
+          prev.every((p, i) => p === remote[i])
+        if (same) return prev
+        setPromptSequenceDraft([...remote])
+        return remote
+      })
     })
 
     return () => {
@@ -57,12 +65,13 @@ export default function Admin() {
     }
   }, [])
 
-  const commit = async (nextPrompt, nextPanelists) => {
+  const commit = async (nextPrompt, nextPanelists, sequenceToSave = promptSequence) => {
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
         prompt: nextPrompt,
         panelists: nextPanelists,
+        promptSequence: sequenceToSave,
       })
       setStatus('Live')
     } catch (e) {
@@ -130,8 +139,22 @@ export default function Admin() {
     })
   }
 
-  const handleUpdatePromptSequence = () => {
-    setPromptSequence(promptSequenceDraft.map((s) => String(s)))
+  const handleUpdatePromptSequence = async () => {
+    const next = promptSequenceDraft.map((s) => String(s))
+    setPromptSequence(next)
+    setPromptSequenceDraft([...next])
+    setStatus('Updating...')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        promptSequence: next,
+      })
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
   }
 
   const activePromptIndex = promptSequence.findIndex(
@@ -216,7 +239,7 @@ export default function Admin() {
               }}
             />
             <div className="mt-3 text-xs text-slate-400">
-              Tip: changes update `event_state` immediately.
+              Tip: changes save to Supabase immediately. Prompt list uses Update below.
             </div>
           </div>
 
@@ -328,8 +351,8 @@ export default function Admin() {
               ))}
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              Edit the list, then click <span className="text-slate-400">Update</span> so Next /
-              Previous uses your changes.
+              Edit the list, then click <span className="text-slate-400">Update</span> to save the
+              slideshow to the database (survives refresh).
             </p>
           </div>
         </div>
