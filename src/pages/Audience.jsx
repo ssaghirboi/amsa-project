@@ -78,7 +78,7 @@ export default function Audience() {
   return (
     <div className="min-h-screen text-slate-100">
       <div className="mx-auto max-w-md px-4 py-8">
-        <EventBranding centered className="mb-8" />
+        <EventBranding centered className="mb-4 sm:mb-6" />
         <div className="rounded-2xl border border-white/10 bg-slate-900/35 p-5 backdrop-blur">
           <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
             Audience Q&A

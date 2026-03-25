@@ -198,7 +198,7 @@ export default function BigScreen() {
     return (
       <div className="relative min-h-screen text-slate-100">
         <div className="flex min-h-screen flex-col px-6 pb-12 pt-10 sm:px-10">
-          <EventBranding className="mb-10 shrink-0" />
+          <EventBranding variant="presentation" className="mb-6 shrink-0 sm:mb-8" />
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <p className="text-xs font-medium uppercase tracking-[0.35em] text-amber-200/70 sm:text-sm">
               Presentation
@@ -238,7 +238,7 @@ export default function BigScreen() {
   return (
     <div className="relative min-h-screen text-slate-100">
       <div className="mx-auto max-w-6xl px-4 pt-8">
-        <EventBranding className="mb-6" />
+        <EventBranding className="mb-4 shrink-0 sm:mb-6" />
       </div>
       <div
         className={`mx-auto max-w-6xl px-4 pb-8 transition-opacity duration-200 ${

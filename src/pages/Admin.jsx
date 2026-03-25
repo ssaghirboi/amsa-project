@@ -234,7 +234,7 @@ export default function Admin() {
   return (
     <div className="min-h-screen text-slate-100">
       <div className="mx-auto max-w-4xl px-4 py-8">
-        <EventBranding className="mb-8" />
+        <EventBranding className="mb-4 sm:mb-6" />
         <div className="mb-6 rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
           <div className="flex items-start justify-between gap-4">
             <div>
