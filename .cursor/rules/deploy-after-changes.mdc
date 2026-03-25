@@ -1,0 +1,15 @@
+---
+description: After editing project code, commit and push so Vercel deploys
+alwaysApply: true
+---
+
+# GitHub / Vercel sync
+
+When you **change any project source file** (not only when the user asks), do this before finishing:
+
+1. `git status` in the project root
+2. If there are changes: `git add` the affected files, `git commit` with a short message describing the change, `git push` to `origin` (usually `main`)
+
+This repo is connected to **Vercel**; pushing to GitHub triggers deployment. Do not leave fixes only local unless the user explicitly wants that.
+
+If push fails (auth/network), tell the user clearly what failed.

@@ -17,10 +17,18 @@ export default function Admin() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
+  const [promptSequenceDraft, setPromptSequenceDraft] = useState(
+    () => [...DEFAULT_PROMPT_SEQUENCE],
+  )
   const [status, setStatus] = useState('Connecting...')
   const [error, setError] = useState('')
 
   const panelLabels = useMemo(() => ['P1', 'P2', 'P3', 'P4'], [])
+
+  const sequenceDirty = useMemo(
+    () => JSON.stringify(promptSequence) !== JSON.stringify(promptSequenceDraft),
+    [promptSequence, promptSequenceDraft],
+  )
 
   useEffect(() => {
     let unsubscribe = null
@@ -104,7 +112,7 @@ export default function Admin() {
   }
 
   const updatePromptAt = (index, value) => {
-    setPromptSequence((prev) => {
+    setPromptSequenceDraft((prev) => {
       const next = [...prev]
       next[index] = value
       return next
@@ -112,14 +120,18 @@ export default function Admin() {
   }
 
   const addPromptRow = () => {
-    setPromptSequence((prev) => [...prev, ''])
+    setPromptSequenceDraft((prev) => [...prev, ''])
   }
 
   const removePromptAt = (index) => {
-    setPromptSequence((prev) => {
+    setPromptSequenceDraft((prev) => {
       if (prev.length <= 1) return prev
       return prev.filter((_, i) => i !== index)
     })
+  }
+
+  const handleUpdatePromptSequence = () => {
+    setPromptSequence(promptSequenceDraft.map((s) => String(s)))
   }
 
   const activePromptIndex = promptSequence.findIndex(
@@ -242,16 +254,36 @@ export default function Admin() {
           </div>
 
           <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur lg:col-span-2">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-sm font-medium text-slate-200">Prompt Manager</h2>
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <h2 className="text-sm font-medium text-slate-200">Prompt Manager</h2>
+                {sequenceDirty ? (
+                  <span className="text-xs font-medium text-amber-200/90">Unsaved edits</span>
+                ) : (
+                  <span className="text-xs text-slate-500">Saved</span>
+                )}
                 <span className="text-xs text-slate-400">One field per slide</span>
+              </div>
+              <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto sm:justify-start">
                 <button
                   type="button"
                   onClick={addPromptRow}
-                  className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10"
+                  className="whitespace-nowrap rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10"
                 >
                   Add prompt
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpdatePromptSequence}
+                  disabled={!sequenceDirty}
+                  title={
+                    sequenceDirty
+                      ? 'Save list changes for Next / Previous'
+                      : 'Edit a line above to enable'
+                  }
+                  className="whitespace-nowrap rounded-lg border border-indigo-400/50 bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-slate-700 disabled:text-slate-400"
+                >
+                  Update
                 </button>
               </div>
             </div>
@@ -270,7 +302,7 @@ export default function Admin() {
               </div>
             </div>
             <div className="mt-4 space-y-2">
-              {promptSequence.map((line, index) => (
+              {promptSequenceDraft.map((line, index) => (
                 <div key={index} className="flex items-start gap-2">
                   <label className="mt-2 w-8 shrink-0 text-right text-xs font-medium text-slate-500">
                     {index + 1}.
@@ -286,7 +318,7 @@ export default function Admin() {
                   <button
                     type="button"
                     onClick={() => removePromptAt(index)}
-                    disabled={promptSequence.length <= 1}
+                    disabled={promptSequenceDraft.length <= 1}
                     className="mt-1 shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
                     title="Remove this prompt"
                   >
@@ -295,6 +327,10 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+            <p className="mt-3 text-xs text-slate-500">
+              Edit the list, then click <span className="text-slate-400">Update</span> so Next /
+              Previous uses your changes.
+            </p>
           </div>
         </div>
       </div>
