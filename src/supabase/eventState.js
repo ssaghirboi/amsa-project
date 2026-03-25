@@ -1,5 +1,25 @@
 const DEFAULT_SCHEMA = 'public'
 
+/** Set after first fetch/write: DB has `prompt_sequence` column (run migration if false). */
+let promptSequenceColumnAvailable = null
+
+const SELECT_BASE =
+  'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
+const SELECT_FULL = `${SELECT_BASE},prompt_sequence`
+
+function isMissingPromptSequenceColumnError(error) {
+  if (!error) return false
+  const code = error.code
+  if (code === '42703') return true // PostgreSQL undefined_column
+  const msg = String(error.message || '')
+  return /prompt_sequence/i.test(msg) && /does not exist/i.test(msg)
+}
+
+/** `false` after a fetch/write detected no `prompt_sequence` column — run SQL migration to persist the slideshow list. */
+export function shouldPromptSequenceMigrate() {
+  return promptSequenceColumnAvailable === false
+}
+
 // Matches your provided SQL:
 // - event_state has one row with `id = 1`
 // - current_prompt column name
@@ -61,14 +81,24 @@ export function deriveEventStateFromRow(row) {
 }
 
 export async function fetchCurrentEventState(supabase) {
-  const { data, error } = await supabase
+  let res = await supabase
     .from('event_state')
-    .select(
-      'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos,prompt_sequence',
-    )
+    .select(SELECT_FULL)
     .eq('id', EVENT_STATE_ID)
     .maybeSingle()
 
+  if (res.error && isMissingPromptSequenceColumnError(res.error)) {
+    promptSequenceColumnAvailable = false
+    res = await supabase
+      .from('event_state')
+      .select(SELECT_BASE)
+      .eq('id', EVENT_STATE_ID)
+      .maybeSingle()
+  } else if (!res.error) {
+    promptSequenceColumnAvailable = true
+  }
+
+  const { data, error } = res
   if (error) throw error
 
   // If the row somehow doesn't exist, fall back to defaults.
@@ -119,12 +149,20 @@ export async function writeEventState(supabase, { prompt, panelists, promptSeque
     panelist_2_pos: panelists?.[1] ?? 3,
     panelist_3_pos: panelists?.[2] ?? 3,
     panelist_4_pos: panelists?.[3] ?? 3,
-    prompt_sequence: sequence,
   }
 
-  const { error } = await supabase
-    .from('event_state')
-    .upsert(payload, { onConflict: 'id' })
+  if (promptSequenceColumnAvailable !== false) {
+    payload.prompt_sequence = sequence
+  }
+
+  let { error } = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+
+  if (error && isMissingPromptSequenceColumnError(error) && promptSequenceColumnAvailable !== false) {
+    promptSequenceColumnAvailable = false
+    delete payload.prompt_sequence
+    const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = second.error
+  }
 
   if (error) throw error
 }

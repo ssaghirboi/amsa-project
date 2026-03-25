@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 import {
   DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
+  shouldPromptSequenceMigrate,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
@@ -16,6 +17,7 @@ export default function Admin() {
   )
   const [status, setStatus] = useState('Connecting...')
   const [error, setError] = useState('')
+  const [showMigrateBanner, setShowMigrateBanner] = useState(false)
 
   const panelLabels = useMemo(() => ['P1', 'P2', 'P3', 'P4'], [])
 
@@ -38,10 +40,13 @@ export default function Admin() {
             setPromptSequenceDraft([...current.promptSequence])
           }
         }
+        setError('')
         setStatus('Live')
+        setShowMigrateBanner(shouldPromptSequenceMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
+        setShowMigrateBanner(false)
       }
     })()
 
@@ -219,6 +224,19 @@ export default function Admin() {
           {error ? (
             <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
               {error}
+            </div>
+          ) : null}
+          {showMigrateBanner ? (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+              <p className="font-medium text-amber-50">Slideshow list is not saved to the database yet</p>
+              <p className="mt-1 text-amber-100/90">
+                In Supabase → SQL Editor, run:{' '}
+                <code className="rounded bg-black/30 px-1.5 py-0.5 text-xs text-amber-200">
+                  alter table public.event_state add column if not exists prompt_sequence jsonb;
+                </code>{' '}
+                Then refresh this page. Prompts and sliders still sync; only the custom prompt list needs this
+                column.
+              </p>
             </div>
           ) : null}
         </div>
