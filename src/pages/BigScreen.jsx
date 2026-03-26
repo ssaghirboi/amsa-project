@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDES,
@@ -195,7 +195,8 @@ export default function BigScreen() {
   // When switching from slideshow -> debate UI:
   // 1) keep the logo frozen where it was
   // 2) fade in the rest of the debate assets
-  useEffect(() => {
+  // Use `useLayoutEffect` to avoid a flash (blank -> fade) when toggling quickly.
+  useLayoutEffect(() => {
     const slide = PRESENTATION_SLIDES[clampPresentationSlideIndex(slideshowIndex)] ?? PRESENTATION_SLIDES[0]
     const isCornerLayout =
       slide.kind === 'segment' || (slide.title != null && slide.subtitle != null)
