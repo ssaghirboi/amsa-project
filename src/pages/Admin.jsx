@@ -509,7 +509,7 @@ export default function Admin() {
                       <img
                         src={panelistIcons[i]}
                         alt={`${panelLabels[i]} icon`}
-                        className="h-10 w-10 rounded-md border border-white/10 bg-black/20 object-contain"
+                        className="h-10 w-10 rounded-full border border-white/10 bg-black/20 object-cover"
                       />
                     ) : (
                       <div className="h-10 w-10 rounded-md border border-dashed border-white/10 bg-black/10" />

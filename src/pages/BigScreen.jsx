@@ -45,10 +45,35 @@ function valueToPercent(value) {
 function PanelSliderIcon({ value, index, iconUrl }) {
   const visuals = panelVisuals[index]
   const left = valueToPercent(value)
+  const trackSteps = [
+    'bg-rose-500/45',
+    'bg-orange-400/35',
+    'bg-amber-400/30',
+    'bg-lime-400/35',
+    'bg-emerald-500/45',
+  ]
 
   return (
-    <div className="relative h-20 w-full sm:h-24 overflow-visible">
-      <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-slate-800" />
+    <div className="relative h-24 w-full sm:h-28 overflow-visible">
+      {/* Segmented track */}
+      <div className="absolute inset-0 flex items-center rounded-xl border border-white/10 bg-black/10 overflow-hidden">
+        {trackSteps.map((stepCls, i) => (
+          <div
+            // eslint-disable-next-line react/no-array-index-key
+            key={i}
+            className={`relative flex-1 ${stepCls}`}
+          >
+            {i < 4 ? (
+              <div className="absolute right-0 top-0 h-full w-px bg-white/10" aria-hidden />
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      {/* Central marker line */}
+      <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/60" />
+
+      {/* Icon knob */}
       <div
         className="absolute top-1/2 transition-all duration-500 ease-out"
         style={{
@@ -58,18 +83,17 @@ function PanelSliderIcon({ value, index, iconUrl }) {
         aria-label={`${visuals.key} value ${value}`}
       >
         <div className={visuals.glow}>
-          {iconUrl ? (
-            <img
-              src={iconUrl}
-              alt={`${visuals.key} icon`}
-              className="h-16 w-16 rounded-full border border-white/10 bg-black/20 object-contain p-2 sm:h-20 sm:w-20"
-            />
-          ) : (
-            <div
-              className={`h-16 w-16 rounded-full ${visuals.dot} border border-white/10 sm:h-20 sm:w-20`}
-              aria-hidden
-            />
-          )}
+          <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border border-white/20 bg-black/25 backdrop-blur">
+            {iconUrl ? (
+              <img
+                src={iconUrl}
+                alt={`${visuals.key} icon`}
+                className="h-full w-full rounded-full object-cover"
+              />
+            ) : (
+              <div className={`h-full w-full rounded-full ${visuals.dot}`} />
+            )}
+          </div>
         </div>
       </div>
     </div>
