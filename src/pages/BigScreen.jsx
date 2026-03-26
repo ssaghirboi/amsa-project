@@ -89,9 +89,12 @@ export default function BigScreen() {
   const [textOpacity, setTextOpacity] = useState(1)
   const textFadeTimeoutRef = useRef(null)
   const textSlideIndexRef = useRef(0)
-  textSlideIndexRef.current = textSlideIndex
   const title = useMemo(() => 'Event Screen', [])
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    textSlideIndexRef.current = textSlideIndex
+  }, [textSlideIndex])
 
   /** Intro: full-screen typewriter → shrink toward header; idle = normal layout */
   const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'shrinking'
@@ -99,6 +102,13 @@ export default function BigScreen() {
   const [handoffActive, setHandoffActive] = useState(false)
   const prevPromptRef = useRef('')
   const hasSeededRef = useRef(false)
+
+  function applyEventStateFromRemote(next) {
+    setPrompt(next.prompt)
+    setPanelists(next.panelists)
+    setSlideshowActive(Boolean(next.slideshowActive))
+    setSlideshowIndex(next.slideshowIndex ?? 0)
+  }
 
   useEffect(() => {
     let unsubscribe = null
@@ -147,13 +157,6 @@ export default function BigScreen() {
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
-
-  function applyEventStateFromRemote(next) {
-    setPrompt(next.prompt)
-    setPanelists(next.panelists)
-    setSlideshowActive(Boolean(next.slideshowActive))
-    setSlideshowIndex(next.slideshowIndex ?? 0)
-  }
 
   /** Fade only the presentation subtext; keep logo moving immediately with `slideshowIndex`. */
   useEffect(() => {
@@ -343,116 +346,88 @@ export default function BigScreen() {
     logoSlide.kind === 'segment' ||
     (logoSlide.title != null && logoSlide.subtitle != null)
 
-  if (slideshowActive) {
-    const dots = (
-      <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
-        {PRESENTATION_SLIDES.map((_, i) => (
-          <span
-            key={i}
-            className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${
-              i === slideshowIndex
-                ? 'scale-110 bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
-                : 'scale-100 bg-white/20'
-            }`}
-            aria-hidden
-          />
-        ))}
-      </div>
-    )
+  const fixedLogoPos =
+    presentationOffLogoLayout === 'corner'
+      ? {
+          left: eventHeaderLogoPos?.left ?? 'max(1rem, env(safe-area-inset-left))',
+          top: eventHeaderLogoPos?.top ?? 'max(1rem, env(safe-area-inset-top))',
+          transform: 'translate(0, 0)',
+        }
+      : {
+          left: '50%',
+          top: '38vh',
+          transform: 'translate(-50%, -50%)',
+        }
 
-    return (
-      <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
-        <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
-          {/**
-           * Keep `left/top/transform` stable during the slide change and only animate those.
-           * This removes the visual “biff” caused by swapping Tailwind position classes.
-           */}
+  const fixedLogo = (
+    <div
+      className="presentation-logo-shell presentation-branding-transition fixed z-20 flex pointer-events-none"
+      style={fixedLogoPos}
+    >
+      <EventBranding
+        centered={presentationOffLogoLayout === 'hero'}
+        variant={presentationOffLogoLayout === 'corner' ? 'default' : 'presentationHero'}
+        className="presentation-branding-transition shrink-0"
+      />
+    </div>
+  )
+
+  const dots = (
+    <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
+      {PRESENTATION_SLIDES.map((_, i) => (
+        <span
+          key={i}
+          className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${
+            i === slideshowIndex
+              ? 'scale-110 bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+              : 'scale-100 bg-white/20'
+          }`}
+          aria-hidden
+        />
+      ))}
+    </div>
+  )
+
+  const slideshowContent = (
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
+      <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
+        {!cornerLayout ? (
           <div
-            className="presentation-logo-shell presentation-branding-transition absolute z-20 flex"
-            style={{
-              left: cornerLayout ? 'max(1rem, env(safe-area-inset-left))' : '50%',
-              top: cornerLayout ? 'max(1rem, env(safe-area-inset-top))' : '38vh',
-              transform: cornerLayout ? 'translate(0, 0)' : 'translate(-50%, -50%)',
-            }}
+            className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-2xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
+            aria-hidden={!textSlide.tagline}
+            style={{ opacity: textOpacity }}
           >
-            <EventBranding
-              centered
-              variant={cornerLayout ? 'presentationCorner' : 'presentationHero'}
-              className="presentation-branding-transition shrink-0"
-            />
-          </div>
-
-          {!cornerLayout ? (
-            <div
-              className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-2xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
-              aria-hidden={!textSlide.tagline}
-              style={{ opacity: textOpacity }}
-            >
-              {textSlide.tagline ? (
-                <p className="text-xl font-medium tracking-wide text-slate-200/95 sm:text-2xl md:text-3xl">
-                  {textSlide.tagline}
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <div
-              key={`segment-${textSlide.id ?? textSlideIndex}`}
-              className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(7rem,22vh,12rem)] text-center"
-              style={{ opacity: textOpacity }}
-            >
-              <h1 className="max-w-3xl text-balance text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl md:text-5xl">
-                {textSlide.title}
-              </h1>
-              <p className="mt-4 max-w-xl text-lg text-slate-300/95 sm:mt-6 sm:text-xl md:text-2xl">
-                {textSlide.subtitle}
+            {textSlide.tagline ? (
+              <p className="text-xl font-medium tracking-wide text-slate-200/95 sm:text-2xl md:text-3xl">
+                {textSlide.tagline}
               </p>
-            </div>
-          )}
-        </div>
-        {dots}
+            ) : null}
+          </div>
+        ) : (
+          <div
+            key={`segment-${textSlide.id ?? textSlideIndex}`}
+            className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(7rem,22vh,12rem)] text-center"
+            style={{ opacity: textOpacity }}
+          >
+            <h1 className="max-w-3xl text-balance text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl md:text-5xl">
+              {textSlide.title}
+            </h1>
+            <p className="mt-4 max-w-xl text-lg text-slate-300/95 sm:mt-6 sm:text-xl md:text-2xl">
+              {textSlide.subtitle}
+            </p>
+          </div>
+        )}
       </div>
-    )
-  }
+      {dots}
+    </div>
+  );
 
-  return (
-    <div className="relative min-h-screen text-slate-100">
-      {presentationOffTransition ? (
-        <div
-          className="presentation-logo-shell presentation-branding-transition fixed z-20 flex pointer-events-none"
-          style={
-            presentationOffLogoLayout === 'corner'
-              ? {
-                  // Corner: use the exact native event-screen logo position when measured.
-                  left:
-                    eventHeaderLogoPos?.left ?? 'max(1rem, env(safe-area-inset-left))',
-                  top:
-                    eventHeaderLogoPos?.top ?? 'max(1rem, env(safe-area-inset-top))',
-                  transform: 'translate(0, 0)',
-                }
-              : {
-                  // Middle/hero
-                  left: '50%',
-                  top: '38vh',
-                  transform: 'translate(-50%, -50%)',
-                }
-          }
-        >
-          <EventBranding
-            centered={presentationOffLogoLayout === 'hero'}
-            variant={presentationOffLogoLayout === 'corner' ? 'presentationCorner' : 'presentationHero'}
-            className="presentation-branding-transition shrink-0"
-          />
-        </div>
-      ) : null}
+  const debateContent = (
+    <>
+      <div className="relative min-h-screen text-slate-100">
       <div className="mx-auto max-w-6xl px-4 pt-8">
         <div ref={eventHeaderLogoMeasureRef}>
-          <EventBranding
-            className="mb-4 shrink-0 sm:mb-6"
-            style={{
-              opacity: presentationOffFade,
-              transition: 'opacity 0.35s ease-in-out',
-            }}
-          />
+          <EventBranding className="mb-4 shrink-0 sm:mb-6" style={{ opacity: 0 }} />
         </div>
       </div>
       <div
@@ -534,6 +509,14 @@ export default function BigScreen() {
           </div>
         </div>
       ) : null}
+      </div>
+    </>
+  );
+
+  return (
+    <div className="relative min-h-screen text-slate-100">
+      {fixedLogo}
+      {slideshowActive ? slideshowContent : debateContent}
     </div>
   )
 }
