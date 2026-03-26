@@ -82,7 +82,7 @@ export default function BigScreen() {
   const [presentationOffFade, setPresentationOffFade] = useState(1)
   const presentationOffTimeoutRef = useRef(null)
   const wasSlideshowActiveRef = useRef(false)
-  const [presentationOffLogoLayout, setPresentationOffLogoLayout] = useState('hero') // 'hero' | 'corner'
+  const [presentationOffLogoLayout, setPresentationOffLogoLayout] = useState('corner') // 'hero' | 'corner'
   const [eventHeaderLogoPos, setEventHeaderLogoPos] = useState(null) // { left, top } (viewport px)
   const eventHeaderLogoMeasureRef = useRef(null)
   const [textSlideIndex, setTextSlideIndex] = useState(0)
@@ -426,8 +426,11 @@ export default function BigScreen() {
     <>
       <div className="relative min-h-screen text-slate-100">
       <div className="mx-auto max-w-6xl px-4 pt-8">
-        <div ref={eventHeaderLogoMeasureRef}>
-          <EventBranding className="mb-4 shrink-0 sm:mb-6" style={{ opacity: 0 }} />
+        <div
+          ref={eventHeaderLogoMeasureRef}
+          style={{ opacity: 0, pointerEvents: 'none' }}
+        >
+          <EventBranding className="mb-4 shrink-0 sm:mb-6" />
         </div>
       </div>
       <div
