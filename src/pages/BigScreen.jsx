@@ -286,23 +286,20 @@ export default function BigScreen() {
     return (
       <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
         <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
+          {/**
+           * Keep `left/top/transform` stable during the slide change and only animate those.
+           * This removes the visual “biff” caused by swapping Tailwind position classes.
+           */}
           <div
-            className={`presentation-logo-shell presentation-branding-transition absolute z-20 flex ${
-              cornerLayout
-                ? 'translate-x-0 translate-y-0'
-                : 'left-1/2 top-[38vh] w-full max-w-[min(96vw,40rem)] -translate-x-1/2 -translate-y-1/2 justify-center'
-            }`}
-            style={
-              cornerLayout
-                ? {
-                    left: 'max(1rem, env(safe-area-inset-left))',
-                    top: 'max(1rem, env(safe-area-inset-top))',
-                  }
-                : undefined
-            }
+            className="presentation-logo-shell presentation-branding-transition absolute z-20 flex"
+            style={{
+              left: cornerLayout ? 'max(1rem, env(safe-area-inset-left))' : '50%',
+              top: cornerLayout ? 'max(1rem, env(safe-area-inset-top))' : '38vh',
+              transform: cornerLayout ? 'translate(0, 0)' : 'translate(-50%, -50%)',
+            }}
           >
             <EventBranding
-              centered={!cornerLayout}
+              centered
               variant={cornerLayout ? 'presentationCorner' : 'presentationHero'}
               className="presentation-branding-transition shrink-0"
             />
