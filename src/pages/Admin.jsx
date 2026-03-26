@@ -28,6 +28,52 @@ export default function Admin() {
   const [showSlideshowMigrateBanner, setShowSlideshowMigrateBanner] = useState(false)
   const [showPanelistIconsMigrateBanner, setShowPanelistIconsMigrateBanner] = useState(false)
 
+  const PANELIST_ICON_BUCKET = 'panelist-icons'
+
+  const uploadPanelistIcon = async (panelIndex, file) => {
+    if (!file) return
+    const i = panelIndex
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+    const safeExt = /^[a-z0-9]+$/.test(ext) ? ext : 'png'
+    const path = `${i + 1}.${safeExt}`
+
+    setStatus('Uploading icon...')
+    setError('')
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from(PANELIST_ICON_BUCKET)
+        .upload(path, file, {
+          upsert: true,
+          contentType: file.type,
+        })
+
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData, error: urlError } = supabase.storage
+        .from(PANELIST_ICON_BUCKET)
+        .getPublicUrl(path)
+
+      if (urlError) throw urlError
+
+      const nextUrl = publicUrlData?.publicUrl ?? null
+      const next = [...panelistIcons]
+      next[i] = nextUrl
+      setPanelistIcons(next)
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons: next,
+        promptSequence,
+        slideshowActive,
+        slideshowIndex,
+      })
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (upload failed)')
+    }
+  }
+
   const panelLabels = useMemo(() => ['P1', 'P2', 'P3', 'P4'], [])
 
   const sequenceDirty = useMemo(
@@ -446,6 +492,19 @@ export default function Admin() {
                     <label className="block text-xs font-medium text-slate-400">
                       Icon URL
                     </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="w-full text-xs text-slate-300 file:mr-3 file:rounded-lg file:border file:border-white/10 file:bg-white/5 file:px-2 file:py-1.5 file:text-xs file:font-semibold file:text-slate-100"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        uploadPanelistIcon(i, file).finally(() => {
+                          // Allow re-selecting same file
+                          e.target.value = ''
+                        })
+                      }}
+                    />
                     {panelistIcons[i] ? (
                       <img
                         src={panelistIcons[i]}

@@ -42,12 +42,12 @@ function valueToPercent(value) {
   return ((clamped - 1) / 4) * 100
 }
 
-function PanelSliderIcon({ value, index }) {
+function PanelSliderIcon({ value, index, iconUrl }) {
   const visuals = panelVisuals[index]
   const left = valueToPercent(value)
 
   return (
-    <div className="relative h-10 w-full">
+    <div className="relative h-20 w-full sm:h-24 overflow-visible">
       <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-slate-800" />
       <div
         className="absolute top-1/2 transition-all duration-500 ease-out"
@@ -58,13 +58,18 @@ function PanelSliderIcon({ value, index }) {
         aria-label={`${visuals.key} value ${value}`}
       >
         <div className={visuals.glow}>
-          <div
-            className={`relative grid h-10 w-10 place-items-center rounded-full ${visuals.dot}`}
-          >
-            <div className="text-[11px] font-bold text-slate-950">
-              {visuals.key}
-            </div>
-          </div>
+          {iconUrl ? (
+            <img
+              src={iconUrl}
+              alt={`${visuals.key} icon`}
+              className="h-16 w-16 rounded-full border border-white/10 bg-black/20 object-contain p-2 sm:h-20 sm:w-20"
+            />
+          ) : (
+            <div
+              className={`h-16 w-16 rounded-full ${visuals.dot} border border-white/10 sm:h-20 sm:w-20`}
+              aria-hidden
+            />
+          )}
         </div>
       </div>
     </div>
@@ -468,22 +473,8 @@ export default function BigScreen() {
                 key={panelVisuals[i].key}
                 className="rounded-xl border border-white/10 bg-black/20 p-4"
               >
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/20">
-                    {panelistIcons[i] ? (
-                      <img
-                        src={panelistIcons[i]}
-                        alt={`${panelVisuals[i].key} icon`}
-                        className="h-6 w-6 object-contain"
-                      />
-                    ) : (
-                      <span className={`h-2.5 w-2.5 rounded-full ${panelVisuals[i].dot}`} />
-                    )}
-                  </div>
-                  <div className="h-2.5 w-2.5 rounded-full opacity-0" />
-                </div>
-                <div className="mt-3">
-                  <PanelSliderIcon value={value} index={i} />
+                <div className="mt-2">
+                  <PanelSliderIcon value={value} index={i} iconUrl={panelistIcons[i]} />
                 </div>
               </div>
             ))}
