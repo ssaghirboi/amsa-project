@@ -76,6 +76,14 @@ export default function BigScreen() {
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
+  // When turning slideshow OFF, keep the logo identical (no jump),
+  // then fade in the rest of the debate UI.
+  const [presentationOffTransition, setPresentationOffTransition] = useState(false)
+  const [presentationOffFade, setPresentationOffFade] = useState(1)
+  const presentationOffTimeoutRef = useRef(null)
+  const wasSlideshowActiveRef = useRef(false)
+  const lastPresentationLogoStyleRef = useRef(null)
+  const lastPresentationLogoVariantRef = useRef('presentationHero')
   const [textSlideIndex, setTextSlideIndex] = useState(0)
   const [textOpacity, setTextOpacity] = useState(1)
   const textFadeTimeoutRef = useRef(null)
@@ -176,6 +184,64 @@ export default function BigScreen() {
       if (textFadeTimeoutRef.current) {
         clearTimeout(textFadeTimeoutRef.current)
         textFadeTimeoutRef.current = null
+      }
+    }
+  }, [slideshowActive, slideshowIndex])
+
+  // When switching from slideshow -> debate UI:
+  // 1) keep the logo frozen where it was
+  // 2) fade in the rest of the debate assets
+  useEffect(() => {
+    const slide = PRESENTATION_SLIDES[clampPresentationSlideIndex(slideshowIndex)] ?? PRESENTATION_SLIDES[0]
+    const isCornerLayout =
+      slide.kind === 'segment' || (slide.title != null && slide.subtitle != null)
+
+    if (slideshowActive) {
+      wasSlideshowActiveRef.current = true
+      lastPresentationLogoVariantRef.current = isCornerLayout
+        ? 'presentationCorner'
+        : 'presentationHero'
+      lastPresentationLogoStyleRef.current = {
+        left: isCornerLayout ? 'max(1rem, env(safe-area-inset-left))' : '50%',
+        top: isCornerLayout ? 'max(1rem, env(safe-area-inset-top))' : '38vh',
+        transform: isCornerLayout ? 'translate(0, 0)' : 'translate(-50%, -50%)',
+        transition: 'none',
+      }
+
+      if (presentationOffTimeoutRef.current) {
+        clearTimeout(presentationOffTimeoutRef.current)
+        presentationOffTimeoutRef.current = null
+      }
+      setPresentationOffTransition(false)
+      setPresentationOffFade(1)
+      return
+    }
+
+    if (!wasSlideshowActiveRef.current) {
+      setPresentationOffTransition(false)
+      setPresentationOffFade(1)
+      return
+    }
+
+    wasSlideshowActiveRef.current = false
+    setPresentationOffTransition(true)
+    setPresentationOffFade(0)
+
+    if (presentationOffTimeoutRef.current) {
+      clearTimeout(presentationOffTimeoutRef.current)
+      presentationOffTimeoutRef.current = null
+    }
+
+    presentationOffTimeoutRef.current = setTimeout(() => {
+      setPresentationOffFade(1)
+      setPresentationOffTransition(false)
+      presentationOffTimeoutRef.current = null
+    }, 420)
+
+    return () => {
+      if (presentationOffTimeoutRef.current) {
+        clearTimeout(presentationOffTimeoutRef.current)
+        presentationOffTimeoutRef.current = null
       }
     }
   }, [slideshowActive, slideshowIndex])
@@ -339,13 +405,33 @@ export default function BigScreen() {
 
   return (
     <div className="relative min-h-screen text-slate-100">
+      {presentationOffTransition ? (
+        <div
+          className="presentation-logo-shell presentation-branding-transition absolute z-20 flex pointer-events-none"
+          style={lastPresentationLogoStyleRef.current ?? undefined}
+        >
+          <EventBranding
+            centered
+            variant={lastPresentationLogoVariantRef.current}
+            className="presentation-branding-transition shrink-0"
+          />
+        </div>
+      ) : null}
       <div className="mx-auto max-w-6xl px-4 pt-8">
-        <EventBranding className="mb-4 shrink-0 sm:mb-6" />
+        <EventBranding
+          className="mb-4 shrink-0 sm:mb-6"
+          style={{
+            opacity: presentationOffTransition ? 0 : 1,
+            transition: 'opacity 0.35s ease-in-out',
+          }}
+        />
       </div>
       <div
-        className={`mx-auto max-w-6xl px-4 pb-8 transition-opacity duration-200 ${
-          showOverlay ? 'pointer-events-none opacity-0' : 'opacity-100'
-        }`}
+        className="mx-auto max-w-6xl px-4 pb-8 transition-opacity duration-400 ease-in-out"
+        style={{
+          opacity: showOverlay ? 0 : presentationOffFade,
+          pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
+        }}
       >
         <div className="mb-8 rounded-2xl border border-white/10 bg-slate-900/35 p-5 backdrop-blur">
           <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
