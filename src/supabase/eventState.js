@@ -1,4 +1,4 @@
-import { PRESENTATION_SLIDE_COUNT } from '../constants/presentationSlides.js'
+import { clampPresentationSlideIndex } from '../constants/presentationSlides.js'
 
 const DEFAULT_SCHEMA = 'public'
 
@@ -88,12 +88,6 @@ function clampPos(value) {
   return Math.max(1, Math.min(5, Math.round(n)))
 }
 
-function clampSlideIndex(raw) {
-  const n = Math.floor(Number(raw))
-  if (!Number.isFinite(n)) return 0
-  return Math.max(0, Math.min(PRESENTATION_SLIDE_COUNT - 1, n))
-}
-
 export function deriveEventStateFromRow(row) {
   if (!row) return null
 
@@ -103,7 +97,7 @@ export function deriveEventStateFromRow(row) {
   const promptSequence = fromDb ?? DEFAULT_PROMPT_SEQUENCE
 
   const slideshowActive = row.slideshow_active === true
-  const slideshowIndex = clampSlideIndex(row.slideshow_index ?? 0)
+  const slideshowIndex = clampPresentationSlideIndex(row.slideshow_index ?? 0)
 
   return {
     prompt: String(prompt),
@@ -197,7 +191,7 @@ export async function writeEventState(
 
   if (slideshowColumnsAvailable !== false) {
     payload.slideshow_active = Boolean(slideshowActive)
-    payload.slideshow_index = clampSlideIndex(slideshowIndex)
+    payload.slideshow_index = clampPresentationSlideIndex(slideshowIndex)
   }
 
   let { error } = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })

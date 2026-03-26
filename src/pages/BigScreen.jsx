@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
-import { PRESENTATION_SLIDES } from '../constants/presentationSlides'
+import {
+  PRESENTATION_SLIDES,
+  clampPresentationSlideIndex,
+} from '../constants/presentationSlides'
 import { supabase } from '../supabaseClient'
 import {
   fetchCurrentEventState,
@@ -73,6 +76,11 @@ export default function BigScreen() {
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
+  const [textSlideIndex, setTextSlideIndex] = useState(0)
+  const [textOpacity, setTextOpacity] = useState(1)
+  const textFadeTimeoutRef = useRef(null)
+  const textSlideIndexRef = useRef(0)
+  textSlideIndexRef.current = textSlideIndex
   const title = useMemo(() => 'Event Screen', [])
   const [error, setError] = useState('')
 
@@ -94,10 +102,7 @@ export default function BigScreen() {
       })
 
       if (current) {
-        setPrompt(current.prompt)
-        setPanelists(current.panelists)
-        setSlideshowActive(Boolean(current.slideshowActive))
-        setSlideshowIndex(current.slideshowIndex ?? 0)
+        applyEventStateFromRemote(current)
         setError('')
       } else {
         setError('Waiting for the event state...')
@@ -105,16 +110,75 @@ export default function BigScreen() {
     })()
 
     unsubscribe = subscribeToEventState(supabase, (next) => {
-      setPrompt(next.prompt)
-      setPanelists(next.panelists)
-      setSlideshowActive(Boolean(next.slideshowActive))
-      setSlideshowIndex(next.slideshowIndex ?? 0)
+      applyEventStateFromRemote(next)
     })
+
+    const pollMs = 2500
+    const pollId = setInterval(() => {
+      fetchCurrentEventState(supabase)
+        .then((next) => {
+          if (next) applyEventStateFromRemote(next)
+        })
+        .catch(() => {})
+    }, pollMs)
+
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      fetchCurrentEventState(supabase)
+        .then((next) => {
+          if (next) applyEventStateFromRemote(next)
+        })
+        .catch(() => {})
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
       if (unsubscribe) unsubscribe()
+      clearInterval(pollId)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
+
+  function applyEventStateFromRemote(next) {
+    setPrompt(next.prompt)
+    setPanelists(next.panelists)
+    setSlideshowActive(Boolean(next.slideshowActive))
+    setSlideshowIndex(next.slideshowIndex ?? 0)
+  }
+
+  /** Fade only the presentation subtext; keep logo moving immediately with `slideshowIndex`. */
+  useEffect(() => {
+    if (!slideshowActive) {
+      if (textFadeTimeoutRef.current) {
+        clearTimeout(textFadeTimeoutRef.current)
+        textFadeTimeoutRef.current = null
+      }
+      setTextSlideIndex(slideshowIndex)
+      setTextOpacity(1)
+      return
+    }
+
+    if (slideshowIndex === textSlideIndexRef.current) return
+
+    setTextOpacity(0)
+    if (textFadeTimeoutRef.current) {
+      clearTimeout(textFadeTimeoutRef.current)
+      textFadeTimeoutRef.current = null
+    }
+
+    textFadeTimeoutRef.current = setTimeout(() => {
+      setTextSlideIndex(slideshowIndex)
+      setTextOpacity(1)
+      textFadeTimeoutRef.current = null
+    }, 280)
+
+    return () => {
+      if (textFadeTimeoutRef.current) {
+        clearTimeout(textFadeTimeoutRef.current)
+        textFadeTimeoutRef.current = null
+      }
+    }
+  }, [slideshowActive, slideshowIndex])
 
   /** When prompt changes (after first non-empty sync), run intro sequence */
   useEffect(() => {
@@ -192,7 +256,15 @@ export default function BigScreen() {
   const showOverlay =
     !slideshowActive && (introPhase === 'typing' || introPhase === 'shrinking')
 
-  const presentationSlide = PRESENTATION_SLIDES[slideshowIndex] ?? PRESENTATION_SLIDES[0]
+  const logoSlide =
+    PRESENTATION_SLIDES[clampPresentationSlideIndex(slideshowIndex)] ??
+    PRESENTATION_SLIDES[0]
+  const textSlide =
+    PRESENTATION_SLIDES[clampPresentationSlideIndex(textSlideIndex)] ??
+    PRESENTATION_SLIDES[0]
+  const cornerLayout =
+    logoSlide.kind === 'segment' ||
+    (logoSlide.title != null && logoSlide.subtitle != null)
 
   if (slideshowActive) {
     const dots = (
@@ -213,18 +285,55 @@ export default function BigScreen() {
 
     return (
       <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
-        <div className="flex flex-1 flex-col items-center justify-center px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
+        <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
           <div
-            key={slideshowIndex}
-            className="presentation-slide-content flex w-full flex-col items-center justify-center"
+            className={`presentation-logo-shell presentation-branding-transition absolute z-20 flex ${
+              cornerLayout
+                ? 'translate-x-0 translate-y-0'
+                : 'left-1/2 top-[38vh] w-full max-w-[min(96vw,40rem)] -translate-x-1/2 -translate-y-1/2 justify-center'
+            }`}
+            style={
+              cornerLayout
+                ? {
+                    left: 'max(1rem, env(safe-area-inset-left))',
+                    top: 'max(1rem, env(safe-area-inset-top))',
+                  }
+                : undefined
+            }
           >
-            <EventBranding centered variant="presentationHero" className="shrink-0" />
-            {presentationSlide.tagline ? (
-              <p className="mt-8 max-w-2xl text-center text-xl font-medium tracking-wide text-slate-200/95 sm:mt-12 sm:text-2xl md:text-3xl">
-                {presentationSlide.tagline}
-              </p>
-            ) : null}
+            <EventBranding
+              centered={!cornerLayout}
+              variant={cornerLayout ? 'presentationCorner' : 'presentationHero'}
+              className="presentation-branding-transition shrink-0"
+            />
           </div>
+
+          {!cornerLayout ? (
+            <div
+              className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-2xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
+              aria-hidden={!textSlide.tagline}
+              style={{ opacity: textOpacity }}
+            >
+              {textSlide.tagline ? (
+                <p className="text-xl font-medium tracking-wide text-slate-200/95 sm:text-2xl md:text-3xl">
+                  {textSlide.tagline}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <div
+              key={`segment-${textSlide.id ?? textSlideIndex}`}
+              className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(7rem,22vh,12rem)] text-center"
+              style={{ opacity: textOpacity }}
+            >
+              <h1 className="max-w-3xl text-balance text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl md:text-5xl">
+                {textSlide.title}
+              </h1>
+              <p className="mt-4 max-w-xl text-lg text-slate-300/95 sm:mt-6 sm:text-xl md:text-2xl">
+                {textSlide.subtitle}
+              </p>
+            </div>
+          )}
         </div>
         {dots}
       </div>
