@@ -11,6 +11,13 @@ export const PRESENTATION_SLIDES = [
     title: 'Recitation of the Holy Quran',
     subtitle: 'John Doe',
   },
+  /** Slide 4 — Speaker 1 introduction (filler text for now). */
+  {
+    kind: 'segment',
+    id: 'speaker-1',
+    title: 'Speaker 1',
+    subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+  },
 ]
 
 export const PRESENTATION_SLIDE_COUNT = PRESENTATION_SLIDES.length
