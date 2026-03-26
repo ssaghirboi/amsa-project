@@ -18,6 +18,27 @@ export const PRESENTATION_SLIDES = [
     title: 'Speaker 1',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
+  /** Slide 5 — Speaker 2 introduction (filler text for now). */
+  {
+    kind: 'segment',
+    id: 'speaker-2',
+    title: 'Speaker 2',
+    subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+  },
+  /** Slide 6 — Speaker 3 introduction (filler text for now). */
+  {
+    kind: 'segment',
+    id: 'speaker-3',
+    title: 'Speaker 3',
+    subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+  },
+  /** Slide 7 — Speaker 4 introduction (filler text for now). */
+  {
+    kind: 'segment',
+    id: 'speaker-4',
+    title: 'Speaker 4',
+    subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+  },
 ]
 
 export const PRESENTATION_SLIDE_COUNT = PRESENTATION_SLIDES.length
