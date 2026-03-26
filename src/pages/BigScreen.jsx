@@ -83,6 +83,8 @@ export default function BigScreen() {
   const presentationOffTimeoutRef = useRef(null)
   const wasSlideshowActiveRef = useRef(false)
   const [presentationOffLogoLayout, setPresentationOffLogoLayout] = useState('hero') // 'hero' | 'corner'
+  const [eventHeaderLogoPos, setEventHeaderLogoPos] = useState(null) // { left, top } (viewport px)
+  const eventHeaderLogoMeasureRef = useRef(null)
   const [textSlideIndex, setTextSlideIndex] = useState(0)
   const [textOpacity, setTextOpacity] = useState(1)
   const textFadeTimeoutRef = useRef(null)
@@ -223,16 +225,28 @@ export default function BigScreen() {
       presentationOffTimeoutRef.current = null
     }
 
-    presentationOffTimeoutRef.current = setTimeout(() => {
-      setPresentationOffFade(1)
-      setPresentationOffTransition(false)
-      presentationOffTimeoutRef.current = null
-    }, isCornerLayout ? 420 : 900)
+    const moveDurationMs = 850
+    if (isCornerLayout) {
+      // Already in the corner: just fade in.
+      presentationOffTimeoutRef.current = setTimeout(() => {
+        setPresentationOffFade(1)
+        setPresentationOffTransition(false)
+        presentationOffTimeoutRef.current = null
+      }, 420)
+    } else {
+      // Logo is in the middle: move logo to the exact native event-screen position
+      // first, then fade in the rest.
+      requestAnimationFrame(() => {
+        const rect = eventHeaderLogoMeasureRef.current?.getBoundingClientRect()
+        if (rect) setEventHeaderLogoPos({ left: rect.left, top: rect.top })
+        setPresentationOffLogoLayout('corner')
 
-    if (!isCornerLayout) {
-      // Logo is currently in the middle: move to corner first, then fade in assets.
-      // Using rAF ensures the initial (hero) layout renders before we change to corner layout.
-      requestAnimationFrame(() => setPresentationOffLogoLayout('corner'))
+        presentationOffTimeoutRef.current = setTimeout(() => {
+          setPresentationOffFade(1)
+          setPresentationOffTransition(false)
+          presentationOffTimeoutRef.current = null
+        }, moveDurationMs)
+      })
     }
 
     return () => {
@@ -404,38 +418,42 @@ export default function BigScreen() {
     <div className="relative min-h-screen text-slate-100">
       {presentationOffTransition ? (
         <div
-          className="presentation-logo-shell presentation-branding-transition absolute z-20 flex pointer-events-none"
+          className="presentation-logo-shell presentation-branding-transition fixed z-20 flex pointer-events-none"
+          style={
+            presentationOffLogoLayout === 'corner'
+              ? {
+                  // Corner: use the exact native event-screen logo position when measured.
+                  left:
+                    eventHeaderLogoPos?.left ?? 'max(1rem, env(safe-area-inset-left))',
+                  top:
+                    eventHeaderLogoPos?.top ?? 'max(1rem, env(safe-area-inset-top))',
+                  transform: 'translate(0, 0)',
+                }
+              : {
+                  // Middle/hero
+                  left: '50%',
+                  top: '38vh',
+                  transform: 'translate(-50%, -50%)',
+                }
+          }
         >
           <EventBranding
             centered={presentationOffLogoLayout === 'hero'}
             variant={presentationOffLogoLayout === 'corner' ? 'presentationCorner' : 'presentationHero'}
             className="presentation-branding-transition shrink-0"
-            style={
-              presentationOffLogoLayout === 'corner'
-                ? {
-                    // Corner (matches the presentationCorner positioning)
-                    left: 'max(1rem, env(safe-area-inset-left))',
-                    top: 'max(1rem, env(safe-area-inset-top))',
-                    transform: 'translate(0, 0)',
-                  }
-                : {
-                    // Middle/hero
-                    left: '50%',
-                    top: '38vh',
-                    transform: 'translate(-50%, -50%)',
-                  }
-            }
           />
         </div>
       ) : null}
       <div className="mx-auto max-w-6xl px-4 pt-8">
-        <EventBranding
-          className="mb-4 shrink-0 sm:mb-6"
-          style={{
-            opacity: presentationOffTransition ? 0 : 1,
-            transition: 'opacity 0.35s ease-in-out',
-          }}
-        />
+        <div ref={eventHeaderLogoMeasureRef}>
+          <EventBranding
+            className="mb-4 shrink-0 sm:mb-6"
+            style={{
+              opacity: presentationOffFade,
+              transition: 'opacity 0.35s ease-in-out',
+            }}
+          />
+        </div>
       </div>
       <div
         className="mx-auto max-w-6xl px-4 pb-8 transition-opacity duration-400 ease-in-out"
