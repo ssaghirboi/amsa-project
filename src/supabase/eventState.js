@@ -6,11 +6,28 @@ const DEFAULT_SCHEMA = 'public'
 let promptSequenceColumnAvailable = null
 /** Set after fetch: DB has slideshow columns. */
 let slideshowColumnsAvailable = null
+/** Set after fetch: DB has panelist icon URL columns. */
+let panelistIconsColumnsAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
 
+const PANELIST_ICON_COLUMNS = [
+  'panelist_1_icon_url',
+  'panelist_2_icon_url',
+  'panelist_3_icon_url',
+  'panelist_4_icon_url',
+]
+
+const PANELIST_ICON_COLUMNS_SELECT = PANELIST_ICON_COLUMNS.join(',')
+
 const SELECT_VARIANTS = [
+  // With panelist icon URL columns
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},slideshow_active,slideshow_index`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT}`,
+  // Without panelist icon URL columns (backwards compatible)
   `${SELECT_BASE},prompt_sequence,slideshow_active,slideshow_index`,
   `${SELECT_BASE},prompt_sequence`,
   `${SELECT_BASE},slideshow_active,slideshow_index`,
@@ -45,6 +62,11 @@ export function shouldPromptSequenceMigrate() {
 /** `false` after fetch detected no slideshow columns. */
 export function shouldSlideshowMigrate() {
   return slideshowColumnsAvailable === false
+}
+
+/** `false` after fetch detected no panelist icon URL columns. */
+export function shouldPanelistIconsMigrate() {
+  return panelistIconsColumnsAvailable === false
 }
 
 // Matches your provided SQL:
@@ -93,6 +115,7 @@ export function deriveEventStateFromRow(row) {
 
   const prompt = row.current_prompt ?? ''
   const panelists = PANEL_POS_COLUMNS.map((col) => clampPos(row[col]))
+  const panelistIcons = PANELIST_ICON_COLUMNS.map((col) => row[col] ?? null)
   const fromDb = normalizePromptSequence(row.prompt_sequence)
   const promptSequence = fromDb ?? DEFAULT_PROMPT_SEQUENCE
 
@@ -102,6 +125,7 @@ export function deriveEventStateFromRow(row) {
   return {
     prompt: String(prompt),
     panelists,
+    panelistIcons,
     promptSequence,
     slideshowActive,
     slideshowIndex,
@@ -124,12 +148,14 @@ export async function fetchCurrentEventState(supabase) {
     if (!error) {
       promptSequenceColumnAvailable = cols.includes('prompt_sequence')
       slideshowColumnsAvailable = cols.includes('slideshow_active')
+      panelistIconsColumnsAvailable = cols.includes('panelist_1_icon_url')
 
       const row = Array.isArray(data) ? data[0] : data
       return (
         deriveEventStateFromRow(row) ?? {
           prompt: '',
           panelists: [3, 3, 3, 3],
+            panelistIcons: [null, null, null, null],
           promptSequence: DEFAULT_PROMPT_SEQUENCE,
           slideshowActive: false,
           slideshowIndex: 0,
@@ -169,7 +195,7 @@ export function subscribeToEventState(supabase, onUpdate) {
 
 export async function writeEventState(
   supabase,
-  { prompt, panelists, promptSequence, slideshowActive = false, slideshowIndex = 0 },
+  { prompt, panelists, panelistIcons, promptSequence, slideshowActive = false, slideshowIndex = 0 },
 ) {
   const sequence =
     Array.isArray(promptSequence) && promptSequence.length > 0
@@ -183,6 +209,13 @@ export async function writeEventState(
     panelist_2_pos: panelists?.[1] ?? 3,
     panelist_3_pos: panelists?.[2] ?? 3,
     panelist_4_pos: panelists?.[3] ?? 3,
+  }
+
+  if (panelistIconsColumnsAvailable !== false) {
+    payload.panelist_1_icon_url = panelistIcons?.[0] ?? null
+    payload.panelist_2_icon_url = panelistIcons?.[1] ?? null
+    payload.panelist_3_icon_url = panelistIcons?.[2] ?? null
+    payload.panelist_4_icon_url = panelistIcons?.[3] ?? null
   }
 
   if (promptSequenceColumnAvailable !== false) {
@@ -209,6 +242,22 @@ export async function writeEventState(
     delete payload.slideshow_index
     const third = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
     error = third.error
+  }
+
+  // If icon columns are missing, retry without them.
+  if (
+    error &&
+    /panelist_[1-4]_icon_url/i.test(String(error.message || '')) &&
+    /does not exist/i.test(String(error.message || '')) &&
+    panelistIconsColumnsAvailable !== false
+  ) {
+    panelistIconsColumnsAvailable = false
+    delete payload.panelist_1_icon_url
+    delete payload.panelist_2_icon_url
+    delete payload.panelist_3_icon_url
+    delete payload.panelist_4_icon_url
+    const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = second.error
   }
 
   if (error) throw error

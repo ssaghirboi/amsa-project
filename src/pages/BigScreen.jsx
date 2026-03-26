@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDES,
@@ -74,6 +74,7 @@ function PanelSliderIcon({ value, index }) {
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
+  const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
   // When turning slideshow OFF, keep the logo identical (no jump),
@@ -89,7 +90,6 @@ export default function BigScreen() {
   const [textOpacity, setTextOpacity] = useState(1)
   const textFadeTimeoutRef = useRef(null)
   const textSlideIndexRef = useRef(0)
-  const title = useMemo(() => 'Event Screen', [])
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -106,6 +106,7 @@ export default function BigScreen() {
   function applyEventStateFromRemote(next) {
     setPrompt(next.prompt)
     setPanelists(next.panelists)
+    setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
     setSlideshowActive(Boolean(next.slideshowActive))
     setSlideshowIndex(next.slideshowIndex ?? 0)
   }
@@ -165,14 +166,18 @@ export default function BigScreen() {
         clearTimeout(textFadeTimeoutRef.current)
         textFadeTimeoutRef.current = null
       }
-      setTextSlideIndex(slideshowIndex)
-      setTextOpacity(1)
+      queueMicrotask(() => {
+        setTextSlideIndex(slideshowIndex)
+        setTextOpacity(1)
+      })
       return
     }
 
     if (slideshowIndex === textSlideIndexRef.current) return
 
-    setTextOpacity(0)
+    queueMicrotask(() => {
+      setTextOpacity(0)
+    })
     if (textFadeTimeoutRef.current) {
       clearTimeout(textFadeTimeoutRef.current)
       textFadeTimeoutRef.current = null
@@ -203,26 +208,33 @@ export default function BigScreen() {
 
     if (slideshowActive) {
       wasSlideshowActiveRef.current = true
-      setPresentationOffLogoLayout(isCornerLayout ? 'corner' : 'hero')
+      const nextLogoLayout = isCornerLayout ? 'corner' : 'hero'
 
       if (presentationOffTimeoutRef.current) {
         clearTimeout(presentationOffTimeoutRef.current)
         presentationOffTimeoutRef.current = null
       }
-      setPresentationOffTransition(false)
-      setPresentationOffFade(1)
+      queueMicrotask(() => {
+        setPresentationOffLogoLayout(nextLogoLayout)
+        setPresentationOffTransition(false)
+        setPresentationOffFade(1)
+      })
       return
     }
 
     if (!wasSlideshowActiveRef.current) {
-      setPresentationOffTransition(false)
-      setPresentationOffFade(1)
+      queueMicrotask(() => {
+        setPresentationOffTransition(false)
+        setPresentationOffFade(1)
+      })
       return
     }
 
     wasSlideshowActiveRef.current = false
-    setPresentationOffTransition(true)
-    setPresentationOffFade(0)
+    queueMicrotask(() => {
+      setPresentationOffTransition(true)
+      setPresentationOffFade(0)
+    })
 
     if (presentationOffTimeoutRef.current) {
       clearTimeout(presentationOffTimeoutRef.current)
@@ -291,9 +303,11 @@ export default function BigScreen() {
   /** Cancel debate intro when presentation mode is on */
   useEffect(() => {
     if (!slideshowActive) return
-    setIntroPhase('idle')
-    setHandoffActive(false)
-    setIntroText('')
+    queueMicrotask(() => {
+      setIntroPhase('idle')
+      setHandoffActive(false)
+      setIntroText('')
+    })
   }, [slideshowActive])
 
   /** Typewriter */
@@ -441,18 +455,7 @@ export default function BigScreen() {
           pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
         }}
       >
-        <div className="mb-8 rounded-2xl border border-white/10 bg-slate-900/35 p-5 backdrop-blur">
-          <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
-            {title}
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold leading-snug sm:text-4xl">
-            {prompt || 'Waiting for the prompt...'}
-          </h1>
-        </div>
-
         <div className="rounded-2xl border border-white/10 bg-slate-900/35 p-6 backdrop-blur">
-          <div className="mt-1 text-xs text-slate-400">Live panel scores:</div>
-
           {error ? (
             <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
               {error}
@@ -466,18 +469,18 @@ export default function BigScreen() {
                 className="rounded-xl border border-white/10 bg-black/20 p-4"
               >
                 <div className="flex items-center justify-between gap-4">
-                  <div className="text-sm font-medium text-slate-200">
-                    {panelVisuals[i].key}
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/20">
+                    {panelistIcons[i] ? (
+                      <img
+                        src={panelistIcons[i]}
+                        alt={`${panelVisuals[i].key} icon`}
+                        className="h-6 w-6 object-contain"
+                      />
+                    ) : (
+                      <span className={`h-2.5 w-2.5 rounded-full ${panelVisuals[i].dot}`} />
+                    )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`h-2.5 w-2.5 rounded-full ${panelVisuals[i].dot}`} />
-                    <div className="text-sm font-semibold text-indigo-200">{value}</div>
-                  </div>
-                </div>
-
-                <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Strongly Disagree</span>
-                  <span>Strongly Agree</span>
+                  <div className="h-2.5 w-2.5 rounded-full opacity-0" />
                 </div>
                 <div className="mt-3">
                   <PanelSliderIcon value={value} index={i} />

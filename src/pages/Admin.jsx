@@ -6,6 +6,7 @@ import {
   DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
   shouldPromptSequenceMigrate,
+  shouldPanelistIconsMigrate,
   shouldSlideshowMigrate,
   subscribeToEventState,
   writeEventState,
@@ -14,6 +15,7 @@ import {
 export default function Admin() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
+  const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [promptSequenceDraft, setPromptSequenceDraft] = useState(
     () => [...DEFAULT_PROMPT_SEQUENCE],
@@ -24,6 +26,7 @@ export default function Admin() {
   const [error, setError] = useState('')
   const [showMigrateBanner, setShowMigrateBanner] = useState(false)
   const [showSlideshowMigrateBanner, setShowSlideshowMigrateBanner] = useState(false)
+  const [showPanelistIconsMigrateBanner, setShowPanelistIconsMigrateBanner] = useState(false)
 
   const panelLabels = useMemo(() => ['P1', 'P2', 'P3', 'P4'], [])
 
@@ -41,6 +44,7 @@ export default function Admin() {
         if (current) {
           setPrompt(current.prompt)
           setPanelists(current.panelists)
+          setPanelistIcons(current.panelistIcons ?? [null, null, null, null])
           setSlideshowActive(Boolean(current.slideshowActive))
           setSlideshowIndex(current.slideshowIndex ?? 0)
           if (current.promptSequence?.length) {
@@ -52,17 +56,20 @@ export default function Admin() {
         setStatus('Live')
         setShowMigrateBanner(shouldPromptSequenceMigrate())
         setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
+        setShowPanelistIconsMigrateBanner(shouldPanelistIconsMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
         setShowMigrateBanner(false)
         setShowSlideshowMigrateBanner(false)
+        setShowPanelistIconsMigrateBanner(false)
       }
     })()
 
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt)
       setPanelists(next.panelists)
+      setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
       if (!next.promptSequence?.length) return
@@ -82,12 +89,18 @@ export default function Admin() {
     }
   }, [])
 
-  const commit = async (nextPrompt, nextPanelists, sequenceToSave = promptSequence) => {
+  const commit = async (
+    nextPrompt,
+    nextPanelists,
+    sequenceToSave = promptSequence,
+    nextPanelistIcons = panelistIcons,
+  ) => {
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
         prompt: nextPrompt,
         panelists: nextPanelists,
+        panelistIcons: nextPanelistIcons,
         promptSequence: sequenceToSave,
         slideshowActive,
         slideshowIndex,
@@ -167,6 +180,7 @@ export default function Admin() {
       await writeEventState(supabase, {
         prompt,
         panelists,
+        panelistIcons,
         promptSequence: next,
         slideshowActive,
         slideshowIndex,
@@ -186,6 +200,7 @@ export default function Admin() {
       await writeEventState(supabase, {
         prompt,
         panelists,
+        panelistIcons,
         promptSequence,
         slideshowActive: next,
         slideshowIndex: idx,
@@ -209,6 +224,7 @@ export default function Admin() {
       await writeEventState(supabase, {
         prompt,
         panelists,
+        panelistIcons,
         promptSequence,
         slideshowActive: true,
         slideshowIndex: next,
@@ -361,6 +377,22 @@ export default function Admin() {
           </div>
         ) : null}
 
+        {showPanelistIconsMigrateBanner ? (
+          <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+            <p className="font-medium text-amber-50">Panelist icons are not saved to the database yet</p>
+            <p className="mt-1 text-amber-100/90">
+              In Supabase → SQL Editor, run:{' '}
+              <code className="rounded bg-black/30 px-1.5 py-0.5 text-xs text-amber-200">
+                alter table public.event_state add column if not exists panelist_1_icon_url text default null;
+                alter table public.event_state add column if not exists panelist_2_icon_url text default null;
+                alter table public.event_state add column if not exists panelist_3_icon_url text default null;
+                alter table public.event_state add column if not exists panelist_4_icon_url text default null;
+              </code>{' '}
+              Then refresh. Icon URLs will appear on the event screen.
+            </p>
+          </div>
+        ) : null}
+
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
             <label className="block text-sm font-medium text-slate-200">
@@ -409,6 +441,33 @@ export default function Admin() {
                     }}
                     className="h-2 w-full cursor-pointer accent-indigo-400"
                   />
+
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-slate-400">
+                      Icon URL
+                    </label>
+                    {panelistIcons[i] ? (
+                      <img
+                        src={panelistIcons[i]}
+                        alt={`${panelLabels[i]} icon`}
+                        className="h-10 w-10 rounded-md border border-white/10 bg-black/20 object-contain"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-md border border-dashed border-white/10 bg-black/10" />
+                    )}
+                    <input
+                      type="text"
+                      value={panelistIcons[i] ?? ''}
+                      placeholder="https://.../icon.png"
+                      className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                      onChange={(e) => {
+                        const next = [...panelistIcons]
+                        next[i] = e.target.value || null
+                        setPanelistIcons(next)
+                        commit(prompt, panelists, promptSequence, next)
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
