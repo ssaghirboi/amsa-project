@@ -39,6 +39,14 @@ export const PRESENTATION_SLIDES = [
     title: 'Speaker 4',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
+  /** Slide 8 — Saghir Saeed intro */
+  {
+    kind: 'segment',
+    id: 'saghir-saeed',
+    title: 'Saghir Saeed',
+    subtitle:
+      "President of the Ahmadiyya Muslim Students' Association",
+  },
 ]
 
 export const PRESENTATION_SLIDE_COUNT = PRESENTATION_SLIDES.length
