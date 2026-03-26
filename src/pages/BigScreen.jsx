@@ -82,8 +82,7 @@ export default function BigScreen() {
   const [presentationOffFade, setPresentationOffFade] = useState(1)
   const presentationOffTimeoutRef = useRef(null)
   const wasSlideshowActiveRef = useRef(false)
-  const lastPresentationLogoStyleRef = useRef(null)
-  const lastPresentationLogoVariantRef = useRef('presentationHero')
+  const [presentationOffLogoLayout, setPresentationOffLogoLayout] = useState('hero') // 'hero' | 'corner'
   const [textSlideIndex, setTextSlideIndex] = useState(0)
   const [textOpacity, setTextOpacity] = useState(1)
   const textFadeTimeoutRef = useRef(null)
@@ -198,15 +197,7 @@ export default function BigScreen() {
 
     if (slideshowActive) {
       wasSlideshowActiveRef.current = true
-      lastPresentationLogoVariantRef.current = isCornerLayout
-        ? 'presentationCorner'
-        : 'presentationHero'
-      lastPresentationLogoStyleRef.current = {
-        left: isCornerLayout ? 'max(1rem, env(safe-area-inset-left))' : '50%',
-        top: isCornerLayout ? 'max(1rem, env(safe-area-inset-top))' : '38vh',
-        transform: isCornerLayout ? 'translate(0, 0)' : 'translate(-50%, -50%)',
-        transition: 'none',
-      }
+      setPresentationOffLogoLayout(isCornerLayout ? 'corner' : 'hero')
 
       if (presentationOffTimeoutRef.current) {
         clearTimeout(presentationOffTimeoutRef.current)
@@ -236,7 +227,13 @@ export default function BigScreen() {
       setPresentationOffFade(1)
       setPresentationOffTransition(false)
       presentationOffTimeoutRef.current = null
-    }, 420)
+    }, isCornerLayout ? 420 : 900)
+
+    if (!isCornerLayout) {
+      // Logo is currently in the middle: move to corner first, then fade in assets.
+      // Using rAF ensures the initial (hero) layout renders before we change to corner layout.
+      requestAnimationFrame(() => setPresentationOffLogoLayout('corner'))
+    }
 
     return () => {
       if (presentationOffTimeoutRef.current) {
@@ -408,12 +405,26 @@ export default function BigScreen() {
       {presentationOffTransition ? (
         <div
           className="presentation-logo-shell presentation-branding-transition absolute z-20 flex pointer-events-none"
-          style={lastPresentationLogoStyleRef.current ?? undefined}
         >
           <EventBranding
-            centered
-            variant={lastPresentationLogoVariantRef.current}
+            centered={presentationOffLogoLayout === 'hero'}
+            variant={presentationOffLogoLayout === 'corner' ? 'presentationCorner' : 'presentationHero'}
             className="presentation-branding-transition shrink-0"
+            style={
+              presentationOffLogoLayout === 'corner'
+                ? {
+                    // Corner (matches the presentationCorner positioning)
+                    left: 'max(1rem, env(safe-area-inset-left))',
+                    top: 'max(1rem, env(safe-area-inset-top))',
+                    transform: 'translate(0, 0)',
+                  }
+                : {
+                    // Middle/hero
+                    left: '50%',
+                    top: '38vh',
+                    transform: 'translate(-50%, -50%)',
+                  }
+            }
           />
         </div>
       ) : null}
