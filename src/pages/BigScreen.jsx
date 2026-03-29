@@ -37,7 +37,8 @@ function RevealPromptChars({ text, visibleCount, className = '' }) {
 
 const FULLSCREEN_PROMPT_BODY =
   '!text-[clamp(1.45rem,3.8vw,2.5rem)] sm:!text-[clamp(1.65rem,4.2vw,3rem)] md:!text-[clamp(1.85rem,4.8vw,3.5rem)] lg:!text-[clamp(2rem,5.2vw,4rem)] !leading-[1.12]'
-const FULLSCREEN_PROMPT_INNER = '!px-6 !py-10 sm:!px-10 sm:!py-14 md:!px-14 md:!py-16'
+const FULLSCREEN_PROMPT_INNER =
+  '!flex !min-h-0 !flex-1 !flex-col !justify-center !px-6 !py-10 sm:!px-10 sm:!py-14 md:!px-14 md:!py-16'
 
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
@@ -323,18 +324,15 @@ export default function BigScreen() {
             if (intro && target) {
               const a = intro.getBoundingClientRect()
               const b = target.getBoundingClientRect()
-              const cx = a.left + a.width / 2
-              const cy = a.top + a.height / 2
-              const tcx = b.left + b.width / 2
-              const tcy = b.top + b.height / 2
+              // Top-left FLIP: matches transform-origin: top left + translate(...) scale(...)
               nextFly = {
-                dx: tcx - cx,
-                dy: tcy - cy,
+                dx: b.left - a.left,
+                dy: b.top - a.top,
                 sx: b.width / Math.max(a.width, 1),
                 sy: b.height / Math.max(a.height, 1),
               }
             } else {
-              nextFly = { dx: 0, dy: -140, sx: 0.48, sy: 0.48 }
+              nextFly = { dx: 0, dy: -120, sx: 0.45, sy: 0.45 }
             }
             const noMotion =
               nextFly &&
@@ -506,10 +504,11 @@ export default function BigScreen() {
             aria-hidden
           />
           <div
-            className="pointer-events-none fixed inset-0 z-[51] flex min-h-0 flex-col p-2 pt-[max(5rem,env(safe-area-inset-top))] pb-4 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-6 sm:pt-24 sm:pb-8"
+            className="pointer-events-none fixed inset-0 z-[51] flex min-h-0 flex-col items-stretch justify-stretch p-2 pt-[max(4.5rem,env(safe-area-inset-top))] pb-5 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-6 sm:pt-24 sm:pb-10"
             aria-live="polite"
             aria-busy={introPhase === 'typing'}
           >
+            <div className="flex min-h-0 w-full flex-1 flex-col">
             <PromptBox
               key={prompt}
               ref={introPromptRef}
@@ -520,7 +519,7 @@ export default function BigScreen() {
                   ? FULLSCREEN_PROMPT_BODY
                   : ''
               }
-              className={`flex min-h-0 w-full flex-1 flex-col justify-center ${
+              className={`relative flex h-full min-h-[min(88dvh,920px)] w-full flex-1 flex-col justify-center ${
                 introPhase === 'shrinking' && flyTo ? 'bigscreen-prompt-fly-to-target' : ''
               }`}
               style={
@@ -543,6 +542,7 @@ export default function BigScreen() {
                 prompt
               )}
             </PromptBox>
+            </div>
           </div>
         </>
       ) : null}
