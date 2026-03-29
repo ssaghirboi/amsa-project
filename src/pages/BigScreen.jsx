@@ -399,18 +399,22 @@ export default function BigScreen() {
     logoSlide.kind === 'segment' ||
     (logoSlide.title != null && logoSlide.subtitle != null)
 
-  const fixedLogoPos =
-    presentationOffLogoLayout === 'corner'
-      ? {
-          left: eventHeaderLogoPos?.left ?? 'max(1rem, env(safe-area-inset-left))',
-          top: eventHeaderLogoPos?.top ?? 'max(1rem, env(safe-area-inset-top))',
-          transform: 'translate(0, 0)',
-        }
-      : {
-          left: '50%',
-          top: '38vh',
-          transform: 'translate(-50%, -50%)',
-        }
+  // Debate / main screen: same top-left slot + size as slideshow corner slides.
+  // Slideshow hero: centered large logo only while presentation is on.
+  const logoUsesCornerSlot =
+    !slideshowActive || presentationOffLogoLayout === 'corner'
+
+  const fixedLogoPos = logoUsesCornerSlot
+    ? {
+        left: eventHeaderLogoPos?.left ?? 'max(1rem, env(safe-area-inset-left))',
+        top: eventHeaderLogoPos?.top ?? 'max(1rem, env(safe-area-inset-top))',
+        transform: 'translate(0, 0)',
+      }
+    : {
+        left: '50%',
+        top: '38vh',
+        transform: 'translate(-50%, -50%)',
+      }
 
   const fixedLogo = (
     <div
@@ -418,15 +422,11 @@ export default function BigScreen() {
       style={fixedLogoPos}
     >
       <EventBranding
-        centered={presentationOffLogoLayout === 'hero'}
+        centered={!logoUsesCornerSlot}
         variant={
-          slideshowActive
-            ? presentationOffLogoLayout === 'corner'
-              ? 'presentationCorner'
-              : 'presentationHero'
-            : presentationOffLogoLayout === 'corner'
-              ? 'default'
-              : 'presentationHero'
+          slideshowActive && presentationOffLogoLayout === 'hero'
+            ? 'presentationHero'
+            : 'presentationCorner'
         }
         className="presentation-branding-transition shrink-0"
       />
@@ -486,16 +486,16 @@ export default function BigScreen() {
   const debateContent = (
     <>
       <div className="relative min-h-screen text-slate-100">
-      <div className="mx-auto max-w-6xl px-4 pt-8">
-        <div
-          ref={eventHeaderLogoMeasureRef}
-          style={{ opacity: 0, pointerEvents: 'none' }}
-        >
-          <EventBranding className="mb-4 shrink-0 sm:mb-6" />
-        </div>
+      {/* Invisible twin for center→corner transition; matches on-screen corner logo slot */}
+      <div
+        ref={eventHeaderLogoMeasureRef}
+        className="pointer-events-none fixed z-[15] left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))] opacity-0"
+        aria-hidden
+      >
+        <EventBranding variant="presentationCorner" className="shrink-0" />
       </div>
       <div
-        className="mx-auto max-w-6xl px-4 pb-8 transition-opacity duration-400 ease-in-out"
+        className="mx-auto max-w-6xl px-4 pb-8 pt-[clamp(10rem,28vh,16rem)] transition-opacity duration-400 ease-in-out sm:px-8"
         style={{
           opacity: showOverlay ? 0 : presentationOffFade,
           pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
