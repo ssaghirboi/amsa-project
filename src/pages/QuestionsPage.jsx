@@ -79,7 +79,6 @@ export default function QuestionsPage() {
   const [pushError, setPushError] = useState('')
   const [pushStatus, setPushStatus] = useState('')
   const [clearStatus, setClearStatus] = useState('')
-  const [lastClearedPromptKey, setLastClearedPromptKey] = useState('')
 
   useEffect(() => {
     let unsub = null
@@ -193,14 +192,8 @@ export default function QuestionsPage() {
     }
   }
 
-  // Reset questions on each new prompt (best-effort, only if deletes are allowed).
-  useEffect(() => {
-    if (!activePromptKey) return
-    if (activePromptKey === lastClearedPromptKey) return
-    setLastClearedPromptKey(activePromptKey)
-    clearAllQuestions().catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePromptKey])
+  // NOTE: Do not auto-clear on prompt change.
+  // Questions should persist across refresh; MC selection resets per prompt instead.
 
   const pushToMc = async (panelKey, q) => {
     if (!eventState) return
@@ -318,6 +311,42 @@ export default function QuestionsPage() {
             {pushError}
           </div>
         ) : null}
+
+        {/* MC dashboard (pushed questions) */}
+        <div className="mt-6 rounded-3xl border border-white/10 bg-slate-900/30 p-6 backdrop-blur sm:p-7">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-300/90">
+              Panelist questions
+            </h2>
+            <span className="text-xs text-slate-500">pushed to MC</span>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {PANELISTS.map((p) => {
+              const q = pushedFor(p.key)
+              return (
+                <div
+                  key={p.key}
+                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4"
+                >
+                  <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                    {p.title}
+                  </div>
+                  <div className="mt-2 text-sm leading-relaxed text-slate-100">
+                    {q?.question_text ? q.question_text : (
+                      <span className="text-slate-500">No question yet.</span>
+                    )}
+                  </div>
+                  {q?.created_at ? (
+                    <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
+                      {new Date(q.created_at).toLocaleTimeString()}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {PANELISTS.map((p) => {
