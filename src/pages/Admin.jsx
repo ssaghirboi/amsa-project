@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
-import { PRESENTATION_SLIDE_COUNT } from '../constants/presentationSlides'
+import {
+  PRESENTATION_SLIDE_COUNT,
+  mergePresentationSlidesFromRemote,
+} from '../constants/presentationSlides'
 import { supabase } from '../supabaseClient'
 import {
   DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
   shouldPromptSequenceMigrate,
   shouldPanelistIconsMigrate,
+  shouldPresentationSlidesMigrate,
   shouldSlideshowMigrate,
   subscribeToEventState,
   writeEventState,
@@ -22,11 +26,16 @@ export default function Admin() {
   )
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
+  const [presentationSlides, setPresentationSlides] = useState(() =>
+    mergePresentationSlidesFromRemote(null),
+  )
   const [status, setStatus] = useState('Connecting...')
   const [error, setError] = useState('')
   const [showMigrateBanner, setShowMigrateBanner] = useState(false)
   const [showSlideshowMigrateBanner, setShowSlideshowMigrateBanner] = useState(false)
   const [showPanelistIconsMigrateBanner, setShowPanelistIconsMigrateBanner] = useState(false)
+  const [showPresentationSlidesMigrateBanner, setShowPresentationSlidesMigrateBanner] =
+    useState(false)
 
   const PANELIST_ICON_BUCKET = 'panelist-icons'
 
@@ -64,6 +73,7 @@ export default function Admin() {
         panelists,
         panelistIcons: next,
         promptSequence,
+        presentationSlides,
         slideshowActive,
         slideshowIndex,
       })
@@ -93,6 +103,9 @@ export default function Admin() {
           setPanelistIcons(current.panelistIcons ?? [null, null, null, null])
           setSlideshowActive(Boolean(current.slideshowActive))
           setSlideshowIndex(current.slideshowIndex ?? 0)
+          setPresentationSlides(
+            mergePresentationSlidesFromRemote(current.presentationSlides ?? null),
+          )
           if (current.promptSequence?.length) {
             setPromptSequence(current.promptSequence)
             setPromptSequenceDraft([...current.promptSequence])
@@ -103,12 +116,14 @@ export default function Admin() {
         setShowMigrateBanner(shouldPromptSequenceMigrate())
         setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
         setShowPanelistIconsMigrateBanner(shouldPanelistIconsMigrate())
+        setShowPresentationSlidesMigrateBanner(shouldPresentationSlidesMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
         setShowMigrateBanner(false)
         setShowSlideshowMigrateBanner(false)
         setShowPanelistIconsMigrateBanner(false)
+        setShowPresentationSlidesMigrateBanner(false)
       }
     })()
 
@@ -118,6 +133,9 @@ export default function Admin() {
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
+      setPresentationSlides(
+        mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
+      )
       if (!next.promptSequence?.length) return
       const remote = next.promptSequence.map((s) => String(s))
       setPromptSequence((prev) => {
@@ -140,6 +158,7 @@ export default function Admin() {
     nextPanelists,
     sequenceToSave = promptSequence,
     nextPanelistIcons = panelistIcons,
+    nextPresentationSlides = presentationSlides,
   ) => {
     setStatus('Updating...')
     try {
@@ -148,6 +167,7 @@ export default function Admin() {
         panelists: nextPanelists,
         panelistIcons: nextPanelistIcons,
         promptSequence: sequenceToSave,
+        presentationSlides: nextPresentationSlides,
         slideshowActive,
         slideshowIndex,
       })
@@ -156,6 +176,15 @@ export default function Admin() {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
     }
+  }
+
+  const patchPresentationSlide = (index, partial) => {
+    const next = presentationSlides.map((s, i) =>
+      i === index ? { ...s, ...partial } : s,
+    )
+    const normalized = mergePresentationSlidesFromRemote(next)
+    setPresentationSlides(normalized)
+    commit(prompt, panelists, promptSequence, panelistIcons, normalized)
   }
 
   const handleNextPrompt = () => {
@@ -228,6 +257,7 @@ export default function Admin() {
         panelists,
         panelistIcons,
         promptSequence: next,
+        presentationSlides,
         slideshowActive,
         slideshowIndex,
       })
@@ -248,6 +278,7 @@ export default function Admin() {
         panelists,
         panelistIcons,
         promptSequence,
+        presentationSlides,
         slideshowActive: next,
         slideshowIndex: idx,
       })
@@ -255,6 +286,7 @@ export default function Admin() {
       setSlideshowIndex(idx)
       setStatus('Live')
       setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
+      setShowPresentationSlidesMigrateBanner(shouldPresentationSlidesMigrate())
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -272,6 +304,7 @@ export default function Admin() {
         panelists,
         panelistIcons,
         promptSequence,
+        presentationSlides,
         slideshowActive: true,
         slideshowIndex: next,
       })
@@ -407,6 +440,70 @@ export default function Admin() {
               </button>
             </div>
           ) : null}
+
+          <div className="mt-6 space-y-4 rounded-lg border border-white/10 bg-black/15 p-4">
+            <div>
+              <h3 className="text-sm font-medium text-slate-200">Slideshow text</h3>
+              <p className="mt-1 text-xs text-slate-400">
+                Edit what appears on each presentation slide on{' '}
+                <code className="text-slate-300">/screen</code>. Changes save immediately.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {presentationSlides.map((slide, i) => (
+                <div
+                  key={`${slide.kind}-${slide.id ?? i}`}
+                  className="rounded-lg border border-white/10 bg-black/20 p-3"
+                >
+                  <div className="mb-2 text-xs font-medium text-slate-400">
+                    Slide {i + 1} · {slide.kind === 'hero' ? 'Hero' : 'Title card'}
+                  </div>
+                  {slide.kind === 'hero' ? (
+                    <label className="block space-y-1">
+                      <span className="text-xs text-slate-500">Line (optional)</span>
+                      <input
+                        type="text"
+                        value={slide.tagline ?? ''}
+                        onChange={(e) =>
+                          patchPresentationSlide(i, { tagline: e.target.value })
+                        }
+                        className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                        placeholder="Leave empty for no line"
+                        disabled={status === 'Updating...'}
+                      />
+                    </label>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="block space-y-1">
+                        <span className="text-xs text-slate-500">Title</span>
+                        <input
+                          type="text"
+                          value={slide.title ?? ''}
+                          onChange={(e) =>
+                            patchPresentationSlide(i, { title: e.target.value })
+                          }
+                          className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                          disabled={status === 'Updating...'}
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-slate-500">Subtitle</span>
+                        <input
+                          type="text"
+                          value={slide.subtitle ?? ''}
+                          onChange={(e) =>
+                            patchPresentationSlide(i, { subtitle: e.target.value })
+                          }
+                          className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                          disabled={status === 'Updating...'}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {showSlideshowMigrateBanner ? (
@@ -419,6 +516,20 @@ export default function Admin() {
                 false; alter table public.event_state add column if not exists slideshow_index int default 0;
               </code>{' '}
               Then refresh. The toggle will sync to the event screen.
+            </p>
+          </div>
+        ) : null}
+
+        {showPresentationSlidesMigrateBanner ? (
+          <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+            <p className="font-medium text-amber-50">Slideshow text is not saved to the database yet</p>
+            <p className="mt-1 text-amber-100/90">
+              In Supabase → SQL Editor, run:{' '}
+              <code className="rounded bg-black/30 px-1.5 py-0.5 text-xs text-amber-200">
+                alter table public.event_state add column if not exists presentation_slides jsonb default
+                null;
+              </code>{' '}
+              Then refresh. Edited slide copy will sync to the event screen.
             </p>
           </div>
         ) : null}

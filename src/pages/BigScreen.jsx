@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import {
-  PRESENTATION_SLIDES,
   clampPresentationSlideIndex,
+  mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
 import { supabase } from '../supabaseClient'
 import {
@@ -59,8 +59,7 @@ function PanelSliderIcon({ value, index, iconUrl }) {
       <div className="absolute inset-0 flex items-center rounded-xl border border-white/10 bg-black/10 overflow-hidden">
         {trackSteps.map((stepCls, i) => (
           <div
-            // eslint-disable-next-line react/no-array-index-key
-            key={i}
+            key={stepCls}
             className={`relative flex-1 ${stepCls}`}
           >
             {i < 4 ? (
@@ -106,6 +105,9 @@ export default function BigScreen() {
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
+  const [presentationSlides, setPresentationSlides] = useState(() =>
+    mergePresentationSlidesFromRemote(null),
+  )
   // When turning slideshow OFF, keep the logo identical (no jump),
   // then fade in the rest of the debate UI.
   const [presentationOffTransition, setPresentationOffTransition] = useState(false)
@@ -138,6 +140,9 @@ export default function BigScreen() {
     setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
     setSlideshowActive(Boolean(next.slideshowActive))
     setSlideshowIndex(next.slideshowIndex ?? 0)
+    setPresentationSlides(
+      mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
+    )
   }
 
   useEffect(() => {
@@ -231,7 +236,9 @@ export default function BigScreen() {
   // 2) fade in the rest of the debate assets
   // Use `useLayoutEffect` to avoid a flash (blank -> fade) when toggling quickly.
   useLayoutEffect(() => {
-    const slide = PRESENTATION_SLIDES[clampPresentationSlideIndex(slideshowIndex)] ?? PRESENTATION_SLIDES[0]
+    const slide =
+      presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
+      presentationSlides[0]
     const isCornerLayout =
       slide.kind === 'segment' || (slide.title != null && slide.subtitle != null)
 
@@ -300,6 +307,8 @@ export default function BigScreen() {
         presentationOffTimeoutRef.current = null
       }
     }
+  // Logo layout follows slide index only; omit presentationSlides so text edits do not retrigger.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideshowActive, slideshowIndex])
 
   /** When prompt changes (after first non-empty sync), run intro sequence */
@@ -381,11 +390,11 @@ export default function BigScreen() {
     !slideshowActive && (introPhase === 'typing' || introPhase === 'shrinking')
 
   const logoSlide =
-    PRESENTATION_SLIDES[clampPresentationSlideIndex(slideshowIndex)] ??
-    PRESENTATION_SLIDES[0]
+    presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
+    presentationSlides[0]
   const textSlide =
-    PRESENTATION_SLIDES[clampPresentationSlideIndex(textSlideIndex)] ??
-    PRESENTATION_SLIDES[0]
+    presentationSlides[clampPresentationSlideIndex(textSlideIndex)] ??
+    presentationSlides[0]
   const cornerLayout =
     logoSlide.kind === 'segment' ||
     (logoSlide.title != null && logoSlide.subtitle != null)
@@ -418,7 +427,7 @@ export default function BigScreen() {
 
   const dots = (
     <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
-      {PRESENTATION_SLIDES.map((_, i) => (
+      {presentationSlides.map((_, i) => (
         <span
           key={i}
           className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${

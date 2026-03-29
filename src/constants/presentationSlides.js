@@ -59,3 +59,50 @@ export function clampPresentationSlideIndex(raw) {
   if (!Number.isFinite(n)) return 0
   return Math.max(0, Math.min(PRESENTATION_SLIDE_COUNT - 1, n))
 }
+
+/**
+ * Merge DB-stored slide text with built-in defaults (structure: kind, id, slide order).
+ * `raw` may be null, a JSON string, or an array of partial slide objects.
+ */
+export function mergePresentationSlidesFromRemote(raw) {
+  const defaults = PRESENTATION_SLIDES
+  let arr = raw
+  if (raw == null) {
+    return defaults.map((s) => ({ ...s }))
+  }
+  if (typeof raw === 'string') {
+    try {
+      arr = JSON.parse(raw)
+    } catch {
+      return defaults.map((s) => ({ ...s }))
+    }
+  }
+  if (!Array.isArray(arr)) {
+    return defaults.map((s) => ({ ...s }))
+  }
+
+  return defaults.map((def, i) => {
+    const patch = arr[i]
+    if (!patch || typeof patch !== 'object') {
+      return { ...def }
+    }
+    if (def.kind === 'hero') {
+      const tagline =
+        patch.tagline !== undefined ? patch.tagline : def.tagline
+      return {
+        ...def,
+        tagline:
+          tagline === '' || tagline === undefined ? null : String(tagline),
+      }
+    }
+    return {
+      ...def,
+      title:
+        patch.title !== undefined ? String(patch.title) : def.title,
+      subtitle:
+        patch.subtitle !== undefined
+          ? String(patch.subtitle)
+          : def.subtitle,
+    }
+  })
+}
