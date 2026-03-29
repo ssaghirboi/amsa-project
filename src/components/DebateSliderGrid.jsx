@@ -38,15 +38,16 @@ const SCALE_COLUMNS = [
   },
 ]
 
-function valueToPercent(value) {
+/** Snap thumb to horizontal center of each of the five equal columns (10% … 90%). */
+function valueToThumbPercent(value) {
   const v = typeof value === 'number' ? value : Number(value)
-  const clamped = Number.isFinite(v) ? Math.max(1, Math.min(5, v)) : 1
-  return ((clamped - 1) / 4) * 100
+  const clamped = Number.isFinite(v) ? Math.max(1, Math.min(5, Math.round(v))) : 1
+  return ((clamped - 0.5) / 5) * 100
 }
 
 function SliderRow({ value, index, iconUrl, rowLabel }) {
   const visuals = PANEL_VISUALS[index]
-  const left = valueToPercent(value)
+  const thumbLeftPct = valueToThumbPercent(value)
 
   return (
     <div className="group relative grid min-h-[5.5rem] grid-cols-1 sm:min-h-[6.25rem] md:grid-cols-[minmax(8.5rem,11rem)_1fr] md:gap-0">
@@ -88,15 +89,15 @@ function SliderRow({ value, index, iconUrl, rowLabel }) {
           ))}
         </div>
 
-        {/* Track + ticks */}
-        <div className="relative z-10 flex w-full items-center px-3 pb-1 pt-7 md:px-5 md:pb-2 md:pt-2">
-          <div className="relative h-11 w-full md:h-12">
-            {/* Tick marks at column centers (10%, 30%, …) */}
+        {/* Track + ticks — full width (no horizontal padding) so % matches column boxes */}
+        <div className="relative z-10 w-full pb-1 pt-7 md:pb-2 md:pt-2">
+          <div className="relative mx-auto h-11 w-full max-w-full md:h-12">
+            {/* Tick marks at column centers: (i + ½) / 5 */}
             {[0, 1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 className="pointer-events-none absolute top-1/2 z-[5] h-6 w-px -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${(i + 0.5) * 20}%` }}
+                style={{ left: `${((i + 0.5) / 5) * 100}%` }}
                 aria-hidden
               >
                 <div className="h-full w-px bg-gradient-to-b from-transparent via-white/40 to-transparent" />
@@ -106,10 +107,10 @@ function SliderRow({ value, index, iconUrl, rowLabel }) {
             {/* Horizontal rail */}
             <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-white/5 via-white/25 to-white/5 shadow-[0_0_12px_rgba(255,255,255,0.06)]" />
 
-            {/* Thumb */}
+            {/* Thumb — same % as ticks for each discrete value */}
             <div
               className="absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-500 ease-out"
-              style={{ left: `${left}%` }}
+              style={{ left: `${thumbLeftPct}%` }}
               aria-label={`${rowLabel} position ${value} of 5`}
             >
               <div className={`rounded-full ${visuals.glow}`}>
