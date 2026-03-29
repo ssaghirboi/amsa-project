@@ -49,6 +49,10 @@ function promptKeyFromQuestion(q) {
   return s || 'Unknown prompt'
 }
 
+function normalizePrompt(raw) {
+  return String(raw ?? '').trim().toLowerCase()
+}
+
 function emptyMcQuestions(nextPrompt) {
   return {
     prompt: String(nextPrompt ?? ''),
@@ -65,6 +69,7 @@ export default function QuestionsPage() {
   const [questions, setQuestions] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [hasPromptColumn, setHasPromptColumn] = useState(true)
   const [eventPrompt, setEventPrompt] = useState('')
   const [eventState, setEventState] = useState(null)
   const [pushError, setPushError] = useState('')
@@ -85,11 +90,14 @@ export default function QuestionsPage() {
           .order('created_at', { ascending: false })
           .limit(400)
         if (result.error && isMissingColumnError(result.error)) {
+          setHasPromptColumn(false)
           result = await supabase
             .from('questions')
             .select('id,target_panelist,question_text,created_at')
             .order('created_at', { ascending: false })
             .limit(400)
+        } else {
+          setHasPromptColumn(true)
         }
         if (result.error) throw result.error
         if (!isActive) return
@@ -161,6 +169,8 @@ export default function QuestionsPage() {
   const pushed = eventState?.mcQuestions ?? null
   const pushedFor = (panelKey) => pushed?.panelists?.[panelKey] ?? null
 
+  const activePromptKey = normalizePrompt(eventPrompt)
+
   const pushToMc = async (panelKey, q) => {
     if (!eventState) return
     setPushError('')
@@ -205,11 +215,16 @@ export default function QuestionsPage() {
   }
 
   const grouped = useMemo(() => {
+    const filtered =
+      hasPromptColumn && activePromptKey
+        ? questions.filter((q) => normalizePrompt(q.prompt) === activePromptKey)
+        : questions
+
     // Map<panelistKey, Map<promptKey, questions[]>>
     const panelMap = new Map()
     for (const p of PANELISTS) panelMap.set(p.key, new Map())
 
-    for (const q of questions) {
+    for (const q of filtered) {
       const panelKey = normalizeTarget(q.target_panelist) ?? 'Unassigned'
       if (!panelMap.has(panelKey)) panelMap.set(panelKey, new Map())
       const byPrompt = panelMap.get(panelKey)
@@ -247,6 +262,20 @@ export default function QuestionsPage() {
             Current prompt: <span className="text-slate-200">{eventPrompt || '—'}</span>
             {pushStatus ? <span className="ml-2 text-indigo-300">• {pushStatus}</span> : null}
           </div>
+          {hasPromptColumn ? (
+            <div className="mt-2 text-xs text-slate-500">
+              Showing questions for the <span className="text-slate-300">current prompt</span> only.
+            </div>
+          ) : (
+            <div className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100/95">
+              This database is missing the <code className="text-amber-200">questions.prompt</code>{' '}
+              column, so questions can’t be filtered/grouped by prompt yet. Add it in Supabase:
+              <div className="mt-2 rounded bg-black/30 px-2 py-1 font-mono text-[0.7rem] text-amber-200">
+                alter table public.questions add column if not exists prompt text;
+              </div>
+              New questions will automatically save the prompt once this exists.
+            </div>
+          )}
         </div>
 
         {error ? (
@@ -331,7 +360,12 @@ export default function QuestionsPage() {
                                   <button
                                     type="button"
                                     onClick={() => pushToMc(p.key, q)}
-                                    disabled={!eventState}
+                                    disabled={
+                                      !eventState ||
+                                      (hasPromptColumn &&
+                                        activePromptKey &&
+                                        normalizePrompt(q.prompt) !== activePromptKey)
+                                    }
                                     className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
                                   >
                                     Push to MC
