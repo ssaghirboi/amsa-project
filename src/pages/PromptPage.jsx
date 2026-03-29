@@ -49,8 +49,8 @@ export default function PromptPage() {
         <EventBranding variant="presentationCorner" className="shrink-0" />
       </div>
 
-      <main className="flex min-h-[100dvh] min-h-screen items-center justify-center px-6 pb-16 pt-[clamp(8rem,22vh,14rem)] sm:px-10 sm:pb-20">
-        <p className="max-w-5xl text-balance text-center text-4xl font-semibold leading-snug tracking-tight text-slate-50 sm:text-5xl md:text-6xl lg:text-[clamp(2.75rem,6vw,4.25rem)] lg:leading-[1.12]">
+      <main className="flex min-h-[100dvh] min-h-screen items-center justify-center px-4 pb-16 pt-[clamp(8rem,22vh,14rem)] sm:px-8 sm:pb-20 md:px-12">
+        <p className="max-w-[min(100%,56rem)] text-balance text-center text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
           {text}
         </p>
       </main>
