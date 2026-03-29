@@ -1,5 +1,5 @@
 /**
- * Static privacy policy (legal text).
+ * Privacy Policy + Messaging Terms (static legal text).
  */
 export default function PolicyPage() {
   return (
@@ -292,6 +292,126 @@ export default function PolicyPage() {
                 saghir.saeed@ucalgary.ca
               </a>
             </address>
+          </section>
+        </article>
+
+        <article
+          className="mt-20 space-y-10 border-t border-white/10 pt-16 text-[0.9375rem] leading-relaxed sm:mt-24 sm:pt-20 sm:text-base"
+          aria-labelledby="messaging-terms-heading"
+        >
+          <header className="space-y-4 border-b border-white/10 pb-10">
+            <p className="text-sm font-medium uppercase tracking-wider text-slate-500">AMSA UCalgary</p>
+            <p>
+              <a
+                className="text-sky-400 underline decoration-sky-400/40 underline-offset-2 hover:text-sky-300"
+                href="https://eepurl.com/jCP-JY"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                http://eepurl.com/jCP-JY
+              </a>
+            </p>
+            <h1
+              id="messaging-terms-heading"
+              className="text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl"
+            >
+              Messaging Terms &amp; Conditions
+            </h1>
+          </header>
+
+          <section className="space-y-3" id="msg-general">
+            <h2 className="text-lg font-semibold text-slate-100">General</h2>
+            <p>When you opt-in to the service, we will send you a message to confirm your signup.</p>
+            <p>
+              By opting into messages, you agree to receive recurring automated marketing and informational text
+              messages from AMSA UCalgary. Automated messages may be sent using an automatic telephone dialing system to
+              the mobile telephone number you provided when signing up or any other number that you designate.
+            </p>
+            <p>
+              Message frequency varies, and additional mobile messages may be sent periodically based on your interaction
+              with AMSA UCalgary. AMSA UCalgary reserves the right to alter the frequency of messages sent at any time
+              to increase or decrease the total number of sent messages. AMSA UCalgary also reserves the right to change
+              the short code or phone number or alphanumeric sender where messages are sent
+            </p>
+            <p>
+              Your usual message and data rates may apply. If you have any questions about your text plan or data plan,
+              it is best to contact your mobile provider. Your mobile provider is not liable for delayed or undelivered
+              messages.
+            </p>
+            <p>Your consent to receive marketing messages is not a condition of purchase.</p>
+          </section>
+
+          <section className="space-y-3" id="msg-carriers">
+            <h2 className="text-lg font-semibold text-slate-100">Carriers</h2>
+            <p>Carriers are not liable for delayed or undelivered messages.</p>
+          </section>
+
+          <section className="space-y-3" id="msg-cancellation">
+            <h2 className="text-lg font-semibold text-slate-100">Cancellation</h2>
+            <p>
+              Messages will provide instructions to unsubscribe either by texting STOP or through an included link. After
+              you unsubscribe, we will send you a message to confirm that you have been unsubscribed and no more messages
+              will be sent. If you would like to receive messages from AMSA UCalgary again, just sign up as you did the
+              first time and AMSA UCalgary will start sending messages to you again.
+            </p>
+          </section>
+
+          <section className="space-y-3" id="msg-info">
+            <h2 className="text-lg font-semibold text-slate-100">Info</h2>
+            <p>
+              For support regarding our services, email us at{' '}
+              <a
+                className="text-sky-400 underline decoration-sky-400/40 underline-offset-2 hover:text-sky-300"
+                href="mailto:saghir.saeed@ucalgary.ca"
+              >
+                saghir.saeed@ucalgary.ca
+              </a>
+              , or, if supported, text &ldquo;HELP&rdquo; to our messages at any time and we will respond with
+              instructions on how to unsubscribe. If we include a link in messages we send you from AMSA UCalgary, you may
+              also access instructions on how to unsubscribe and our company information by following that link.
+            </p>
+          </section>
+
+          <section className="space-y-3" id="msg-transfer">
+            <h2 className="text-lg font-semibold text-slate-100">Transfer of Number</h2>
+            <p>
+              You agree that before changing your mobile number or transferring your mobile number to another individual,
+              you will either reply &ldquo;STOP&rdquo; from the original number, unsubscribe using the link included in
+              our messages (if one is provided), or notify us of your old number at{' '}
+              <a
+                className="text-sky-400 underline decoration-sky-400/40 underline-offset-2 hover:text-sky-300"
+                href="mailto:saghir.saeed@ucalgary.ca"
+              >
+                saghir.saeed@ucalgary.ca
+              </a>
+              . The duty to inform us based on the above events is a condition of using this service to receive messages.
+            </p>
+          </section>
+
+          <section className="space-y-3" id="msg-privacy">
+            <h2 className="text-lg font-semibold text-slate-100">Privacy</h2>
+            <p>
+              If you have any questions about your data or our privacy practices, please visit our{' '}
+              <a
+                className="text-sky-400 underline decoration-sky-400/40 underline-offset-2 hover:text-sky-300"
+                href="https://eepurl.com/jCP-JY"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                http://eepurl.com/jCP-JY
+              </a>
+              .
+            </p>
+          </section>
+
+          <section className="space-y-3" id="msg-changes">
+            <h2 className="text-lg font-semibold text-slate-100">Messaging Terms Changes</h2>
+            <p>
+              We reserve the right to change or terminate our messaging program at any time. We also reserve the right to
+              update these Messaging Terms at any time. Such changes will be effective immediately upon posting. If you do
+              not agree to a change to these Messaging Terms, you should cancel your enrollment with our messaging
+              program. Your continued enrollment following such changes shall constitute your acceptance of such changes.
+            </p>
           </section>
         </article>
       </main>
