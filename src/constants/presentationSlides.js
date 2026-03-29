@@ -11,8 +11,13 @@ export const PRESENTATION_SLIDES = [
     title: 'Recitation of the Holy Quran',
     subtitle: 'John Doe',
   },
-  /** Slide 4 — logo-only beat between recitation and speaker 1. */
-  { kind: 'hero', tagline: null },
+  /** Slide 4 — title card between recitation and speaker 1. */
+  {
+    kind: 'segment',
+    id: 'post-recitation-title',
+    title: 'Does God Exist?',
+    subtitle: 'A conversation across perspectives',
+  },
   /** Slide 5 — Speaker 1 introduction (filler text for now). */
   {
     kind: 'segment',
