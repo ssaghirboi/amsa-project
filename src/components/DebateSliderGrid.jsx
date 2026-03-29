@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react'
+import { useMemo } from 'react'
 import { PromptBox } from './PromptBox'
 
 const DEFAULT_ROW_LABELS = ['Islam', 'Christianity', 'Atheism', 'Hinduism']
@@ -152,9 +152,9 @@ export function DebateSliderGrid({
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      {/* Prompt — same width axis as table below (matches page alignment) */}
-      <div className="mb-10 w-full">
-        <PromptBox ref={promptBoxRef} maxWidthClass="max-w-none">
+      {/* Prompt — large, centered */}
+      <div className="mb-10 flex w-full justify-center px-3 sm:px-4">
+        <PromptBox ref={promptBoxRef}>
           {prompt?.trim() ? prompt : (
             <span className="text-lg font-normal text-slate-500 md:text-xl">
               Waiting for the current prompt…
@@ -169,44 +169,41 @@ export function DebateSliderGrid({
         </div>
       ) : null}
 
-      {/*
-        Two-column grid: labels are only in column 1 (not inside the bordered table).
-        Shared row heights center each label with its slider row.
-      */}
-      <div className="grid w-full grid-cols-1 md:grid-cols-[minmax(0,min(10.5rem,26vw))_1fr] md:gap-x-3 lg:gap-x-4">
-        <div
-          className="hidden border-b border-transparent md:block"
-          aria-hidden
-        />
-        <div className="col-span-full overflow-hidden rounded-t-2xl border border-b-0 border-white/[0.08] bg-black/40 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:col-span-1 md:col-start-2 md:shadow-[0_24px_80px_rgba(0,0,0,0.65)]">
-          <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07]">
-            {SCALE_COLUMNS.map((col) => (
+      {/* Table — centered, labels outside the card */}
+      <div className="flex w-full justify-center px-3 sm:px-4">
+        <div className="relative w-full max-w-6xl">
+          {/* Desktop row labels in the left margin (not part of the table card) */}
+          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[10.5rem] flex-col items-end md:flex lg:mr-4">
+            {/* Spacer matches the table header row height */}
+            <div className="min-h-[4.25rem] shrink-0 sm:min-h-[5rem]" aria-hidden />
+            {labels.map((label, i) => (
               <div
-                key={col.label}
-                className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+                key={PANEL_VISUALS[i].key}
+                className="flex min-h-[5.5rem] items-center justify-end sm:min-h-[6.25rem]"
               >
-                <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
-                  {col.label}
+                <span className="text-right text-[0.65rem] font-semibold uppercase leading-none tracking-[0.2em] text-slate-300 sm:text-xs">
+                  {label}
                 </span>
               </div>
             ))}
           </div>
-        </div>
 
-        {panelists.map((value, i) => (
-          <Fragment key={PANEL_VISUALS[i].key}>
-            <div className="pointer-events-none hidden items-center justify-end pr-1 sm:pr-2 md:flex lg:pr-3">
-              <span className="text-right text-[0.65rem] font-semibold uppercase leading-none tracking-[0.2em] text-slate-300 sm:text-xs">
-                {labels[i]}
-              </span>
+          {/* Rounded table card only (no labels inside) */}
+          <div className="w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
+              {SCALE_COLUMNS.map((col) => (
+                <div
+                  key={col.label}
+                  className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+                >
+                  <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                    {col.label}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div
-              className={`relative min-w-0 border-x border-white/[0.08] bg-[#050505] ${
-                i === panelists.length - 1
-                  ? 'overflow-hidden rounded-b-2xl border-b border-white/[0.08] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]'
-                  : 'border-b border-white/[0.06]'
-              }`}
-            >
+
+            <div className="relative">
               <div
                 className="pointer-events-none absolute inset-0 opacity-[0.07]"
                 style={{
@@ -215,16 +212,19 @@ export function DebateSliderGrid({
                 }}
                 aria-hidden
               />
-              <SliderRow
-                value={value}
-                index={i}
-                iconUrl={panelistIcons[i]}
-                rowLabel={labels[i]}
-                showBorderBottom={false}
-              />
+              {panelists.map((value, i) => (
+                <SliderRow
+                  key={PANEL_VISUALS[i].key}
+                  value={value}
+                  index={i}
+                  iconUrl={panelistIcons[i]}
+                  rowLabel={labels[i]}
+                  showBorderBottom={i < panelists.length - 1}
+                />
+              ))}
             </div>
-          </Fragment>
-        ))}
+          </div>
+        </div>
       </div>
     </div>
   )
