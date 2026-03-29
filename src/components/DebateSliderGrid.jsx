@@ -178,11 +178,12 @@ export function DebateSliderGrid({
       {/* Table stays full width of max-w-7xl (same as before); labels sit in the margin via right-full */}
       <div className="relative w-full">
         <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-2 hidden w-[min(10.5rem,26vw)] flex-col items-end sm:mr-3 md:flex lg:mr-4">
-          <div className="min-h-[4.75rem] shrink-0 sm:min-h-[5.5rem]" aria-hidden />
+          {/* Match header row height so row labels align with slider rows (not below center) */}
+          <div className="min-h-[4.25rem] shrink-0 sm:min-h-[5rem]" aria-hidden />
           {labels.map((label, i) => (
             <div
               key={PANEL_VISUALS[i].key}
-              className="flex min-h-[5.5rem] items-center justify-end py-2 sm:min-h-[6.25rem]"
+              className="flex min-h-[5.5rem] items-center justify-end sm:min-h-[6.25rem]"
             >
               <span className="text-right text-[0.65rem] font-semibold uppercase leading-snug tracking-[0.2em] text-slate-300 sm:text-xs">
                 {label}
