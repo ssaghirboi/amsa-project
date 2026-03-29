@@ -18,10 +18,10 @@ const TYPE_MS = 58
 const HANDOFF_MS = 1150
 
 /** Full prompt layout with characters revealed in place (stable wrapping while typing). */
-function RevealPromptChars({ text, visibleCount }) {
+function RevealPromptChars({ text, visibleCount, className = '' }) {
   const chars = useMemo(() => Array.from(text), [text])
   return (
-    <>
+    <span className={`block ${className}`}>
       {chars.map((ch, i) => (
         <span
           key={`${i}-${ch}`}
@@ -31,9 +31,13 @@ function RevealPromptChars({ text, visibleCount }) {
           {ch}
         </span>
       ))}
-    </>
+    </span>
   )
 }
+
+const FULLSCREEN_PROMPT_BODY =
+  '!text-[clamp(1.45rem,3.8vw,2.5rem)] sm:!text-[clamp(1.65rem,4.2vw,3rem)] md:!text-[clamp(1.85rem,4.8vw,3.5rem)] lg:!text-[clamp(2rem,5.2vw,4rem)] !leading-[1.12]'
+const FULLSCREEN_PROMPT_INNER = '!px-6 !py-10 sm:!px-10 sm:!py-14 md:!px-14 md:!py-16'
 
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
@@ -66,8 +70,9 @@ export default function BigScreen() {
   /** Intro: typewriter in final prompt slot → optional fly to anchor; idle = normal layout */
   const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'shrinking'
   const [revealedCount, setRevealedCount] = useState(0)
-  const [anchorRect, setAnchorRect] = useState(null)
-  /** FLIP target: fly centered intro PromptBox to DebateSliderGrid prompt anchor */
+  /** Sliders + labels fade in after intro prompt lands (prompt stays visible). */
+  const [debateTableOpacity, setDebateTableOpacity] = useState(1)
+  /** FLIP target: fly fullscreen intro PromptBox down to DebateSliderGrid prompt anchor */
   const [flyTo, setFlyTo] = useState(null)
   const introPromptRef = useRef(null)
   const promptAnchorRef = useRef(null)
@@ -274,6 +279,7 @@ export default function BigScreen() {
     queueMicrotask(() => {
       setFlyTo(null)
       setRevealedCount(0)
+      setDebateTableOpacity(0)
       setIntroPhase('typing')
     })
   }, [prompt, slideshowActive])
@@ -285,6 +291,7 @@ export default function BigScreen() {
       setIntroPhase('idle')
       setFlyTo(null)
       setRevealedCount(0)
+      setDebateTableOpacity(1)
     })
   }, [slideshowActive])
 
@@ -295,7 +302,10 @@ export default function BigScreen() {
 
     const full = prompt ?? ''
     if (!full) {
-      queueMicrotask(() => setIntroPhase('idle'))
+      queueMicrotask(() => {
+        setIntroPhase('idle')
+        setDebateTableOpacity(1)
+      })
       return
     }
 
@@ -336,6 +346,7 @@ export default function BigScreen() {
               setFlyTo(null)
               setIntroPhase('idle')
               setRevealedCount(0)
+              setDebateTableOpacity(1)
             } else {
               setFlyTo(nextFly)
               setIntroPhase('shrinking')
@@ -348,51 +359,22 @@ export default function BigScreen() {
     return () => clearInterval(id)
   }, [introPhase, prompt, slideshowActive])
 
-  /** After shrink animation, return to normal layout */
+  /** After shrink animation: drop overlay, keep prompt visible, fade in sliders */
   useEffect(() => {
     if (introPhase !== 'shrinking') return
     const t = setTimeout(() => {
       setIntroPhase('idle')
       setFlyTo(null)
       setRevealedCount(0)
+      queueMicrotask(() => {
+        requestAnimationFrame(() => setDebateTableOpacity(1))
+      })
     }, HANDOFF_MS)
     return () => clearTimeout(t)
   }, [introPhase])
 
   const showOverlay =
     !slideshowActive && (introPhase === 'typing' || introPhase === 'shrinking')
-
-  /** Keep overlay prompt aligned with the grid prompt slot (same box while typing). */
-  useLayoutEffect(() => {
-    if (!showOverlay) {
-      setAnchorRect(null)
-      return
-    }
-    const el = promptAnchorRef.current
-    if (!el) {
-      setAnchorRect(null)
-      return
-    }
-    const update = () => {
-      const r = el.getBoundingClientRect()
-      setAnchorRect({
-        left: r.left,
-        top: r.top,
-        width: r.width,
-        height: r.height,
-      })
-    }
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    window.addEventListener('resize', update)
-    window.addEventListener('scroll', update, true)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', update)
-      window.removeEventListener('scroll', update, true)
-    }
-  }, [showOverlay, prompt, introPhase])
 
   const logoSlide =
     presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
@@ -502,7 +484,7 @@ export default function BigScreen() {
       <div
         className="mx-auto max-w-7xl px-3 pb-10 pt-[clamp(10rem,28vh,16rem)] transition-opacity duration-400 ease-in-out sm:px-6 lg:px-10"
         style={{
-          opacity: showOverlay ? 0 : presentationOffFade,
+          opacity: presentationOffFade,
           pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
         }}
       >
@@ -512,54 +494,56 @@ export default function BigScreen() {
           panelistIcons={panelistIcons}
           error={error}
           promptBoxRef={promptAnchorRef}
+          promptBoxHidden={showOverlay}
+          tableOpacity={debateTableOpacity}
         />
       </div>
 
       {showOverlay ? (
         <>
           <div
-            className="fixed inset-0 z-50 bg-[#030202]/97 backdrop-blur-md"
+            className="fixed inset-0 z-50 bg-[#030202]/88 backdrop-blur-sm"
             aria-hidden
           />
-          {anchorRect ? (
-            <div
-              className="pointer-events-none fixed z-[51]"
-              style={{
-                left: anchorRect.left,
-                top: anchorRect.top,
-                width: anchorRect.width,
-              }}
-              aria-live="polite"
-              aria-busy={introPhase === 'typing'}
+          <div
+            className="pointer-events-none fixed inset-0 z-[51] flex min-h-0 flex-col p-2 pt-[max(5rem,env(safe-area-inset-top))] pb-4 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-6 sm:pt-24 sm:pb-8"
+            aria-live="polite"
+            aria-busy={introPhase === 'typing'}
+          >
+            <PromptBox
+              key={prompt}
+              ref={introPromptRef}
+              maxWidthClass="max-w-none"
+              innerClassName={FULLSCREEN_PROMPT_INNER}
+              bodyClassName={
+                introPhase === 'typing' || introPhase === 'shrinking'
+                  ? FULLSCREEN_PROMPT_BODY
+                  : ''
+              }
+              className={`flex min-h-0 w-full flex-1 flex-col justify-center ${
+                introPhase === 'shrinking' && flyTo ? 'bigscreen-prompt-fly-to-target' : ''
+              }`}
+              style={
+                introPhase === 'shrinking' && flyTo
+                  ? {
+                      '--fly-dx': `${flyTo.dx}px`,
+                      '--fly-dy': `${flyTo.dy}px`,
+                      '--fly-sx': String(flyTo.sx),
+                      '--fly-sy': String(flyTo.sy),
+                    }
+                  : undefined
+              }
             >
-              <PromptBox
-                key={prompt}
-                ref={introPromptRef}
-                className={`w-full max-w-none ${
-                  introPhase === 'shrinking' && flyTo ? 'bigscreen-prompt-fly-to-target' : ''
-                }`}
-                style={
-                  introPhase === 'shrinking' && flyTo
-                    ? {
-                        '--fly-dx': `${flyTo.dx}px`,
-                        '--fly-dy': `${flyTo.dy}px`,
-                        '--fly-sx': String(flyTo.sx),
-                        '--fly-sy': String(flyTo.sy),
-                      }
-                    : undefined
-                }
-              >
-                {introPhase === 'typing' ? (
-                  <RevealPromptChars
-                    text={prompt ?? ''}
-                    visibleCount={revealedCount}
-                  />
-                ) : (
-                  prompt
-                )}
-              </PromptBox>
-            </div>
-          ) : null}
+              {introPhase === 'typing' ? (
+                <RevealPromptChars
+                  text={prompt ?? ''}
+                  visibleCount={revealedCount}
+                />
+              ) : (
+                prompt
+              )}
+            </PromptBox>
+          </div>
         </>
       ) : null}
       </div>

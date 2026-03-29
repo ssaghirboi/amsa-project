@@ -145,6 +145,10 @@ export function DebateSliderGrid({
   rowLabels = DEFAULT_ROW_LABELS,
   error,
   promptBoxRef,
+  /** Hide in-flow prompt (e.g. BigScreen intro overlay shows it) while keeping layout for measurement */
+  promptBoxHidden = false,
+  /** Fade sliders + labels + error after intro (0 … 1) */
+  tableOpacity = 1,
 }) {
   const labels = useMemo(() => {
     return panelists.map((_, i) => rowLabels[i] ?? `Panel ${i + 1}`)
@@ -153,7 +157,12 @@ export function DebateSliderGrid({
   return (
     <div className="mx-auto w-full max-w-7xl">
       {/* Prompt — large, centered */}
-      <div className="mb-10 flex w-full justify-center px-3 sm:px-4">
+      <div
+        className={`mb-10 flex w-full justify-center px-3 sm:px-4 ${
+          promptBoxHidden ? 'pointer-events-none opacity-0' : ''
+        }`}
+        aria-hidden={promptBoxHidden}
+      >
         <PromptBox ref={promptBoxRef}>
           {prompt?.trim() ? prompt : (
             <span className="text-lg font-normal text-slate-500 md:text-xl">
@@ -163,6 +172,10 @@ export function DebateSliderGrid({
         </PromptBox>
       </div>
 
+      <div
+        className="transition-opacity duration-700 ease-out"
+        style={{ opacity: tableOpacity }}
+      >
       {error ? (
         <div className="mb-6 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/95">
           {error}
@@ -225,6 +238,7 @@ export function DebateSliderGrid({
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
