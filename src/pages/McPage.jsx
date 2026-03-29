@@ -159,7 +159,7 @@ export default function McPage() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] min-h-screen bg-[#010101] text-slate-100">
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col bg-[#010101] text-slate-100">
       <div
         className="pointer-events-none fixed z-20 left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))]"
         aria-hidden
@@ -167,8 +167,8 @@ export default function McPage() {
         <EventBranding variant="presentationCorner" className="shrink-0" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 pb-20 pt-[max(10rem,18vh)] sm:px-6 sm:pb-24 lg:px-10">
-        <div className="flex flex-wrap items-center justify-between gap-5 rounded-2xl border border-white/10 bg-slate-900/35 px-7 py-6 backdrop-blur">
+      <div className="flex min-h-0 w-full flex-1 flex-col px-4 pb-6 pt-[max(6.5rem,12vh)] sm:px-6 sm:pb-8 lg:px-10 lg:pb-10">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-5 rounded-2xl border border-white/10 bg-slate-900/35 px-5 py-5 backdrop-blur sm:px-7 sm:py-6">
           <div className="min-w-0">
             <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
               MC Control
@@ -196,32 +196,32 @@ export default function McPage() {
         </div>
 
         {error ? (
-          <div className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/95">
+          <div className="mt-4 shrink-0 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/95 sm:mt-5">
             {error}
           </div>
         ) : null}
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-[22rem_1fr] lg:items-start">
-          <aside className="rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-7">
-            <div className="flex items-baseline justify-between gap-3">
+        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-6 lg:mt-8 lg:grid lg:min-h-0 lg:grid-cols-[minmax(18rem,28vw)_1fr] lg:items-stretch lg:gap-8">
+          <aside className="flex min-h-[22rem] shrink-0 flex-col rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:min-h-[24rem] sm:p-7 lg:min-h-0 lg:h-full lg:max-h-none">
+            <div className="flex shrink-0 items-baseline justify-between gap-3">
               <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-300/90">
                 Panelist questions
               </h2>
               <span className="text-xs text-slate-500">{mcQuestionsStatus}</span>
             </div>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 grid min-h-0 flex-1 grid-rows-4 gap-3 sm:gap-4 lg:min-h-[12rem]">
               {PANELISTS.map((p) => {
                 const q = mcQuestions?.panelists?.[p.key] ?? null
                 return (
                   <div
                     key={p.key}
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4"
+                    className="flex min-h-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:py-4"
                   >
                     <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
                       {p.title}
                     </div>
-                    <div className="mt-2 text-sm leading-relaxed text-slate-100">
+                    <div className="mt-2 min-h-0 text-sm leading-relaxed text-slate-100 line-clamp-4 sm:line-clamp-none">
                       {q?.question_text ? q.question_text : (
                         <span className="text-slate-500">No question yet.</span>
                       )}
@@ -237,48 +237,48 @@ export default function McPage() {
             </div>
           </aside>
 
-          <section>
+          <section className="flex min-h-[50vh] flex-1 flex-col lg:min-h-0">
             {slideshowActive ? (
-              <div className="rounded-3xl border border-white/10 bg-black/25 p-10 backdrop-blur sm:p-12">
-                <div className="text-center">
-                  <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
+                  <div className="shrink-0 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                     Current slide
                   </div>
 
                   {currentSlide?.kind === 'hero' ? (
-                    <p className="mt-6 text-balance text-[clamp(2rem,5.5vw,4rem)] font-semibold leading-tight tracking-tight text-slate-50">
+                    <p className="mt-6 text-balance text-[clamp(2.25rem,7vw,5.5rem)] font-semibold leading-tight tracking-tight text-slate-50">
                       {currentSlide.tagline || ' '}
                     </p>
                   ) : (
-                    <>
-                      <h1 className="mt-6 text-balance text-[clamp(2.25rem,6vw,4.5rem)] font-semibold leading-tight tracking-tight text-slate-50">
+                    <div className="mt-6 min-h-0 w-full max-w-[min(100%,72rem)]">
+                      <h1 className="text-balance text-[clamp(2.25rem,7vw,5.5rem)] font-semibold leading-tight tracking-tight text-slate-50">
                         {currentSlide?.title || ' '}
                       </h1>
-                      <p className="mt-5 text-balance text-[clamp(1.1rem,2.6vw,2rem)] text-slate-300/95">
+                      <p className="mt-5 text-balance text-[clamp(1.15rem,2.8vw,2.25rem)] text-slate-300/95">
                         {currentSlide?.subtitle || ' '}
                       </p>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-10 backdrop-blur sm:p-12">
-                <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-start">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
+                <div className="flex shrink-0 flex-col items-center justify-between gap-4 sm:flex-row sm:items-start">
                   <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                     Current prompt
                   </div>
-                  <div className="w-full max-w-[34rem] rounded-xl border border-white/10 bg-black/20 px-4 py-3 sm:w-auto">
+                  <div className="w-full max-w-[min(100%,36rem)] rounded-xl border border-white/10 bg-black/20 px-4 py-3 sm:w-auto lg:max-w-[min(100%,42rem)]">
                     <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
                       Next prompt
                     </div>
-                    <div className="mt-2 text-sm text-slate-200/95">
+                    <div className="mt-2 text-sm text-slate-200/95 sm:text-base">
                       {nextInfo.next || 'None'}
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-10 text-center sm:mt-12">
-                  <p className="text-balance text-[clamp(2.4rem,6.5vw,5rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-2 py-8 text-center sm:py-10 lg:py-12">
+                  <p className="w-full max-w-[min(100%,85rem)] text-balance text-[clamp(2.5rem,8vw,7rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
                     {prompt?.trim() ? prompt.trim() : 'Waiting for the current prompt…'}
                   </p>
                 </div>
