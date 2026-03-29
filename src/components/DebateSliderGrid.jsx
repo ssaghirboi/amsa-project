@@ -49,17 +49,17 @@ function SliderRow({ value, index, iconUrl, rowLabel }) {
   const left = valueToPercent(value)
 
   return (
-    <div className="group relative grid min-h-[5.5rem] grid-cols-1 sm:min-h-[6.25rem] md:grid-cols-[minmax(7.5rem,10rem)_1fr] md:gap-0">
-      {/* Row label — desktop: left rail */}
-      <div className="hidden items-center justify-end border-b border-white/[0.06] bg-black/20 py-3 pr-4 md:flex">
-        <span className="text-right text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400/95 sm:text-xs">
+    <div className="group relative grid min-h-[5.5rem] grid-cols-1 sm:min-h-[6.25rem] md:grid-cols-[minmax(8.5rem,11rem)_1fr] md:gap-0">
+      {/* Row label — desktop: centered in left rail */}
+      <div className="hidden items-center justify-center border-b border-white/[0.06] bg-black/20 px-2 py-3 md:flex">
+        <span className="text-center text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400/95 sm:text-xs">
           {rowLabel}
         </span>
       </div>
 
       <div className="relative flex min-h-[5.5rem] flex-1 items-center border-b border-white/[0.06] sm:min-h-[6.25rem]">
         {/* Mobile row label */}
-        <div className="absolute left-3 top-2 z-20 md:hidden">
+        <div className="absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
           <span className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
             {rowLabel}
           </span>
@@ -145,18 +145,20 @@ export function DebateSliderGrid({
   }, [panelists, rowLabels])
 
   return (
-    <div className="w-full">
-      {/* Prompt — centered pill */}
-      <div className="mb-8 flex justify-center px-2">
-        <div className="relative w-full max-w-4xl">
-          <div className="absolute -inset-px rounded-full bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-80 blur-sm" />
-          <div className="relative rounded-full border border-white/15 bg-black/50 px-6 py-3.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md sm:px-10 sm:py-4">
-            <p className="text-[0.65rem] font-medium uppercase tracking-[0.35em] text-slate-500">
+    <div className="mx-auto w-full max-w-7xl">
+      {/* Prompt — large, centered */}
+      <div className="mb-10 flex w-full justify-center px-3 sm:px-4">
+        <div className="relative w-full max-w-6xl">
+          <div className="absolute -inset-0.5 rounded-[2rem] bg-gradient-to-r from-white/12 via-indigo-500/10 to-white/12 opacity-90 blur-md" />
+          <div className="relative rounded-[1.75rem] border border-white/20 bg-black/55 px-8 py-7 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md sm:px-12 sm:py-9 md:px-16 md:py-10">
+            <p className="text-xs font-medium uppercase tracking-[0.4em] text-sky-300/90 sm:text-sm">
               Prompt
             </p>
-            <p className="mt-1.5 text-balance text-base font-medium leading-snug tracking-tight text-slate-100 sm:text-lg md:text-xl">
+            <p className="mt-4 text-balance text-2xl font-semibold leading-tight tracking-tight text-slate-50 sm:text-3xl md:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
               {prompt?.trim() ? prompt : (
-                <span className="text-slate-500">Waiting for the current prompt…</span>
+                <span className="text-lg font-normal text-slate-500 md:text-xl">
+                  Waiting for the current prompt…
+                </span>
               )}
             </p>
           </div>
@@ -172,7 +174,7 @@ export function DebateSliderGrid({
       {/* Grid card */}
       <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
         {/* Column headers */}
-        <div className="grid grid-cols-1 border-b border-white/[0.07] bg-black/40 md:grid-cols-[minmax(7.5rem,10rem)_1fr]">
+        <div className="grid grid-cols-1 border-b border-white/[0.07] bg-black/40 md:grid-cols-[minmax(8.5rem,11rem)_1fr]">
           <div className="hidden border-r border-white/[0.06] md:block" aria-hidden />
           <div className="grid grid-cols-5 gap-0">
             {SCALE_COLUMNS.map((col) => (
