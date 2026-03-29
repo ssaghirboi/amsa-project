@@ -84,6 +84,7 @@ export default function QuestionsPage() {
   const [pushError, setPushError] = useState('')
   const [pushStatus, setPushStatus] = useState('')
   const [clearStatus, setClearStatus] = useState('')
+  const [lastPromptSeen, setLastPromptSeen] = useState('')
 
   useEffect(() => {
     let unsub = null
@@ -197,8 +198,64 @@ export default function QuestionsPage() {
     }
   }
 
-  // NOTE: Do not auto-clear on prompt change.
-  // Questions should persist across refresh; MC selection resets per prompt instead.
+  const clearQuestionsForPromptTransition = async (nextPrompt) => {
+    setClearStatus('Clearing…')
+    setError('')
+    try {
+      const nextPromptText = String(nextPrompt ?? '').trim()
+      if (hasPromptColumn && nextPromptText) {
+        const { error: e } = await supabase
+          .from('questions')
+          .delete()
+          .neq('prompt', nextPromptText)
+        if (e && isMissingColumnError(e)) {
+          setHasPromptColumn(false)
+        } else if (e) {
+          throw e
+        } else {
+          setQuestions((prev) =>
+            prev.filter((q) => normalizePrompt(q.prompt) === normalizePrompt(nextPromptText)),
+          )
+          setClearStatus('')
+          return
+        }
+      }
+
+      // Fallback: no prompt snapshot column — clear everything on prompt change.
+      const { error: e2 } = await supabase.from('questions').delete().neq('id', -1)
+      if (e2) throw e2
+      setQuestions([])
+      setClearStatus('')
+    } catch (e3) {
+      setClearStatus('')
+      setError(e3?.message || String(e3))
+    }
+  }
+
+  // Clear previous prompt's questions when the event moves to a new prompt.
+  // Do NOT clear on first load/refresh; only when we detect an actual transition.
+  useEffect(() => {
+    const key = 'questions:lastPromptSeen'
+    const current = String(eventPrompt ?? '').trim()
+    if (!current) return
+
+    const stored = localStorage.getItem(key) ?? ''
+    if (!stored) {
+      localStorage.setItem(key, current)
+      setLastPromptSeen(current)
+      return
+    }
+
+    if (stored === current) {
+      setLastPromptSeen(current)
+      return
+    }
+
+    localStorage.setItem(key, current)
+    setLastPromptSeen(current)
+    clearQuestionsForPromptTransition(current).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventPrompt, hasPromptColumn])
 
   const pushToMc = async (panelKey, q) => {
     if (!eventState) return
