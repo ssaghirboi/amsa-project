@@ -18,7 +18,7 @@ const TYPE_MS = 58
 const HANDOFF_MS = 1150
 
 /** Full prompt layout with characters revealed in place (stable wrapping while typing). */
-function RevealPromptChars({ text, visibleCount, showCaret }) {
+function RevealPromptChars({ text, visibleCount }) {
   const chars = useMemo(() => Array.from(text), [text])
   return (
     <>
@@ -31,12 +31,6 @@ function RevealPromptChars({ text, visibleCount, showCaret }) {
           {ch}
         </span>
       ))}
-      {showCaret && visibleCount < chars.length ? (
-        <span
-          className="ml-0.5 inline-block h-[1em] w-[0.08em] animate-pulse rounded-sm bg-indigo-300/70 align-middle"
-          aria-hidden
-        />
-      ) : null}
     </>
   )
 }
@@ -559,7 +553,6 @@ export default function BigScreen() {
                   <RevealPromptChars
                     text={prompt ?? ''}
                     visibleCount={revealedCount}
-                    showCaret
                   />
                 ) : (
                   prompt
