@@ -176,7 +176,7 @@ export function DebateSliderGrid({
           {labels.map((label, i) => (
             <div
               key={PANEL_VISUALS[i].key}
-              className="flex min-h-[5.5rem] items-end justify-end pb-2 sm:min-h-[6.25rem]"
+              className="flex min-h-[5.5rem] items-center justify-end sm:min-h-[6.25rem]"
             >
               <span className="text-right text-[0.65rem] font-semibold uppercase leading-snug tracking-[0.2em] text-slate-300 sm:text-xs">
                 {label}
