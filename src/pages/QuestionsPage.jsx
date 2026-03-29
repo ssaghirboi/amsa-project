@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
+import {
+  DEFAULT_PROMPT_SEQUENCE,
+  fetchCurrentEventState,
+  subscribeToEventState,
+  writeEventState,
+} from '../supabase/eventState'
 
 const PANELISTS = [
   { key: 'Panelist 1', title: 'Panelist 1' },
@@ -43,10 +49,26 @@ function promptKeyFromQuestion(q) {
   return s || 'Unknown prompt'
 }
 
+function emptyMcQuestions(nextPrompt) {
+  return {
+    prompt: String(nextPrompt ?? ''),
+    panelists: {
+      'Panelist 1': null,
+      'Panelist 2': null,
+      'Panelist 3': null,
+      'Panelist 4': null,
+    },
+  }
+}
+
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [eventPrompt, setEventPrompt] = useState('')
+  const [eventState, setEventState] = useState(null)
+  const [pushError, setPushError] = useState('')
+  const [pushStatus, setPushStatus] = useState('')
 
   useEffect(() => {
     let unsub = null
@@ -106,6 +128,82 @@ export default function QuestionsPage() {
     }
   }, [])
 
+  // Track current prompt + pushed MC selections
+  useEffect(() => {
+    let unsubscribe = null
+    let pollId = null
+
+    const apply = (next) => {
+      setEventPrompt(next.prompt ?? '')
+      setEventState(next)
+    }
+
+    ;(async () => {
+      const current = await fetchCurrentEventState(supabase).catch(() => null)
+      if (current) apply(current)
+    })()
+
+    unsubscribe = subscribeToEventState(supabase, apply)
+    pollId = setInterval(() => {
+      fetchCurrentEventState(supabase)
+        .then((next) => {
+          if (next) apply(next)
+        })
+        .catch(() => {})
+    }, 2500)
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+      if (pollId) clearInterval(pollId)
+    }
+  }, [])
+
+  const pushed = eventState?.mcQuestions ?? null
+  const pushedFor = (panelKey) => pushed?.panelists?.[panelKey] ?? null
+
+  const pushToMc = async (panelKey, q) => {
+    if (!eventState) return
+    setPushError('')
+    setPushStatus('Pushing…')
+    try {
+      const nextMc = pushed && typeof pushed === 'object'
+        ? {
+            prompt: String(eventState.prompt ?? ''),
+            panelists: {
+              'Panelist 1': pushed?.panelists?.['Panelist 1'] ?? null,
+              'Panelist 2': pushed?.panelists?.['Panelist 2'] ?? null,
+              'Panelist 3': pushed?.panelists?.['Panelist 3'] ?? null,
+              'Panelist 4': pushed?.panelists?.['Panelist 4'] ?? null,
+            },
+          }
+        : emptyMcQuestions(eventState.prompt ?? '')
+
+      nextMc.panelists[panelKey] = {
+        id: q.id ?? null,
+        question_text: q.question_text ?? '',
+        created_at: q.created_at ?? null,
+        prompt: q.prompt ?? null,
+      }
+
+      await writeEventState(supabase, {
+        prompt: eventState.prompt ?? '',
+        panelists: eventState.panelists ?? [3, 3, 3, 3],
+        panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
+        promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
+        presentationSlides: eventState.presentationSlides ?? [],
+        slideshowActive: Boolean(eventState.slideshowActive),
+        slideshowIndex: eventState.slideshowIndex ?? 0,
+        mcQuestions: nextMc,
+      })
+
+      setPushStatus('Pushed')
+      setTimeout(() => setPushStatus(''), 900)
+    } catch (e) {
+      setPushError(e?.message || String(e))
+      setPushStatus('')
+    }
+  }
+
   const grouped = useMemo(() => {
     // Map<panelistKey, Map<promptKey, questions[]>>
     const panelMap = new Map()
@@ -145,11 +243,21 @@ export default function QuestionsPage() {
           <p className="mt-2 text-sm text-slate-300">
             Questions are grouped by panelist and by prompt, and update live.
           </p>
+          <div className="mt-3 text-xs text-slate-400">
+            Current prompt: <span className="text-slate-200">{eventPrompt || '—'}</span>
+            {pushStatus ? <span className="ml-2 text-indigo-300">• {pushStatus}</span> : null}
+          </div>
         </div>
 
         {error ? (
           <div className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/95">
             {error}
+          </div>
+        ) : null}
+
+        {pushError ? (
+          <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/95">
+            {pushError}
           </div>
         ) : null}
 
@@ -162,6 +270,7 @@ export default function QuestionsPage() {
               const tb = Date.parse(b[1]?.[0]?.created_at ?? '') || 0
               return tb - ta
             })
+            const pushedQ = pushedFor(p.key)
             return (
               <section
                 key={p.key}
@@ -174,6 +283,17 @@ export default function QuestionsPage() {
                   <span className="text-xs font-medium text-slate-400">
                     {total}
                   </span>
+                </div>
+
+                <div className="border-b border-white/10 px-5 py-4">
+                  <div className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Currently pushed to MC
+                  </div>
+                  <div className="mt-2 text-sm text-slate-100">
+                    {pushedQ?.question_text ? pushedQ.question_text : (
+                      <span className="text-slate-500">None</span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="max-h-[70vh] overflow-auto px-5 py-4">
@@ -198,15 +318,32 @@ export default function QuestionsPage() {
                             {items.map((q) => (
                               <li
                                 key={q.id ?? `${q.created_at}-${q.question_text}`}
-                                className="rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+                                className={`rounded-xl border bg-black/20 px-4 py-3 ${
+                                  pushedQ?.id != null && q.id != null && String(pushedQ.id) === String(q.id)
+                                    ? 'border-indigo-400/50'
+                                    : 'border-white/10'
+                                }`}
                               >
                                 <div className="text-sm leading-relaxed text-slate-100">
                                   {q.question_text}
                                 </div>
+                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => pushToMc(p.key, q)}
+                                    disabled={!eventState}
+                                    className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    Push to MC
+                                  </button>
+                                  {q.created_at ? (
+                                    <div className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-500">
+                                      {new Date(q.created_at).toLocaleString()}
+                                    </div>
+                                  ) : null}
+                                </div>
                                 {q.created_at ? (
-                                  <div className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-500">
-                                    {new Date(q.created_at).toLocaleString()}
-                                  </div>
+                                  null
                                 ) : null}
                               </li>
                             ))}

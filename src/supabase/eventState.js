@@ -13,6 +13,8 @@ let slideshowColumnsAvailable = null
 let panelistIconsColumnsAvailable = null
 /** Set after fetch: DB has `presentation_slides` column. */
 let presentationSlidesColumnsAvailable = null
+/** Set after fetch: DB has `mc_questions` column. */
+let mcQuestionsColumnsAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
@@ -27,6 +29,19 @@ const PANELIST_ICON_COLUMNS = [
 const PANELIST_ICON_COLUMNS_SELECT = PANELIST_ICON_COLUMNS.join(',')
 
 const SELECT_VARIANTS = [
+  // With MC question picks
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,mc_questions`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,mc_questions`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},slideshow_active,slideshow_index,presentation_slides,mc_questions`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},slideshow_active,slideshow_index,mc_questions`,
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},mc_questions`,
+  `${SELECT_BASE},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions`,
+  `${SELECT_BASE},prompt_sequence,slideshow_active,slideshow_index,mc_questions`,
+  `${SELECT_BASE},prompt_sequence,mc_questions`,
+  `${SELECT_BASE},slideshow_active,slideshow_index,presentation_slides,mc_questions`,
+  `${SELECT_BASE},slideshow_active,slideshow_index,mc_questions`,
+  `${SELECT_BASE},mc_questions`,
   // With presentation_slides + panelist icons + slideshow
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides`,
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index`,
@@ -68,6 +83,12 @@ function isMissingPresentationSlidesColumnError(error) {
   return /presentation_slides/i.test(msg) && /does not exist/i.test(msg)
 }
 
+function isMissingMcQuestionsColumnError(error) {
+  if (!error) return false
+  const msg = String(error.message || '')
+  return /mc_questions/i.test(msg) && /does not exist/i.test(msg)
+}
+
 /** `false` after fetch detected no `prompt_sequence` column. */
 export function shouldPromptSequenceMigrate() {
   return promptSequenceColumnAvailable === false
@@ -86,6 +107,11 @@ export function shouldPanelistIconsMigrate() {
 /** `false` after fetch detected no `presentation_slides` column. */
 export function shouldPresentationSlidesMigrate() {
   return presentationSlidesColumnsAvailable === false
+}
+
+/** `false` after fetch detected no `mc_questions` column. */
+export function shouldMcQuestionsMigrate() {
+  return mcQuestionsColumnsAvailable === false
 }
 
 /** Only merge `presentationSlides` from Supabase when the column exists (avoids wiping local edits). */
@@ -146,6 +172,7 @@ export function deriveEventStateFromRow(row) {
   const slideshowActive = row.slideshow_active === true
   const slideshowIndex = clampPresentationSlideIndex(row.slideshow_index ?? 0)
   const presentationSlides = mergePresentationSlidesFromRemote(row.presentation_slides)
+  const mcQuestions = row.mc_questions ?? null
 
   return {
     prompt: String(prompt),
@@ -155,6 +182,7 @@ export function deriveEventStateFromRow(row) {
     slideshowActive,
     slideshowIndex,
     presentationSlides,
+    mcQuestions,
     meta: {
       id: row.id,
     },
@@ -176,6 +204,7 @@ export async function fetchCurrentEventState(supabase) {
       slideshowColumnsAvailable = cols.includes('slideshow_active')
       panelistIconsColumnsAvailable = cols.includes('panelist_1_icon_url')
       presentationSlidesColumnsAvailable = cols.includes('presentation_slides')
+      mcQuestionsColumnsAvailable = cols.includes('mc_questions')
 
       const row = Array.isArray(data) ? data[0] : data
       return (
@@ -187,6 +216,7 @@ export async function fetchCurrentEventState(supabase) {
           slideshowActive: false,
           slideshowIndex: 0,
           presentationSlides: mergePresentationSlidesFromRemote(null),
+          mcQuestions: null,
           meta: { id: EVENT_STATE_ID },
         }
       )
@@ -231,6 +261,7 @@ export async function writeEventState(
     presentationSlides,
     slideshowActive = false,
     slideshowIndex = 0,
+    mcQuestions = null,
   },
 ) {
   const sequence =
@@ -267,6 +298,10 @@ export async function writeEventState(
     payload.presentation_slides = mergePresentationSlidesFromRemote(presentationSlides)
   }
 
+  if (mcQuestionsColumnsAvailable !== false) {
+    payload.mc_questions = mcQuestions
+  }
+
   let { error } = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
 
   if (error && isMissingPromptSequenceColumnError(error) && promptSequenceColumnAvailable !== false) {
@@ -282,6 +317,13 @@ export async function writeEventState(
     delete payload.slideshow_index
     const third = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
     error = third.error
+  }
+
+  if (error && isMissingMcQuestionsColumnError(error) && mcQuestionsColumnsAvailable !== false) {
+    mcQuestionsColumnsAvailable = false
+    delete payload.mc_questions
+    const next = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = next.error
   }
 
   // If icon columns are missing, retry without them.

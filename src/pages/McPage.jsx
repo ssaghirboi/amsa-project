@@ -13,12 +13,16 @@ function normalizePrompt(s) {
   return String(s ?? '').trim().toLowerCase()
 }
 
-function normalizeTarget(raw) {
-  const s = String(raw ?? '').trim()
-  if (!s) return null
-  const m = s.match(/panelist\s*(\d)/i) ?? s.match(/^(\d)$/)
-  if (!m) return s
-  return `Panelist ${m[1]}`
+function emptyMcQuestions(nextPrompt) {
+  return {
+    prompt: String(nextPrompt ?? ''),
+    panelists: {
+      'Panelist 1': null,
+      'Panelist 2': null,
+      'Panelist 3': null,
+      'Panelist 4': null,
+    },
+  }
 }
 
 function getNextPrompt(current, sequence) {
@@ -46,17 +50,21 @@ export default function McPage() {
   const [presentationSlides, setPresentationSlides] = useState([])
   const [status, setStatus] = useState('Connecting…')
   const [error, setError] = useState('')
-  const [panelistQuestions, setPanelistQuestions] = useState(() => {
-    const base = {}
-    for (const p of PANELISTS) base[p.key] = null
-    return base
-  })
+  const [mcQuestions, setMcQuestions] = useState(null)
+  const [mcQuestionsStatus, setMcQuestionsStatus] = useState('—')
 
   useEffect(() => {
     let unsubscribe = null
     let pollId = null
 
     const apply = (next) => {
+      // If prompt changed, auto-clear pushed MC questions.
+      const nextPrompt = next.prompt ?? ''
+      const incomingMc = next.mcQuestions ?? null
+      const incomingPrompt = String(incomingMc?.prompt ?? '')
+      const promptMismatch =
+        incomingMc && normalizePrompt(incomingPrompt) !== normalizePrompt(nextPrompt)
+
       setPrompt(next.prompt ?? '')
       setPanelists(next.panelists ?? [3, 3, 3, 3])
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
@@ -64,8 +72,30 @@ export default function McPage() {
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
       setPresentationSlides(next.presentationSlides ?? [])
+      setMcQuestions(incomingMc)
+      setMcQuestionsStatus(
+        incomingMc
+          ? promptMismatch
+            ? 'Resetting…'
+            : 'Pushed'
+          : '—',
+      )
       setStatus('Live')
       setError('')
+
+      if (promptMismatch) {
+        // Fire-and-forget reset; avoid blocking the MC view.
+        writeEventState(supabase, {
+          prompt: nextPrompt,
+          panelists: next.panelists ?? [3, 3, 3, 3],
+          panelistIcons: next.panelistIcons ?? [null, null, null, null],
+          promptSequence: next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
+          presentationSlides: next.presentationSlides ?? [],
+          slideshowActive: Boolean(next.slideshowActive),
+          slideshowIndex: next.slideshowIndex ?? 0,
+          mcQuestions: emptyMcQuestions(nextPrompt),
+        }).catch(() => {})
+      }
     }
 
     ;(async () => {
@@ -95,59 +125,6 @@ export default function McPage() {
     }
   }, [])
 
-  // Panelist questions feed (latest per panelist)
-  useEffect(() => {
-    let isActive = true
-    let unsub = null
-    let pollId = null
-
-    const hydrate = async () => {
-      try {
-        const { data, error: e } = await supabase
-          .from('questions')
-          .select('id,target_panelist,question_text,created_at')
-          .order('created_at', { ascending: false })
-          .limit(200)
-        if (e) throw e
-        if (!isActive) return
-
-        const next = {}
-        for (const p of PANELISTS) next[p.key] = null
-        for (const q of Array.isArray(data) ? data : []) {
-          const key = normalizeTarget(q.target_panelist)
-          if (!key || !(key in next)) continue
-          if (next[key]) continue
-          next[key] = q
-        }
-        setPanelistQuestions(next)
-      } catch {
-        // ignore (MC screen should stay usable even if questions table is unavailable)
-      }
-    }
-
-    hydrate()
-
-    const channel = supabase
-      .channel('mc_questions_updates')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'questions' },
-        () => {
-          hydrate()
-        },
-      )
-      .subscribe()
-
-    unsub = () => supabase.removeChannel(channel)
-    pollId = setInterval(hydrate, 2500)
-
-    return () => {
-      isActive = false
-      if (unsub) unsub()
-      if (pollId) clearInterval(pollId)
-    }
-  }, [])
-
   const nextInfo = useMemo(() => getNextPrompt(prompt, promptSequence), [prompt, promptSequence])
   const currentSlide = useMemo(() => {
     if (!Array.isArray(presentationSlides) || presentationSlides.length === 0) return null
@@ -172,6 +149,7 @@ export default function McPage() {
         presentationSlides,
         slideshowActive: false,
         slideshowIndex,
+        mcQuestions: emptyMcQuestions(nextPrompt),
       })
       setStatus('Live')
     } catch (e) {
@@ -229,12 +207,12 @@ export default function McPage() {
               <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-300/90">
                 Panelist questions
               </h2>
-              <span className="text-xs text-slate-500">latest</span>
+              <span className="text-xs text-slate-500">{mcQuestionsStatus}</span>
             </div>
 
             <div className="mt-5 space-y-4">
               {PANELISTS.map((p) => {
-                const q = panelistQuestions[p.key]
+                const q = mcQuestions?.panelists?.[p.key] ?? null
                 return (
                   <div
                     key={p.key}
