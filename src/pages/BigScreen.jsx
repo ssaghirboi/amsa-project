@@ -324,22 +324,27 @@ export default function BigScreen() {
             if (intro && target) {
               const a = intro.getBoundingClientRect()
               const b = target.getBoundingClientRect()
-              // Top-left FLIP: matches transform-origin: top left + translate(...) scale(...)
+              const sx = b.width / Math.max(a.width, 1)
+              const sy = b.height / Math.max(a.height, 1)
+              // Single scale factor keeps typography proportional (no non-uniform squash/stretch).
+              const s = Math.min(sx, sy)
+              const scaledW = a.width * s
+              const scaledH = a.height * s
+              const destLeft = b.left + (b.width - scaledW) / 2
+              const destTop = b.top + (b.height - scaledH) / 2
               nextFly = {
-                dx: b.left - a.left,
-                dy: b.top - a.top,
-                sx: b.width / Math.max(a.width, 1),
-                sy: b.height / Math.max(a.height, 1),
+                dx: destLeft - a.left,
+                dy: destTop - a.top,
+                s,
               }
             } else {
-              nextFly = { dx: 0, dy: -120, sx: 0.45, sy: 0.45 }
+              nextFly = { dx: 0, dy: -120, s: 0.45 }
             }
             const noMotion =
               nextFly &&
               Math.abs(nextFly.dx) < 2 &&
               Math.abs(nextFly.dy) < 2 &&
-              Math.abs(nextFly.sx - 1) < 0.03 &&
-              Math.abs(nextFly.sy - 1) < 0.03
+              Math.abs(nextFly.s - 1) < 0.03
             if (noMotion) {
               setFlyTo(null)
               setIntroPhase('idle')
@@ -527,8 +532,7 @@ export default function BigScreen() {
                   ? {
                       '--fly-dx': `${flyTo.dx}px`,
                       '--fly-dy': `${flyTo.dy}px`,
-                      '--fly-sx': String(flyTo.sx),
-                      '--fly-sy': String(flyTo.sy),
+                      '--fly-s': String(flyTo.s),
                     }
                   : undefined
               }

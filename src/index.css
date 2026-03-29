@@ -14,14 +14,13 @@ body {
   background-attachment: fixed;
 }
 
-/* Event screen: fullscreen PromptBox shrinks to debate slot (FLIP, top-left origin, BigScreen.jsx) */
+/* Event screen: fullscreen PromptBox shrinks to debate slot (uniform scale = no text warp, BigScreen.jsx) */
 @keyframes bigscreen-prompt-fly-to-target {
   from {
-    transform: translate3d(0, 0, 0) scale(1, 1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   to {
-    /* translate then scale — applied right-to-left so scale runs first; origin top-left aligns rects */
-    transform: translate3d(var(--fly-dx, 0px), var(--fly-dy, 0px), 0) scale(var(--fly-sx, 1), var(--fly-sy, 1));
+    transform: translate3d(var(--fly-dx, 0px), var(--fly-dy, 0px), 0) scale(var(--fly-s, 1));
   }
 }
 
