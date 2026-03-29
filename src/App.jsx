@@ -6,6 +6,7 @@ import Audience from './pages/Audience'
 import PromptPage from './pages/PromptPage'
 import QuestionsPage from './pages/QuestionsPage'
 import McPage from './pages/McPage'
+import PolicyPage from './pages/PolicyPage'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       <Route path="/prompt" element={<PromptPage />} />
       <Route path="/questions" element={<QuestionsPage />} />
       <Route path="/mc" element={<McPage />} />
+      <Route path="/policy" element={<PolicyPage />} />
     </Routes>
   )
 }
