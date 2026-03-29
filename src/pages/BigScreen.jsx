@@ -115,6 +115,7 @@ export default function BigScreen() {
   const presentationOffTimeoutRef = useRef(null)
   const wasSlideshowActiveRef = useRef(false)
   const [presentationOffLogoLayout, setPresentationOffLogoLayout] = useState('corner') // 'hero' | 'corner'
+  const [eventHeaderLogoPos, setEventHeaderLogoPos] = useState(null) // { left, top } px — corner target during center→corner
   const eventHeaderLogoMeasureRef = useRef(null)
   const [textSlideIndex, setTextSlideIndex] = useState(0)
   const [textOpacity, setTextOpacity] = useState(1)
@@ -235,16 +236,22 @@ export default function BigScreen() {
   // 2) fade in the rest of the debate assets
   // Use `useLayoutEffect` to avoid a flash (blank -> fade) when toggling quickly.
   useLayoutEffect(() => {
+    const slide =
+      presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
+      presentationSlides[0]
+    const isCornerLayout =
+      slide.kind === 'segment' || (slide.title != null && slide.subtitle != null)
+
     if (slideshowActive) {
       wasSlideshowActiveRef.current = true
-      // Slideshow: logo always top-left (larger corner mark), not centered hero.
-      const nextLogoLayout = 'corner'
+      const nextLogoLayout = isCornerLayout ? 'corner' : 'hero'
 
       if (presentationOffTimeoutRef.current) {
         clearTimeout(presentationOffTimeoutRef.current)
         presentationOffTimeoutRef.current = null
       }
       queueMicrotask(() => {
+        setEventHeaderLogoPos(null)
         setPresentationOffLogoLayout(nextLogoLayout)
         setPresentationOffTransition(false)
         setPresentationOffFade(1)
@@ -271,13 +278,28 @@ export default function BigScreen() {
       presentationOffTimeoutRef.current = null
     }
 
-    // Slideshow keeps the logo top-left the whole time; debate header is the same corner.
-    // Fade in the debate layer only (no center→corner animation).
-    presentationOffTimeoutRef.current = setTimeout(() => {
-      setPresentationOffFade(1)
-      setPresentationOffTransition(false)
-      presentationOffTimeoutRef.current = null
-    }, 420)
+    const moveDurationMs = 850
+    if (isCornerLayout) {
+      // Logo already top-left: fade debate in.
+      presentationOffTimeoutRef.current = setTimeout(() => {
+        setPresentationOffFade(1)
+        setPresentationOffTransition(false)
+        presentationOffTimeoutRef.current = null
+      }, 420)
+    } else {
+      // Hero slide: animate logo from center to the measured header corner, then fade debate in.
+      requestAnimationFrame(() => {
+        const rect = eventHeaderLogoMeasureRef.current?.getBoundingClientRect()
+        if (rect) setEventHeaderLogoPos({ left: rect.left, top: rect.top })
+        setPresentationOffLogoLayout('corner')
+
+        presentationOffTimeoutRef.current = setTimeout(() => {
+          setPresentationOffFade(1)
+          setPresentationOffTransition(false)
+          presentationOffTimeoutRef.current = null
+        }, moveDurationMs)
+      })
+    }
 
     return () => {
       if (presentationOffTimeoutRef.current) {
@@ -285,6 +307,8 @@ export default function BigScreen() {
         presentationOffTimeoutRef.current = null
       }
     }
+  // Logo layout follows slide index; omit presentationSlides text-only edits from deps.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideshowActive, slideshowIndex])
 
   /** When prompt changes (after first non-empty sync), run intro sequence */
@@ -378,8 +402,8 @@ export default function BigScreen() {
   const fixedLogoPos =
     presentationOffLogoLayout === 'corner'
       ? {
-          left: 'max(1rem, env(safe-area-inset-left))',
-          top: 'max(1rem, env(safe-area-inset-top))',
+          left: eventHeaderLogoPos?.left ?? 'max(1rem, env(safe-area-inset-left))',
+          top: eventHeaderLogoPos?.top ?? 'max(1rem, env(safe-area-inset-top))',
           transform: 'translate(0, 0)',
         }
       : {
@@ -394,12 +418,12 @@ export default function BigScreen() {
       style={fixedLogoPos}
     >
       <EventBranding
-        centered={
-          !slideshowActive && presentationOffLogoLayout === 'hero'
-        }
+        centered={presentationOffLogoLayout === 'hero'}
         variant={
           slideshowActive
-            ? 'presentationCorner'
+            ? presentationOffLogoLayout === 'corner'
+              ? 'presentationCorner'
+              : 'presentationHero'
             : presentationOffLogoLayout === 'corner'
               ? 'default'
               : 'presentationHero'
@@ -430,11 +454,7 @@ export default function BigScreen() {
       <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
         {!cornerLayout ? (
           <div
-            className={
-              slideshowActive
-                ? 'presentation-hero-text relative z-10 flex min-h-[min(72dvh,36rem)] flex-1 flex-col items-center justify-center px-4 text-center'
-                : 'presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-2xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]'
-            }
+            className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-2xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
             aria-hidden={!textSlide.tagline}
             style={{ opacity: textOpacity }}
           >
