@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { DebateSliderGrid } from '../components/DebateSliderGrid'
 import { EventBranding } from '../components/EventBranding'
 import {
   clampPresentationSlideIndex,
@@ -10,94 +11,8 @@ import {
   subscribeToEventState,
 } from '../supabase/eventState'
 
-const panelVisuals = [
-  {
-    key: 'P1',
-    dot: 'bg-fuchsia-500',
-    glow: 'shadow-[0_0_24px_rgba(232,121,249,0.55)]',
-  },
-  {
-    key: 'P2',
-    dot: 'bg-cyan-400',
-    glow: 'shadow-[0_0_24px_rgba(34,211,238,0.45)]',
-  },
-  {
-    key: 'P3',
-    dot: 'bg-amber-400',
-    glow: 'shadow-[0_0_24px_rgba(251,191,36,0.45)]',
-  },
-  {
-    key: 'P4',
-    dot: 'bg-lime-400',
-    glow: 'shadow-[0_0_24px_rgba(163,230,53,0.45)]',
-  },
-]
-
 const TYPE_MS = 32
 const HANDOFF_MS = 1000
-
-function valueToPercent(value) {
-  const v = typeof value === 'number' ? value : Number(value)
-  const clamped = Number.isFinite(v) ? Math.max(1, Math.min(5, v)) : 1
-  return ((clamped - 1) / 4) * 100
-}
-
-function PanelSliderIcon({ value, index, iconUrl }) {
-  const visuals = panelVisuals[index]
-  const left = valueToPercent(value)
-  const trackSteps = [
-    'bg-rose-500/45',
-    'bg-orange-400/35',
-    'bg-amber-400/30',
-    'bg-lime-400/35',
-    'bg-emerald-500/45',
-  ]
-
-  return (
-    <div className="relative h-24 w-full sm:h-28 overflow-visible">
-      {/* Segmented track */}
-      <div className="absolute inset-0 flex items-center rounded-xl border border-white/10 bg-black/10 overflow-hidden">
-        {trackSteps.map((stepCls, i) => (
-          <div
-            key={stepCls}
-            className={`relative flex-1 ${stepCls}`}
-          >
-            {i < 4 ? (
-              <div className="absolute right-0 top-0 h-full w-px bg-white/10" aria-hidden />
-            ) : null}
-          </div>
-        ))}
-      </div>
-
-      {/* Central marker line */}
-      <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/60" />
-
-      {/* Icon knob */}
-      <div
-        className="absolute top-1/2 transition-all duration-500 ease-out"
-        style={{
-          left: `${left}%`,
-          transform: 'translate(-50%, -50%)',
-        }}
-        aria-label={`${visuals.key} value ${value}`}
-      >
-        <div className={visuals.glow}>
-          <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border border-white/20 bg-black/25 backdrop-blur">
-            {iconUrl ? (
-              <img
-                src={iconUrl}
-                alt={`${visuals.key} icon`}
-                className="h-full w-full rounded-full object-cover"
-              />
-            ) : (
-              <div className={`h-full w-full rounded-full ${visuals.dot}`} />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
@@ -495,32 +410,18 @@ export default function BigScreen() {
         <EventBranding variant="presentationCorner" className="shrink-0" />
       </div>
       <div
-        className="mx-auto max-w-6xl px-4 pb-8 pt-[clamp(10rem,28vh,16rem)] transition-opacity duration-400 ease-in-out sm:px-8"
+        className="mx-auto max-w-7xl px-3 pb-10 pt-[clamp(10rem,28vh,16rem)] transition-opacity duration-400 ease-in-out sm:px-6 lg:px-10"
         style={{
           opacity: showOverlay ? 0 : presentationOffFade,
           pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
         }}
       >
-        <div className="rounded-2xl border border-white/10 bg-slate-900/35 p-6 backdrop-blur">
-          {error ? (
-            <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="mt-6 space-y-5">
-            {panelists.map((value, i) => (
-              <div
-                key={panelVisuals[i].key}
-                className="rounded-xl border border-white/10 bg-black/20 p-4"
-              >
-                <div className="mt-2">
-                  <PanelSliderIcon value={value} index={i} iconUrl={panelistIcons[i]} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <DebateSliderGrid
+          prompt={prompt}
+          panelists={panelists}
+          panelistIcons={panelistIcons}
+          error={error}
+        />
       </div>
 
       {showOverlay ? (

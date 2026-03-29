@@ -1,0 +1,214 @@
+import { useMemo } from 'react'
+
+const DEFAULT_ROW_LABELS = ['Islam', 'Christianity', 'Atheism', 'Hinduism']
+
+const PANEL_VISUALS = [
+  { key: 'P1', dot: 'bg-fuchsia-500', glow: 'shadow-[0_0_28px_rgba(232,121,249,0.45)]' },
+  { key: 'P2', dot: 'bg-cyan-400', glow: 'shadow-[0_0_28px_rgba(34,211,238,0.4)]' },
+  { key: 'P3', dot: 'bg-amber-400', glow: 'shadow-[0_0_28px_rgba(251,191,36,0.4)]' },
+  { key: 'P4', dot: 'bg-lime-400', glow: 'shadow-[0_0_28px_rgba(163,230,53,0.45)]' },
+]
+
+/** Left → right matches value 1 → 5 on the event state sliders */
+const SCALE_COLUMNS = [
+  {
+    label: 'Strongly Agree',
+    bar: 'from-[#3a0a0c] via-[#5c1218] to-[#2a080a]',
+    edge: 'border-rose-900/40',
+  },
+  {
+    label: 'Slightly Agree',
+    bar: 'from-[#2a1818] via-[#3d2420] to-[#221818]',
+    edge: 'border-orange-900/25',
+  },
+  {
+    label: 'Neutral',
+    bar: 'from-[#1f1a14] via-[#2d2618] to-[#18140f]',
+    edge: 'border-amber-900/20',
+  },
+  {
+    label: 'Slightly Disagree',
+    bar: 'from-[#0f1a14] via-[#142820] to-[#0c1510]',
+    edge: 'border-emerald-900/25',
+  },
+  {
+    label: 'Strongly Disagree',
+    bar: 'from-[#061a10] via-[#0c2818] to-[#041208]',
+    edge: 'border-emerald-800/35',
+  },
+]
+
+function valueToPercent(value) {
+  const v = typeof value === 'number' ? value : Number(value)
+  const clamped = Number.isFinite(v) ? Math.max(1, Math.min(5, v)) : 1
+  return ((clamped - 1) / 4) * 100
+}
+
+function SliderRow({ value, index, iconUrl, rowLabel }) {
+  const visuals = PANEL_VISUALS[index]
+  const left = valueToPercent(value)
+
+  return (
+    <div className="group relative grid min-h-[5.5rem] grid-cols-1 sm:min-h-[6.25rem] md:grid-cols-[minmax(7.5rem,10rem)_1fr] md:gap-0">
+      {/* Row label — desktop: left rail */}
+      <div className="hidden items-center justify-end border-b border-white/[0.06] bg-black/20 py-3 pr-4 md:flex">
+        <span className="text-right text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400/95 sm:text-xs">
+          {rowLabel}
+        </span>
+      </div>
+
+      <div className="relative flex min-h-[5.5rem] flex-1 items-center border-b border-white/[0.06] sm:min-h-[6.25rem]">
+        {/* Mobile row label */}
+        <div className="absolute left-3 top-2 z-20 md:hidden">
+          <span className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            {rowLabel}
+          </span>
+        </div>
+
+        {/* Five column washes */}
+        <div className="absolute inset-0 flex">
+          {SCALE_COLUMNS.map((col) => (
+            <div
+              key={col.label}
+              className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r border-black/20 last:border-r-0`}
+            >
+              {/* Fine mesh */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.14]"
+                style={{
+                  backgroundImage: `
+                    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+                  `,
+                  backgroundSize: '5px 5px',
+                }}
+                aria-hidden
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Track + ticks */}
+        <div className="relative z-10 flex w-full items-center px-3 pb-1 pt-7 md:px-5 md:pb-2 md:pt-2">
+          <div className="relative h-11 w-full md:h-12">
+            {/* Tick marks at column centers (10%, 30%, …) */}
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="pointer-events-none absolute top-1/2 z-[5] h-6 w-px -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${(i + 0.5) * 20}%` }}
+                aria-hidden
+              >
+                <div className="h-full w-px bg-gradient-to-b from-transparent via-white/40 to-transparent" />
+              </div>
+            ))}
+
+            {/* Horizontal rail */}
+            <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-white/5 via-white/25 to-white/5 shadow-[0_0_12px_rgba(255,255,255,0.06)]" />
+
+            {/* Thumb */}
+            <div
+              className="absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-500 ease-out"
+              style={{ left: `${left}%` }}
+              aria-label={`${rowLabel} position ${value} of 5`}
+            >
+              <div className={`rounded-full ${visuals.glow}`}>
+                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/25 bg-[#0a0a0a]/90 shadow-[0_8px_32px_rgba(0,0,0,0.65)] ring-1 ring-white/10 backdrop-blur-sm sm:h-16 sm:w-16">
+                  {iconUrl ? (
+                    <img
+                      src={iconUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className={`h-full w-full ${visuals.dot} opacity-90`} />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function DebateSliderGrid({
+  prompt,
+  panelists,
+  panelistIcons,
+  rowLabels = DEFAULT_ROW_LABELS,
+  error,
+}) {
+  const labels = useMemo(() => {
+    return panelists.map((_, i) => rowLabels[i] ?? `Panel ${i + 1}`)
+  }, [panelists, rowLabels])
+
+  return (
+    <div className="w-full">
+      {/* Prompt — centered pill */}
+      <div className="mb-8 flex justify-center px-2">
+        <div className="relative w-full max-w-4xl">
+          <div className="absolute -inset-px rounded-full bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-80 blur-sm" />
+          <div className="relative rounded-full border border-white/15 bg-black/50 px-6 py-3.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md sm:px-10 sm:py-4">
+            <p className="text-[0.65rem] font-medium uppercase tracking-[0.35em] text-slate-500">
+              Prompt
+            </p>
+            <p className="mt-1.5 text-balance text-base font-medium leading-snug tracking-tight text-slate-100 sm:text-lg md:text-xl">
+              {prompt?.trim() ? prompt : (
+                <span className="text-slate-500">Waiting for the current prompt…</span>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="mb-6 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/95">
+          {error}
+        </div>
+      ) : null}
+
+      {/* Grid card */}
+      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
+        {/* Column headers */}
+        <div className="grid grid-cols-1 border-b border-white/[0.07] bg-black/40 md:grid-cols-[minmax(7.5rem,10rem)_1fr]">
+          <div className="hidden border-r border-white/[0.06] md:block" aria-hidden />
+          <div className="grid grid-cols-5 gap-0">
+            {SCALE_COLUMNS.map((col) => (
+              <div
+                key={col.label}
+                className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+              >
+                <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                  {col.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rows */}
+        <div className="relative">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage: `radial-gradient(circle at 20% 30%, rgba(120,40,40,0.15) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(20,80,50,0.12) 0%, transparent 40%)`,
+            }}
+            aria-hidden
+          />
+          {panelists.map((value, i) => (
+            <SliderRow
+              key={PANEL_VISUALS[i].key}
+              value={value}
+              index={i}
+              iconUrl={panelistIcons[i]}
+              rowLabel={labels[i]}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
