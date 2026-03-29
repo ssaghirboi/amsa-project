@@ -52,16 +52,28 @@ function SliderRow({ value, index, iconUrl, rowLabel }) {
   return (
     <div className="group relative min-h-[5.5rem] w-full sm:min-h-[6.25rem]">
       <div className="relative flex min-h-[5.5rem] w-full items-center border-b border-white/[0.06] sm:min-h-[6.25rem]">
-        {/* Religion label: overlays left edge only — full-width 5 columns keeps Neutral at page center */}
-        <div className="absolute bottom-0 left-0 top-0 z-20 hidden w-[min(28vw,9.5rem)] items-center justify-center border-r border-white/[0.08] bg-gradient-to-r from-black/85 via-black/55 to-transparent px-1 backdrop-blur-[2px] md:flex">
-          <span className="text-center text-[0.7rem] font-semibold uppercase leading-tight tracking-[0.18em] text-slate-300/95 sm:text-xs">
+        {/* Religion label — floating text, no box (full-width 5 cols unchanged) */}
+        <div className="pointer-events-none absolute bottom-0 left-3 top-0 z-20 hidden w-[min(30vw,11rem)] items-center justify-start md:flex">
+          <span
+            className="text-left text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.22em] text-slate-100/95 sm:text-xs sm:leading-tight"
+            style={{
+              textShadow:
+                '0 0 32px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+            }}
+          >
             {rowLabel}
           </span>
         </div>
 
-        {/* Mobile row label */}
-        <div className="absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
-          <span className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+        {/* Mobile row label — same floating treatment */}
+        <div className="pointer-events-none absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
+          <span
+            className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-100/90"
+            style={{
+              textShadow:
+                '0 0 24px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.85)',
+            }}
+          >
             {rowLabel}
           </span>
         </div>
