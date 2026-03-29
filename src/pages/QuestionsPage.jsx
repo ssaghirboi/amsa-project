@@ -74,6 +74,8 @@ export default function QuestionsPage() {
   const [eventState, setEventState] = useState(null)
   const [pushError, setPushError] = useState('')
   const [pushStatus, setPushStatus] = useState('')
+  const [clearStatus, setClearStatus] = useState('')
+  const [lastClearedPromptKey, setLastClearedPromptKey] = useState('')
 
   useEffect(() => {
     let unsub = null
@@ -171,6 +173,31 @@ export default function QuestionsPage() {
 
   const activePromptKey = normalizePrompt(eventPrompt)
 
+  const clearAllQuestions = async () => {
+    setClearStatus('Clearing…')
+    setError('')
+    try {
+      // Best-effort: requires Supabase RLS/policies to permit delete.
+      const { error: e } = await supabase.from('questions').delete().neq('id', -1)
+      if (e) throw e
+      setQuestions([])
+      setClearStatus('Cleared')
+      setTimeout(() => setClearStatus(''), 1200)
+    } catch (e2) {
+      setClearStatus('')
+      setError(e2?.message || String(e2))
+    }
+  }
+
+  // Reset questions on each new prompt (best-effort, only if deletes are allowed).
+  useEffect(() => {
+    if (!activePromptKey) return
+    if (activePromptKey === lastClearedPromptKey) return
+    setLastClearedPromptKey(activePromptKey)
+    clearAllQuestions().catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePromptKey])
+
   const pushToMc = async (panelKey, q) => {
     if (!eventState) return
     setPushError('')
@@ -215,9 +242,15 @@ export default function QuestionsPage() {
   }
 
   const grouped = useMemo(() => {
-    const filtered =
+    // If prompt snapshot exists and at least one question is tagged for the current prompt,
+    // show only those. Otherwise, keep showing untagged questions (prevents “flash then disappear”).
+    const currentTagged =
       hasPromptColumn && activePromptKey
         ? questions.filter((q) => normalizePrompt(q.prompt) === activePromptKey)
+        : []
+    const filtered =
+      hasPromptColumn && activePromptKey && currentTagged.length > 0
+        ? currentTagged
         : questions
 
     // Map<panelistKey, Map<promptKey, questions[]>>
@@ -248,34 +281,26 @@ export default function QuestionsPage() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-10">
         <EventBranding centered className="mb-6" />
 
-        <div className="rounded-2xl border border-white/10 bg-slate-900/35 p-5 backdrop-blur">
-          <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
-            Questions feed
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-50">
-            Incoming audience questions
-          </h1>
-          <p className="mt-2 text-sm text-slate-300">
-            Questions are grouped by panelist and by prompt, and update live.
-          </p>
-          <div className="mt-3 text-xs text-slate-400">
-            Current prompt: <span className="text-slate-200">{eventPrompt || '—'}</span>
-            {pushStatus ? <span className="ml-2 text-indigo-300">• {pushStatus}</span> : null}
-          </div>
-          {hasPromptColumn ? (
-            <div className="mt-2 text-xs text-slate-500">
-              Showing questions for the <span className="text-slate-300">current prompt</span> only.
+        <div className="rounded-2xl border border-white/10 bg-slate-900/35 p-6 backdrop-blur sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="min-w-0 text-balance text-3xl font-semibold leading-tight tracking-tight text-slate-50 sm:text-4xl md:text-5xl">
+              {eventPrompt?.trim() ? eventPrompt.trim() : 'Waiting for the current prompt…'}
+            </h1>
+            <div className="shrink-0 text-right">
+              <button
+                type="button"
+                onClick={clearAllQuestions}
+                className="rounded-xl border border-white/15 bg-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={clearStatus === 'Clearing…'}
+                title="Clear all questions"
+              >
+                {clearStatus ? clearStatus : 'Clear'}
+              </button>
+              {pushStatus ? (
+                <div className="mt-2 text-xs font-medium text-indigo-300">• {pushStatus}</div>
+              ) : null}
             </div>
-          ) : (
-            <div className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100/95">
-              This database is missing the <code className="text-amber-200">questions.prompt</code>{' '}
-              column, so questions can’t be filtered/grouped by prompt yet. Add it in Supabase:
-              <div className="mt-2 rounded bg-black/30 px-2 py-1 font-mono text-[0.7rem] text-amber-200">
-                alter table public.questions add column if not exists prompt text;
-              </div>
-              New questions will automatically save the prompt once this exists.
-            </div>
-          )}
+          </div>
         </div>
 
         {error ? (
