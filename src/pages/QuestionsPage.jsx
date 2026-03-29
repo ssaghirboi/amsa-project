@@ -53,6 +53,10 @@ function normalizePrompt(raw) {
   return String(raw ?? '').trim().toLowerCase()
 }
 
+function hasPromptSnapshot(q) {
+  return q?.prompt != null && String(q.prompt).trim().length > 0
+}
+
 function emptyMcQuestions(nextPrompt) {
   return {
     prompt: String(nextPrompt ?? ''),
@@ -389,7 +393,18 @@ export default function QuestionsPage() {
                                       !eventState ||
                                       (hasPromptColumn &&
                                         activePromptKey &&
+                                        hasPromptSnapshot(q) &&
                                         normalizePrompt(q.prompt) !== activePromptKey)
+                                    }
+                                    title={
+                                      !eventState
+                                        ? 'Connecting to event state…'
+                                        : hasPromptColumn &&
+                                            activePromptKey &&
+                                            hasPromptSnapshot(q) &&
+                                            normalizePrompt(q.prompt) !== activePromptKey
+                                          ? 'This question was submitted under a different prompt.'
+                                          : 'Push this question to the MC screen'
                                     }
                                     className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
                                   >
