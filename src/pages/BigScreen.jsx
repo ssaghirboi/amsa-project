@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DebateSliderGrid } from '../components/DebateSliderGrid'
+import { PromptBox } from '../components/PromptBox'
 import { EventBranding } from '../components/EventBranding'
 import {
   clampPresentationSlideIndex,
@@ -47,7 +48,10 @@ export default function BigScreen() {
   /** Intro: full-screen typewriter → shrink toward header; idle = normal layout */
   const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'shrinking'
   const [introText, setIntroText] = useState('')
-  const [handoffActive, setHandoffActive] = useState(false)
+  /** FLIP target: fly centered intro PromptBox to DebateSliderGrid prompt anchor */
+  const [flyTo, setFlyTo] = useState(null)
+  const introPromptRef = useRef(null)
+  const promptAnchorRef = useRef(null)
   const prevPromptRef = useRef('')
   const hasSeededRef = useRef(false)
 
@@ -249,7 +253,7 @@ export default function BigScreen() {
 
     prevPromptRef.current = prompt
     queueMicrotask(() => {
-      setHandoffActive(false)
+      setFlyTo(null)
       setIntroText('')
       setIntroPhase('typing')
     })
@@ -260,7 +264,7 @@ export default function BigScreen() {
     if (!slideshowActive) return
     queueMicrotask(() => {
       setIntroPhase('idle')
-      setHandoffActive(false)
+      setFlyTo(null)
       setIntroText('')
     })
   }, [slideshowActive])
@@ -283,8 +287,29 @@ export default function BigScreen() {
       if (i >= full.length) {
         clearInterval(id)
         queueMicrotask(() => {
-          setHandoffActive(true)
-          setIntroPhase('shrinking')
+          requestAnimationFrame(() => {
+            const intro = introPromptRef.current
+            const target = promptAnchorRef.current
+            let nextFly = null
+            if (intro && target) {
+              const a = intro.getBoundingClientRect()
+              const b = target.getBoundingClientRect()
+              const cx = a.left + a.width / 2
+              const cy = a.top + a.height / 2
+              const tcx = b.left + b.width / 2
+              const tcy = b.top + b.height / 2
+              nextFly = {
+                dx: tcx - cx,
+                dy: tcy - cy,
+                sx: b.width / Math.max(a.width, 1),
+                sy: b.height / Math.max(a.height, 1),
+              }
+            } else {
+              nextFly = { dx: 0, dy: -140, sx: 0.48, sy: 0.48 }
+            }
+            setFlyTo(nextFly)
+            setIntroPhase('shrinking')
+          })
         })
       }
     }, TYPE_MS)
@@ -297,7 +322,7 @@ export default function BigScreen() {
     if (introPhase !== 'shrinking') return
     const t = setTimeout(() => {
       setIntroPhase('idle')
-      setHandoffActive(false)
+      setFlyTo(null)
       setIntroText('')
     }, HANDOFF_MS)
     return () => clearTimeout(t)
@@ -423,44 +448,43 @@ export default function BigScreen() {
           panelists={panelists}
           panelistIcons={panelistIcons}
           error={error}
+          promptBoxRef={promptAnchorRef}
         />
       </div>
 
       {showOverlay ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#030202]/97 px-6 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#030202]/97 px-3 backdrop-blur-md sm:px-6"
           aria-live="polite"
           aria-busy={introPhase === 'typing'}
         >
-          <div className="pointer-events-none flex w-full max-w-6xl flex-col items-center justify-center">
-            <div
+          <div className="pointer-events-none flex w-full max-w-6xl justify-center">
+            <PromptBox
               key={prompt}
-              className={`w-full text-center ${
-                introPhase === 'typing' ? 'bigscreen-prompt-type-rise' : ''
-              }`}
+              ref={introPromptRef}
+              className={
+                introPhase === 'shrinking' && flyTo ? 'bigscreen-prompt-fly-to-target' : ''
+              }
               style={
-                introPhase === 'typing' && (prompt ?? '').length > 0
+                introPhase === 'shrinking' && flyTo
                   ? {
-                      animationDuration: `${(prompt ?? '').length * TYPE_MS}ms`,
+                      '--fly-dx': `${flyTo.dx}px`,
+                      '--fly-dy': `${flyTo.dy}px`,
+                      '--fly-sx': String(flyTo.sx),
+                      '--fly-sy': String(flyTo.sy),
                     }
                   : undefined
               }
             >
-              <p
-                className={`text-center font-semibold leading-tight tracking-tight text-slate-100 drop-shadow-[0_18px_45px_rgba(0,0,0,0.55)] ${
-                  introPhase === 'typing'
-                    ? 'text-[clamp(1.5rem,6vw,4.5rem)]'
-                    : introPhase === 'shrinking' && handoffActive
-                      ? 'text-[clamp(1.5rem,6vw,4.5rem)] bigscreen-prompt-handoff'
-                      : 'text-[clamp(1.5rem,6vw,4.5rem)]'
-                }`}
-              >
-                {introPhase === 'typing' ? introText : prompt}
-                {introPhase === 'typing' ? (
+              {introPhase === 'typing' ? (
+                <>
+                  {introText}
                   <span className="ml-1 inline-block h-[1em] w-[0.08em] animate-pulse rounded-sm bg-indigo-300/70 align-middle" />
-                ) : null}
-              </p>
-            </div>
+                </>
+              ) : (
+                prompt
+              )}
+            </PromptBox>
           </div>
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { PromptBox } from './PromptBox'
 
 const DEFAULT_ROW_LABELS = ['Islam', 'Christianity', 'Atheism', 'Hinduism']
 
@@ -143,6 +144,7 @@ export function DebateSliderGrid({
   panelistIcons,
   rowLabels = DEFAULT_ROW_LABELS,
   error,
+  promptBoxRef,
 }) {
   const labels = useMemo(() => {
     return panelists.map((_, i) => rowLabels[i] ?? `Panel ${i + 1}`)
@@ -152,21 +154,13 @@ export function DebateSliderGrid({
     <div className="mx-auto w-full max-w-7xl">
       {/* Prompt — large, centered */}
       <div className="mb-10 flex w-full justify-center px-3 sm:px-4">
-        <div className="relative w-full max-w-6xl">
-          <div className="absolute -inset-0.5 rounded-[2rem] bg-gradient-to-r from-white/12 via-indigo-500/10 to-white/12 opacity-90 blur-md" />
-          <div className="relative rounded-[1.75rem] border border-white/20 bg-black/55 px-8 py-7 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md sm:px-12 sm:py-9 md:px-16 md:py-10">
-            <p className="text-xs font-medium uppercase tracking-[0.4em] text-sky-300/90 sm:text-sm">
-              Prompt
-            </p>
-            <p className="mt-4 text-balance text-2xl font-semibold leading-tight tracking-tight text-slate-50 sm:text-3xl md:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
-              {prompt?.trim() ? prompt : (
-                <span className="text-lg font-normal text-slate-500 md:text-xl">
-                  Waiting for the current prompt…
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
+        <PromptBox ref={promptBoxRef}>
+          {prompt?.trim() ? prompt : (
+            <span className="text-lg font-normal text-slate-500 md:text-xl">
+              Waiting for the current prompt…
+            </span>
+          )}
+        </PromptBox>
       </div>
 
       {error ? (
