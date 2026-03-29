@@ -57,6 +57,11 @@ function hasPromptSnapshot(q) {
   return q?.prompt != null && String(q.prompt).trim().length > 0
 }
 
+function isSameId(a, b) {
+  if (a == null || b == null) return false
+  return String(a) === String(b)
+}
+
 function emptyMcQuestions(nextPrompt) {
   return {
     prompt: String(nextPrompt ?? ''),
@@ -229,6 +234,17 @@ export default function QuestionsPage() {
         slideshowIndex: eventState.slideshowIndex ?? 0,
         mcQuestions: nextMc,
       })
+
+      // Verify the write actually persisted (mc_questions column must exist).
+      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
+      const persistedId =
+        refreshed?.mcQuestions?.panelists?.[panelKey]?.id ?? null
+      if (!isSameId(persistedId, q.id ?? null)) {
+        throw new Error(
+          "Couldn't persist the MC push. In Supabase, add `mc_questions` to `event_state`:\n\n" +
+            "alter table public.event_state add column if not exists mc_questions jsonb default null;\n",
+        )
+      }
 
       setPushStatus('Pushed')
       setTimeout(() => setPushStatus(''), 900)
