@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { PromptBox } from './PromptBox'
 
 const DEFAULT_ROW_LABELS = ['Islam', 'Christianity', 'Atheism', 'Hinduism']
@@ -169,24 +169,17 @@ export function DebateSliderGrid({
         </div>
       ) : null}
 
-      {/* Labels sit in the left margin (not inside the rounded table); table stays full width */}
-      <div className="relative w-full">
-        <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-2 hidden w-[min(10.5rem,26vw)] flex-col items-end sm:mr-3 md:flex lg:mr-4">
-          <div className="min-h-[4.25rem] shrink-0 sm:min-h-[5rem]" aria-hidden />
-          {labels.map((label, i) => (
-            <div
-              key={PANEL_VISUALS[i].key}
-              className="flex min-h-[5.5rem] items-center justify-end sm:min-h-[6.25rem]"
-            >
-              <span className="text-right text-[0.65rem] font-semibold uppercase leading-snug tracking-[0.2em] text-slate-300 sm:text-xs">
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
+      {/*
+        Two-column grid: labels are only in column 1 (not inside the bordered table).
+        Shared row heights center each label with its slider row.
+      */}
+      <div className="grid w-full grid-cols-1 md:grid-cols-[minmax(0,min(10.5rem,26vw))_1fr] md:gap-x-3 lg:gap-x-4">
+        <div
+          className="hidden border-b border-transparent md:block"
+          aria-hidden
+        />
+        <div className="col-span-full overflow-hidden rounded-t-2xl border border-b-0 border-white/[0.08] bg-black/40 shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:col-span-1 md:col-start-2 md:shadow-[0_24px_80px_rgba(0,0,0,0.65)]">
+          <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07]">
             {SCALE_COLUMNS.map((col) => (
               <div
                 key={col.label}
@@ -198,28 +191,40 @@ export function DebateSliderGrid({
               </div>
             ))}
           </div>
+        </div>
 
-          <div className="relative">
+        {panelists.map((value, i) => (
+          <Fragment key={PANEL_VISUALS[i].key}>
+            <div className="pointer-events-none hidden items-center justify-end pr-1 sm:pr-2 md:flex lg:pr-3">
+              <span className="text-right text-[0.65rem] font-semibold uppercase leading-none tracking-[0.2em] text-slate-300 sm:text-xs">
+                {labels[i]}
+              </span>
+            </div>
             <div
-              className="pointer-events-none absolute inset-0 opacity-[0.07]"
-              style={{
-                backgroundImage: `radial-gradient(circle at 20% 30%, rgba(120,40,40,0.15) 0%, transparent 45%),
+              className={`relative min-w-0 border-x border-white/[0.08] bg-[#050505] ${
+                i === panelists.length - 1
+                  ? 'overflow-hidden rounded-b-2xl border-b border-white/[0.08] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]'
+                  : 'border-b border-white/[0.06]'
+              }`}
+            >
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.07]"
+                style={{
+                  backgroundImage: `radial-gradient(circle at 20% 30%, rgba(120,40,40,0.15) 0%, transparent 45%),
                 radial-gradient(circle at 80% 70%, rgba(20,80,50,0.12) 0%, transparent 40%)`,
-              }}
-              aria-hidden
-            />
-            {panelists.map((value, i) => (
+                }}
+                aria-hidden
+              />
               <SliderRow
-                key={PANEL_VISUALS[i].key}
                 value={value}
                 index={i}
                 iconUrl={panelistIcons[i]}
                 rowLabel={labels[i]}
-                showBorderBottom={i < panelists.length - 1}
+                showBorderBottom={false}
               />
-            ))}
-          </div>
-        </div>
+            </div>
+          </Fragment>
+        ))}
       </div>
     </div>
   )
