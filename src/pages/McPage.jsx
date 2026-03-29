@@ -116,8 +116,8 @@ export default function McPage() {
         <EventBranding variant="presentationCorner" className="shrink-0" />
       </div>
 
-      <div className="mx-auto max-w-6xl px-4 pb-10 pt-[max(6.5rem,12vh)] sm:px-6 lg:px-10">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/35 px-5 py-4 backdrop-blur">
+      <div className="mx-auto max-w-6xl px-4 pb-14 pt-[max(8.5rem,14vh)] sm:px-6 sm:pb-16 lg:px-10">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-900/35 px-6 py-5 backdrop-blur">
           <div className="min-w-0">
             <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
               MC Control
@@ -151,7 +151,7 @@ export default function McPage() {
         ) : null}
 
         {slideshowActive ? (
-          <div className="mt-8 rounded-3xl border border-white/10 bg-black/25 p-8 backdrop-blur sm:p-10">
+          <div className="mt-10 rounded-3xl border border-white/10 bg-black/25 p-9 backdrop-blur sm:p-12">
             <div className="text-center">
               <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                 Current slide
@@ -174,8 +174,8 @@ export default function McPage() {
             </div>
           </div>
         ) : (
-          <div className="relative mt-8 overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-8 backdrop-blur sm:p-10">
-            <div className="absolute right-5 top-5 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+          <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-9 backdrop-blur sm:p-12">
+            <div className="absolute right-6 top-6 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
               <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
                 Next prompt
               </div>
