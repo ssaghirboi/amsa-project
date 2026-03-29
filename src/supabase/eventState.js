@@ -88,6 +88,11 @@ export function shouldPresentationSlidesMigrate() {
   return presentationSlidesColumnsAvailable === false
 }
 
+/** Only merge `presentationSlides` from Supabase when the column exists (avoids wiping local edits). */
+export function shouldSyncPresentationSlidesFromRemote() {
+  return presentationSlidesColumnsAvailable === true
+}
+
 // Matches your provided SQL:
 // - event_state has one row with `id = 1`
 // - current_prompt column name

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDE_COUNT,
@@ -11,6 +11,7 @@ import {
   shouldPromptSequenceMigrate,
   shouldPanelistIconsMigrate,
   shouldPresentationSlidesMigrate,
+  shouldSyncPresentationSlidesFromRemote,
   shouldSlideshowMigrate,
   subscribeToEventState,
   writeEventState,
@@ -37,7 +38,29 @@ export default function Admin() {
   const [showPresentationSlidesMigrateBanner, setShowPresentationSlidesMigrateBanner] =
     useState(false)
 
+  const presentationSlidesSaveTimerRef = useRef(null)
+  const presentationSlidesLatestRef = useRef(null)
+  const writeContextRef = useRef({
+    prompt: '',
+    panelists: [1, 1, 1, 1],
+    panelistIcons: [null, null, null, null],
+    promptSequence: DEFAULT_PROMPT_SEQUENCE,
+    slideshowActive: false,
+    slideshowIndex: 0,
+  })
+
   const PANELIST_ICON_BUCKET = 'panelist-icons'
+
+  useEffect(() => {
+    writeContextRef.current = {
+      prompt,
+      panelists,
+      panelistIcons,
+      promptSequence,
+      slideshowActive,
+      slideshowIndex,
+    }
+  })
 
   const uploadPanelistIcon = async (panelIndex, file) => {
     if (!file) return
@@ -48,6 +71,7 @@ export default function Admin() {
 
     setStatus('Uploading icon...')
     setError('')
+    cancelPendingPresentationSlideSave()
     try {
       const { error: uploadError } = await supabase.storage
         .from(PANELIST_ICON_BUCKET)
@@ -133,9 +157,11 @@ export default function Admin() {
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
-      setPresentationSlides(
-        mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
-      )
+      if (shouldSyncPresentationSlidesFromRemote()) {
+        setPresentationSlides(
+          mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
+        )
+      }
       if (!next.promptSequence?.length) return
       const remote = next.promptSequence.map((s) => String(s))
       setPromptSequence((prev) => {
@@ -150,6 +176,10 @@ export default function Admin() {
 
     return () => {
       if (unsubscribe) unsubscribe()
+      if (presentationSlidesSaveTimerRef.current) {
+        clearTimeout(presentationSlidesSaveTimerRef.current)
+        presentationSlidesSaveTimerRef.current = null
+      }
     }
   }, [])
 
@@ -160,6 +190,7 @@ export default function Admin() {
     nextPanelistIcons = panelistIcons,
     nextPresentationSlides = presentationSlides,
   ) => {
+    cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -178,13 +209,47 @@ export default function Admin() {
     }
   }
 
+  const cancelPendingPresentationSlideSave = () => {
+    if (presentationSlidesSaveTimerRef.current) {
+      clearTimeout(presentationSlidesSaveTimerRef.current)
+      presentationSlidesSaveTimerRef.current = null
+    }
+    presentationSlidesLatestRef.current = null
+  }
+
+  const flushPresentationSlidesSave = () => {
+    const slides = presentationSlidesLatestRef.current
+    presentationSlidesLatestRef.current = null
+    if (!slides) return
+    const ctx = writeContextRef.current
+    setError('')
+    writeEventState(supabase, {
+      prompt: ctx.prompt,
+      panelists: ctx.panelists,
+      panelistIcons: ctx.panelistIcons,
+      promptSequence: ctx.promptSequence,
+      presentationSlides: slides,
+      slideshowActive: ctx.slideshowActive,
+      slideshowIndex: ctx.slideshowIndex,
+    }).catch((e) => {
+      setError(e?.message || String(e))
+    })
+  }
+
   const patchPresentationSlide = (index, partial) => {
     const next = presentationSlides.map((s, i) =>
       i === index ? { ...s, ...partial } : s,
     )
     const normalized = mergePresentationSlidesFromRemote(next)
     setPresentationSlides(normalized)
-    commit(prompt, panelists, promptSequence, panelistIcons, normalized)
+    presentationSlidesLatestRef.current = normalized
+    if (presentationSlidesSaveTimerRef.current) {
+      clearTimeout(presentationSlidesSaveTimerRef.current)
+    }
+    presentationSlidesSaveTimerRef.current = setTimeout(() => {
+      presentationSlidesSaveTimerRef.current = null
+      flushPresentationSlidesSave()
+    }, 350)
   }
 
   const handleNextPrompt = () => {
@@ -250,6 +315,7 @@ export default function Admin() {
     const next = promptSequenceDraft.map((s) => String(s))
     setPromptSequence(next)
     setPromptSequenceDraft([...next])
+    cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -271,6 +337,7 @@ export default function Admin() {
   const handleToggleSlideshow = async () => {
     const next = !slideshowActive
     const idx = next ? 0 : slideshowIndex
+    cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -297,6 +364,7 @@ export default function Admin() {
     if (!slideshowActive) return
     const len = PRESENTATION_SLIDE_COUNT
     const next = (slideshowIndex + delta + len) % len
+    cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -469,7 +537,6 @@ export default function Admin() {
                         }
                         className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                         placeholder="Leave empty for no line"
-                        disabled={status === 'Updating...'}
                       />
                     </label>
                   ) : (
@@ -483,7 +550,6 @@ export default function Admin() {
                             patchPresentationSlide(i, { title: e.target.value })
                           }
                           className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                          disabled={status === 'Updating...'}
                         />
                       </label>
                       <label className="block space-y-1">
@@ -495,7 +561,6 @@ export default function Admin() {
                             patchPresentationSlide(i, { subtitle: e.target.value })
                           }
                           className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                          disabled={status === 'Updating...'}
                         />
                       </label>
                     </div>
