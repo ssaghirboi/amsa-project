@@ -50,15 +50,15 @@ function SliderRow({ value, index, iconUrl, rowLabel }) {
   const thumbLeftPct = valueToThumbPercent(value)
 
   return (
-    <div className="group relative grid min-h-[5.5rem] grid-cols-1 sm:min-h-[6.25rem] md:grid-cols-[minmax(8.5rem,11rem)_1fr] md:gap-0">
-      {/* Row label — desktop: centered in left rail */}
-      <div className="hidden items-center justify-center border-b border-white/[0.06] bg-black/20 px-2 py-3 md:flex">
-        <span className="text-center text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-400/95 sm:text-xs">
-          {rowLabel}
-        </span>
-      </div>
+    <div className="group relative min-h-[5.5rem] w-full sm:min-h-[6.25rem]">
+      <div className="relative flex min-h-[5.5rem] w-full items-center border-b border-white/[0.06] sm:min-h-[6.25rem]">
+        {/* Religion label: overlays left edge only — full-width 5 columns keeps Neutral at page center */}
+        <div className="absolute bottom-0 left-0 top-0 z-20 hidden w-[min(28vw,9.5rem)] items-center justify-center border-r border-white/[0.08] bg-gradient-to-r from-black/85 via-black/55 to-transparent px-1 backdrop-blur-[2px] md:flex">
+          <span className="text-center text-[0.7rem] font-semibold uppercase leading-tight tracking-[0.18em] text-slate-300/95 sm:text-xs">
+            {rowLabel}
+          </span>
+        </div>
 
-      <div className="relative flex min-h-[5.5rem] flex-1 items-center border-b border-white/[0.06] sm:min-h-[6.25rem]">
         {/* Mobile row label */}
         <div className="absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
           <span className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -66,8 +66,8 @@ function SliderRow({ value, index, iconUrl, rowLabel }) {
           </span>
         </div>
 
-        {/* Five column washes */}
-        <div className="absolute inset-0 flex">
+        {/* Five column washes — full card width so column 3 (Neutral) is centered in the card */}
+        <div className="absolute inset-0 flex w-full">
           {SCALE_COLUMNS.map((col) => (
             <div
               key={col.label}
@@ -109,7 +109,7 @@ function SliderRow({ value, index, iconUrl, rowLabel }) {
 
             {/* Thumb — same % as ticks for each discrete value */}
             <div
-              className="absolute top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-500 ease-out"
+              className="absolute top-1/2 z-[35] -translate-x-1/2 -translate-y-1/2 transition-[left] duration-500 ease-out"
               style={{ left: `${thumbLeftPct}%` }}
               aria-label={`${rowLabel} position ${value} of 5`}
             >
@@ -174,21 +174,18 @@ export function DebateSliderGrid({
 
       {/* Grid card */}
       <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
-        {/* Column headers */}
-        <div className="grid grid-cols-1 border-b border-white/[0.07] bg-black/40 md:grid-cols-[minmax(8.5rem,11rem)_1fr]">
-          <div className="hidden border-r border-white/[0.06] md:block" aria-hidden />
-          <div className="grid grid-cols-5 gap-0">
-            {SCALE_COLUMNS.map((col) => (
-              <div
-                key={col.label}
-                className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
-              >
-                <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
-                  {col.label}
-                </span>
-              </div>
-            ))}
-          </div>
+        {/* Column headers — full-width 5 cols (Neutral = visual center of card) */}
+        <div className="grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
+          {SCALE_COLUMNS.map((col) => (
+            <div
+              key={col.label}
+              className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+            >
+              <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                {col.label}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* Rows */}
