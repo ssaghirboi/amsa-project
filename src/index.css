@@ -18,17 +18,15 @@ body {
 @keyframes bigscreen-prompt-fly-to-target {
   from {
     transform: translate3d(0, 0, 0) scale(1, 1);
-    opacity: 1;
   }
   to {
     transform: translate3d(var(--fly-dx, 0px), var(--fly-dy, 0px), 0) scale(var(--fly-sx, 1), var(--fly-sy, 1));
-    opacity: 0;
   }
 }
 
 .bigscreen-prompt-fly-to-target {
   animation: bigscreen-prompt-fly-to-target 1.15s cubic-bezier(0.2, 0.85, 0.15, 1) forwards;
-  will-change: transform, opacity;
+  will-change: transform;
 }
 
 @media (prefers-reduced-motion: reduce) {
