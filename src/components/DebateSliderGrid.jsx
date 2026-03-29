@@ -152,9 +152,9 @@ export function DebateSliderGrid({
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      {/* Prompt — large, centered */}
-      <div className="mb-10 flex w-full justify-center px-3 sm:px-4">
-        <PromptBox ref={promptBoxRef}>
+      {/* Prompt — same width axis as table below (matches page alignment) */}
+      <div className="mb-10 w-full">
+        <PromptBox ref={promptBoxRef} maxWidthClass="max-w-none">
           {prompt?.trim() ? prompt : (
             <span className="text-lg font-normal text-slate-500 md:text-xl">
               Waiting for the current prompt…

@@ -4,13 +4,13 @@ import { forwardRef } from 'react'
  * Shared “Prompt” card — used on BigScreen (intro + debate) so layout and refs match.
  */
 export const PromptBox = forwardRef(function PromptBox(
-  { children, className = '', style, innerClassName = '' },
+  { children, className = '', style, innerClassName = '', maxWidthClass = 'max-w-6xl' },
   ref,
 ) {
   return (
     <div
       ref={ref}
-      className={`relative w-full max-w-6xl ${className}`}
+      className={`relative w-full ${maxWidthClass} ${className}`}
       style={style}
     >
       <div className="absolute -inset-0.5 rounded-[2rem] bg-gradient-to-r from-white/12 via-indigo-500/10 to-white/12 opacity-90 blur-md" />
