@@ -262,21 +262,23 @@ export default function McPage() {
                 </div>
               </div>
             ) : (
-              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-10 backdrop-blur sm:p-12">
-                <div className="absolute right-7 top-7 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
-                  <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                    Next prompt
-                  </div>
-                  <div className="mt-2 max-w-[26rem] text-sm text-slate-200/95">
-                    {nextInfo.next || 'None'}
-                  </div>
-                </div>
-
-                <div className="text-center">
+              <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-10 backdrop-blur sm:p-12">
+                <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-start">
                   <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                     Current prompt
                   </div>
-                  <p className="mt-8 text-balance text-[clamp(2.4rem,6.5vw,5rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
+                  <div className="w-full max-w-[34rem] rounded-xl border border-white/10 bg-black/20 px-4 py-3 sm:w-auto">
+                    <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                      Next prompt
+                    </div>
+                    <div className="mt-2 text-sm text-slate-200/95">
+                      {nextInfo.next || 'None'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 text-center sm:mt-12">
+                  <p className="text-balance text-[clamp(2.4rem,6.5vw,5rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
                     {prompt?.trim() ? prompt.trim() : 'Waiting for the current prompt…'}
                   </p>
                 </div>
