@@ -6,6 +6,7 @@ import eventLogoSvg from '../assets/IS GOD REAL (Print Flyer).svg?url'
  * - presentation: pre-event slides header size (debate screen when not hero)
  * - presentationHero: slideshow — large centered logo
  * - presentationCorner: slideshow — top-left mark (large)
+ * - mc: MC dashboard — top-left logo sized to clear control row (no overlap)
  */
 export function EventBranding({
   className = '',
@@ -16,7 +17,10 @@ export function EventBranding({
     variant === 'presentationHero'
       ? // Slideshow: dominant center logo
         'max-h-[min(52vh,20rem)] max-w-[min(96vw,40rem)] sm:max-h-[min(48vh,24rem)] sm:max-w-[44rem] md:max-h-[min(45vh,26rem)]'
-      : variant === 'presentationCorner'
+      : variant === 'mc'
+        ? // MC page: visible but short so status line never tucks under the mark
+          'max-h-[6rem] max-w-[min(92vw,16rem)] sm:max-h-[6.75rem] sm:max-w-[17rem] md:max-h-[7.25rem] md:max-w-[18rem]'
+        : variant === 'presentationCorner'
         ? // Slideshow: prominent top-left logo
           'max-h-[min(32vh,14rem)] max-w-[min(92vw,28rem)] sm:max-h-[min(30vh,15rem)] sm:max-w-[30rem] md:max-h-[16rem] md:max-w-[32rem]'
         : variant === 'presentation'

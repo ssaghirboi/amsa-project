@@ -158,41 +158,42 @@ export default function McPage() {
     }
   }
 
+  const nextPromptDisabled = status === 'Updating…' || !nextInfo.next
+
   return (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col bg-[#010101] text-slate-100">
-      <div
-        className="pointer-events-none fixed z-20 left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))]"
-        aria-hidden
-      >
-        <EventBranding variant="presentationCorner" className="shrink-0" />
-      </div>
-
-      <div className="flex min-h-0 w-full flex-1 flex-col px-4 pb-6 pt-[max(6.5rem,12vh)] sm:px-6 sm:pb-8 lg:px-10 lg:pb-10">
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-5 rounded-2xl border border-white/10 bg-slate-900/35 px-5 py-5 backdrop-blur sm:px-7 sm:py-6">
-          <div className="min-w-0">
-            <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
-              MC Control
-            </div>
-            <div className="mt-1 text-sm text-slate-300">
-              Status: <span className="text-indigo-300">{status}</span>
-              {slideshowActive ? (
-                <span className="ml-2 text-amber-200/90">• Slideshow ON</span>
-              ) : (
-                <span className="ml-2 text-slate-400">• Slideshow OFF</span>
-              )}
-            </div>
+      <div className="flex min-h-0 w-full flex-1 flex-col px-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pb-8 lg:px-8 lg:pb-10">
+        <div className="flex shrink-0 flex-col gap-4 sm:gap-5">
+          <div className="pl-[max(0px,calc(env(safe-area-inset-left)-0.25rem))] pt-1">
+            <EventBranding variant="mc" className="shrink-0" />
           </div>
 
-          {!slideshowActive ? (
-            <button
-              type="button"
-              onClick={goNextPrompt}
-              disabled={status === 'Updating…' || !nextInfo.next}
-              className="rounded-xl bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Next prompt
-            </button>
-          ) : null}
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-900/35 px-4 py-4 backdrop-blur sm:gap-5 sm:px-7 sm:py-6">
+            <div className="min-w-0 pl-0.5">
+              <div className="text-xs font-medium uppercase tracking-widest text-slate-400">
+                MC Control
+              </div>
+              <div className="mt-1.5 text-sm text-slate-300 sm:text-[0.9375rem]">
+                Status: <span className="text-indigo-300">{status}</span>
+                {slideshowActive ? (
+                  <span className="ml-2 text-amber-200/90">• Slideshow ON</span>
+                ) : (
+                  <span className="ml-2 text-slate-400">• Slideshow OFF</span>
+                )}
+              </div>
+            </div>
+
+            {!slideshowActive ? (
+              <button
+                type="button"
+                onClick={goNextPrompt}
+                disabled={nextPromptDisabled}
+                className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl bg-indigo-500 px-8 py-3.5 text-base font-semibold text-slate-950 shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
+              >
+                Next prompt
+              </button>
+            ) : null}
+          </div>
         </div>
 
         {error ? (
@@ -221,10 +222,14 @@ export default function McPage() {
                     <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
                       {p.title}
                     </div>
-                    <div className="mt-2 min-h-0 text-sm leading-relaxed text-slate-100 line-clamp-4 sm:line-clamp-none">
-                      {q?.question_text ? q.question_text : (
-                        <span className="text-slate-500">No question yet.</span>
-                      )}
+                    <div
+                      className={`mt-2 min-h-0 leading-snug sm:leading-normal ${
+                        q?.question_text
+                          ? 'text-[clamp(1rem,2.4vw,1.75rem)] font-semibold text-slate-50'
+                          : 'text-[clamp(0.95rem,2vw,1.125rem)] font-normal text-slate-500'
+                      }`}
+                    >
+                      {q?.question_text ? q.question_text : 'No question yet.'}
                     </div>
                     {q?.created_at ? (
                       <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
@@ -263,22 +268,28 @@ export default function McPage() {
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
-                <div className="flex shrink-0 flex-col items-center justify-between gap-4 sm:flex-row sm:items-start">
-                  <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                <div className="flex shrink-0 flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-start">
+                  <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400 sm:pt-1">
                     Current prompt
                   </div>
-                  <div className="w-full max-w-[min(100%,36rem)] rounded-xl border border-white/10 bg-black/20 px-4 py-3 sm:w-auto lg:max-w-[min(100%,42rem)]">
-                    <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  <button
+                    type="button"
+                    onClick={goNextPrompt}
+                    disabled={nextPromptDisabled}
+                    title={nextPromptDisabled ? 'Cannot advance right now' : 'Go to next prompt'}
+                    className="w-full max-w-none touch-manipulation rounded-2xl border border-white/15 bg-black/30 px-5 py-4 text-left transition hover:border-white/25 hover:bg-black/40 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:max-w-[min(100%,44rem)] sm:px-6 sm:py-5 lg:ml-auto"
+                  >
+                    <div className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-slate-400 sm:text-[0.75rem]">
                       Next prompt
                     </div>
-                    <div className="mt-2 text-sm text-slate-200/95 sm:text-base">
+                    <div className="mt-2 text-pretty break-words text-base font-medium leading-snug text-slate-100 sm:mt-2.5 sm:text-lg md:text-xl">
                       {nextInfo.next || 'None'}
                     </div>
-                  </div>
+                  </button>
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-2 py-8 text-center sm:py-10 lg:py-12">
-                  <p className="w-full max-w-[min(100%,85rem)] text-balance text-[clamp(2.5rem,8vw,7rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-1 py-8 text-center sm:px-3 sm:py-10 lg:py-12">
+                  <p className="w-full max-w-[min(100%,92vw)] text-balance break-words text-pretty text-[clamp(2.65rem,9.5vw,8.25rem)] font-semibold leading-[1.05] tracking-tight text-slate-50 [overflow-wrap:anywhere]">
                     {prompt?.trim() ? prompt.trim() : 'Waiting for the current prompt…'}
                   </p>
                 </div>
