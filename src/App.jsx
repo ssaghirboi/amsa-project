@@ -5,6 +5,7 @@ import BigScreen from './pages/BigScreen'
 import Audience from './pages/Audience'
 import PromptPage from './pages/PromptPage'
 import QuestionsPage from './pages/QuestionsPage'
+import McPage from './pages/McPage'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Route path="/ask" element={<Audience />} />
       <Route path="/prompt" element={<PromptPage />} />
       <Route path="/questions" element={<QuestionsPage />} />
+      <Route path="/mc" element={<McPage />} />
     </Routes>
   )
 }
