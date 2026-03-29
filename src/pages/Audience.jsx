@@ -87,7 +87,7 @@ export default function Audience() {
             {prompt || 'Waiting for the prompt...'}
           </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Ask one panelist a question. It will be stored in the `questions` table.
+            Ask a question and direct it towards any of the four panelists.
           </p>
         </div>
 
@@ -95,7 +95,9 @@ export default function Audience() {
           onSubmit={onSubmit}
           className="mt-5 rounded-2xl border border-white/10 bg-slate-900/35 p-5 backdrop-blur"
         >
-          <label className="block text-sm font-medium text-slate-200">Panelist</label>
+          <label className="block text-sm font-medium text-slate-200">
+            Select a Panelist
+          </label>
           <select
             className="mt-2 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-slate-100 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
             value={panelist}
@@ -123,7 +125,7 @@ export default function Audience() {
             disabled={submitting}
             className="mt-4 w-full rounded-lg bg-indigo-500 px-4 py-2 font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? 'Sending...' : 'Submit Question'}
+            {submitting ? 'Sending...' : 'Submit'}
           </button>
 
           {notice ? (
