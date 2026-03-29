@@ -56,19 +56,7 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
           showBorderBottom ? 'border-b border-white/[0.06]' : ''
         }`}
       >
-        {/* Desktop: floating label over left of grid (no separate column) */}
-        <div className="pointer-events-none absolute bottom-0 left-3 top-0 z-20 hidden w-[min(30vw,11rem)] items-center justify-start md:flex">
-          <span
-            className="text-left text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.22em] text-slate-100/95 sm:text-xs sm:leading-tight"
-            style={{
-              textShadow:
-                '0 0 32px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
-            }}
-          >
-            {rowLabel}
-          </span>
-        </div>
-        {/* Mobile: centered above track */}
+        {/* Mobile: centered above track (desktop labels sit in left margin beside table) */}
         <div className="pointer-events-none absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
           <span
             className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-100/90"
@@ -187,39 +175,56 @@ export function DebateSliderGrid({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
-        <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
-          {SCALE_COLUMNS.map((col) => (
+      <div className="flex w-full flex-col gap-5 md:flex-row md:items-stretch md:gap-6 lg:gap-8">
+        {/* Blank left margin: religion names only (not inside the colored table) */}
+        <div className="hidden shrink-0 flex-col justify-start md:flex md:w-[min(11rem,26vw)] lg:w-[min(12rem,22vw)]">
+          <div className="min-h-[4.75rem] shrink-0 sm:min-h-[5.5rem]" aria-hidden />
+          {labels.map((label, i) => (
             <div
-              key={col.label}
-              className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+              key={PANEL_VISUALS[i].key}
+              className="flex min-h-[5.5rem] items-center justify-end py-2 sm:min-h-[6.25rem]"
             >
-              <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
-                {col.label}
+              <span className="text-right text-[0.65rem] font-semibold uppercase leading-snug tracking-[0.2em] text-slate-300 sm:text-xs">
+                {label}
               </span>
             </div>
           ))}
         </div>
 
-        <div className="relative">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage: `radial-gradient(circle at 20% 30%, rgba(120,40,40,0.15) 0%, transparent 45%),
+        <div className="min-w-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
+            {SCALE_COLUMNS.map((col) => (
+              <div
+                key={col.label}
+                className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+              >
+                <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                  {col.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="relative">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.07]"
+              style={{
+                backgroundImage: `radial-gradient(circle at 20% 30%, rgba(120,40,40,0.15) 0%, transparent 45%),
                 radial-gradient(circle at 80% 70%, rgba(20,80,50,0.12) 0%, transparent 40%)`,
-            }}
-            aria-hidden
-          />
-          {panelists.map((value, i) => (
-            <SliderRow
-              key={PANEL_VISUALS[i].key}
-              value={value}
-              index={i}
-              iconUrl={panelistIcons[i]}
-              rowLabel={labels[i]}
-              showBorderBottom={i < panelists.length - 1}
+              }}
+              aria-hidden
             />
-          ))}
+            {panelists.map((value, i) => (
+              <SliderRow
+                key={PANEL_VISUALS[i].key}
+                value={value}
+                index={i}
+                iconUrl={panelistIcons[i]}
+                rowLabel={labels[i]}
+                showBorderBottom={i < panelists.length - 1}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
