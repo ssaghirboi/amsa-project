@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
-import {
-  fetchCurrentEventState,
-  subscribeToEventState,
-} from '../supabase/eventState'
+import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
 
-async function insertQuestion(supabase, { panelist, question }) {
+function isMissingColumnError(error) {
+  if (!error) return false
+  if (error.code === '42703') return true
+  const msg = String(error.message || '')
+  return /does not exist/i.test(msg) && /column/i.test(msg)
+}
+
+async function insertQuestion(supabase, { panelist, question, prompt }) {
   // Matches your provided SQL:
   // questions(
   //   target_panelist TEXT, -- 'Panelist 1' .. 'Panelist 4'
@@ -14,10 +18,21 @@ async function insertQuestion(supabase, { panelist, question }) {
   // )
   const target = `Panelist ${panelist}`
 
-  const { error } = await supabase.from('questions').insert({
+  // Try to include prompt snapshot (enables /questions grouping by prompt if column exists).
+  const payload = {
     target_panelist: target,
     question_text: question,
-  })
+    prompt: prompt ?? null,
+  }
+
+  let { error } = await supabase.from('questions').insert(payload)
+
+  // If DB doesn't have a `prompt` column, retry without it.
+  if (error && isMissingColumnError(error)) {
+    delete payload.prompt
+    const second = await supabase.from('questions').insert(payload)
+    error = second.error
+  }
 
   if (error) throw error
 }
@@ -65,7 +80,7 @@ export default function Audience() {
     setNotice('')
 
     try {
-      await insertQuestion(supabase, { panelist, question: text })
+      await insertQuestion(supabase, { panelist, question: text, prompt })
       setQuestion('')
       setNotice('Question sent.')
     } catch (e2) {

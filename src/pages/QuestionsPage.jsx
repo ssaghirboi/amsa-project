@@ -24,6 +24,25 @@ function sortByNewest(a, b) {
   return tb - ta
 }
 
+function isMissingColumnError(error) {
+  if (!error) return false
+  if (error.code === '42703') return true
+  const msg = String(error.message || '')
+  return /does not exist/i.test(msg) && /column/i.test(msg)
+}
+
+function promptKeyFromQuestion(q) {
+  const key =
+    q.prompt ??
+    q.prompt_text ??
+    q.prompt_snapshot ??
+    q.current_prompt ??
+    q.currentPrompt ??
+    null
+  const s = String(key ?? '').trim()
+  return s || 'Unknown prompt'
+}
+
 export default function QuestionsPage() {
   const [questions, setQuestions] = useState([])
   const [error, setError] = useState('')
@@ -37,14 +56,22 @@ export default function QuestionsPage() {
     async function load() {
       setError('')
       try {
-        const { data, error: e } = await supabase
+        // Prefer including a prompt snapshot column if present.
+        let result = await supabase
           .from('questions')
-          .select('id,target_panelist,question_text,created_at')
+          .select('id,target_panelist,question_text,created_at,prompt')
           .order('created_at', { ascending: false })
           .limit(400)
-        if (e) throw e
+        if (result.error && isMissingColumnError(result.error)) {
+          result = await supabase
+            .from('questions')
+            .select('id,target_panelist,question_text,created_at')
+            .order('created_at', { ascending: false })
+            .limit(400)
+        }
+        if (result.error) throw result.error
         if (!isActive) return
-        setQuestions(Array.isArray(data) ? data : [])
+        setQuestions(Array.isArray(result.data) ? result.data : [])
       } catch (e2) {
         if (!isActive) return
         setError(e2?.message || String(e2))
@@ -80,17 +107,27 @@ export default function QuestionsPage() {
   }, [])
 
   const grouped = useMemo(() => {
-    const map = new Map()
-    for (const p of PANELISTS) map.set(p.key, [])
+    // Map<panelistKey, Map<promptKey, questions[]>>
+    const panelMap = new Map()
+    for (const p of PANELISTS) panelMap.set(p.key, new Map())
+
     for (const q of questions) {
-      const key = normalizeTarget(q.target_panelist) ?? 'Unassigned'
-      if (!map.has(key)) map.set(key, [])
-      map.get(key).push(q)
+      const panelKey = normalizeTarget(q.target_panelist) ?? 'Unassigned'
+      if (!panelMap.has(panelKey)) panelMap.set(panelKey, new Map())
+      const byPrompt = panelMap.get(panelKey)
+      const promptKey = promptKeyFromQuestion(q)
+      if (!byPrompt.has(promptKey)) byPrompt.set(promptKey, [])
+      byPrompt.get(promptKey).push(q)
     }
-    for (const [k, arr] of map.entries()) {
-      map.set(k, [...arr].sort(sortByNewest))
+
+    // Sort within each prompt group, and order prompt groups by newest question inside them.
+    for (const [, byPrompt] of panelMap.entries()) {
+      for (const [pk, arr] of byPrompt.entries()) {
+        byPrompt.set(pk, [...arr].sort(sortByNewest))
+      }
     }
-    return map
+
+    return panelMap
   }, [questions])
 
   return (
@@ -106,7 +143,7 @@ export default function QuestionsPage() {
             Incoming audience questions
           </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Questions are grouped by panelist and update live.
+            Questions are grouped by panelist and by prompt, and update live.
           </p>
         </div>
 
@@ -118,7 +155,13 @@ export default function QuestionsPage() {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {PANELISTS.map((p) => {
-            const items = grouped.get(p.key) ?? []
+            const byPrompt = grouped.get(p.key) ?? new Map()
+            const total = Array.from(byPrompt.values()).reduce((acc, arr) => acc + arr.length, 0)
+            const promptGroups = Array.from(byPrompt.entries()).sort((a, b) => {
+              const ta = Date.parse(a[1]?.[0]?.created_at ?? '') || 0
+              const tb = Date.parse(b[1]?.[0]?.created_at ?? '') || 0
+              return tb - ta
+            })
             return (
               <section
                 key={p.key}
@@ -129,33 +172,48 @@ export default function QuestionsPage() {
                     {p.title}
                   </h2>
                   <span className="text-xs font-medium text-slate-400">
-                    {items.length}
+                    {total}
                   </span>
                 </div>
 
                 <div className="max-h-[70vh] overflow-auto px-5 py-4">
                   {loading ? (
                     <div className="text-sm text-slate-400">Loading…</div>
-                  ) : items.length === 0 ? (
+                  ) : total === 0 ? (
                     <div className="text-sm text-slate-400">No questions yet.</div>
                   ) : (
-                    <ul className="space-y-3">
-                      {items.map((q) => (
-                        <li
-                          key={q.id ?? `${q.created_at}-${q.question_text}`}
-                          className="rounded-xl border border-white/10 bg-black/20 px-4 py-3"
-                        >
-                          <div className="text-sm leading-relaxed text-slate-100">
-                            {q.question_text}
-                          </div>
-                          {q.created_at ? (
-                            <div className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-500">
-                              {new Date(q.created_at).toLocaleString()}
+                    <div className="space-y-4">
+                      {promptGroups.map(([promptKey, items]) => (
+                        <div key={promptKey} className="rounded-xl border border-white/10 bg-black/15">
+                          <div className="border-b border-white/10 px-4 py-3">
+                            <div className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                              Prompt
                             </div>
-                          ) : null}
-                        </li>
+                            <div className="mt-1 text-sm font-semibold text-slate-100">
+                              {promptKey}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500">{items.length}</div>
+                          </div>
+                          <ul className="space-y-3 px-4 py-3">
+                            {items.map((q) => (
+                              <li
+                                key={q.id ?? `${q.created_at}-${q.question_text}`}
+                                className="rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+                              >
+                                <div className="text-sm leading-relaxed text-slate-100">
+                                  {q.question_text}
+                                </div>
+                                {q.created_at ? (
+                                  <div className="mt-2 text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-500">
+                                    {new Date(q.created_at).toLocaleString()}
+                                  </div>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
               </section>
