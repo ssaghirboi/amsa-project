@@ -11,8 +11,10 @@ import {
   subscribeToEventState,
 } from '../supabase/eventState'
 
-const TYPE_MS = 32
-const HANDOFF_MS = 1000
+/** Per-character delay during overlay typewriter (higher = slower). */
+const TYPE_MS = 58
+/** Matches `bigscreen-prompt-handoff` duration in index.css */
+const HANDOFF_MS = 1150
 
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
@@ -431,21 +433,34 @@ export default function BigScreen() {
           aria-busy={introPhase === 'typing'}
         >
           <div className="pointer-events-none flex w-full max-w-6xl flex-col items-center justify-center">
-            <p
+            <div
               key={prompt}
-              className={`text-center font-semibold leading-tight tracking-tight text-slate-100 drop-shadow-[0_18px_45px_rgba(0,0,0,0.55)] ${
-                introPhase === 'typing'
-                  ? 'text-[clamp(1.5rem,6vw,4.5rem)]'
-                  : introPhase === 'shrinking' && handoffActive
-                    ? 'text-[clamp(1.5rem,6vw,4.5rem)] bigscreen-prompt-handoff'
-                    : 'text-[clamp(1.5rem,6vw,4.5rem)]'
+              className={`w-full text-center ${
+                introPhase === 'typing' ? 'bigscreen-prompt-type-rise' : ''
               }`}
+              style={
+                introPhase === 'typing' && (prompt ?? '').length > 0
+                  ? {
+                      animationDuration: `${(prompt ?? '').length * TYPE_MS}ms`,
+                    }
+                  : undefined
+              }
             >
-              {introPhase === 'typing' ? introText : prompt}
-              {introPhase === 'typing' ? (
-                <span className="ml-1 inline-block h-[1em] w-[0.08em] animate-pulse rounded-sm bg-indigo-300/70 align-middle" />
-              ) : null}
-            </p>
+              <p
+                className={`text-center font-semibold leading-tight tracking-tight text-slate-100 drop-shadow-[0_18px_45px_rgba(0,0,0,0.55)] ${
+                  introPhase === 'typing'
+                    ? 'text-[clamp(1.5rem,6vw,4.5rem)]'
+                    : introPhase === 'shrinking' && handoffActive
+                      ? 'text-[clamp(1.5rem,6vw,4.5rem)] bigscreen-prompt-handoff'
+                      : 'text-[clamp(1.5rem,6vw,4.5rem)]'
+                }`}
+              >
+                {introPhase === 'typing' ? introText : prompt}
+                {introPhase === 'typing' ? (
+                  <span className="ml-1 inline-block h-[1em] w-[0.08em] animate-pulse rounded-sm bg-indigo-300/70 align-middle" />
+                ) : null}
+              </p>
+            </div>
           </div>
         </div>
       ) : null}

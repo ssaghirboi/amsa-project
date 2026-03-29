@@ -14,7 +14,27 @@ body {
   background-attachment: fixed;
 }
 
-/* Event screen: prompt intro → header handoff (used by BigScreen.jsx) */
+/* Event screen: full-screen type rises into place while typing (BigScreen.jsx) */
+@keyframes bigscreen-prompt-type-rise {
+  from {
+    transform: translateY(min(26vh, 11rem));
+    opacity: 0.72;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.bigscreen-prompt-type-rise {
+  animation-name: bigscreen-prompt-type-rise;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+  animation-iteration-count: 1;
+  will-change: transform, opacity;
+}
+
+/* Then shrinks and travels up into the prompt card */
 @keyframes bigscreen-prompt-handoff {
   0% {
     transform: translateY(0) scale(1);
@@ -22,15 +42,27 @@ body {
     filter: blur(0);
   }
   100% {
-    transform: translateY(calc(-1 * min(36vh, 15rem))) scale(0.48);
-    opacity: 0.92;
-    filter: blur(0.2px);
+    transform: translateY(calc(-1 * min(40vh, 17rem))) scale(0.42);
+    opacity: 0;
+    filter: blur(0.35px);
   }
 }
 
 .bigscreen-prompt-handoff {
-  animation: bigscreen-prompt-handoff 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: bigscreen-prompt-handoff 1.15s cubic-bezier(0.2, 0.85, 0.15, 1) forwards;
   will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bigscreen-prompt-type-rise {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  .bigscreen-prompt-handoff {
+    animation: bigscreen-prompt-handoff 0.35s ease-out forwards;
+  }
 }
 
 /* Presentation slideshow (BigScreen.jsx) */
