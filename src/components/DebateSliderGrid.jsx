@@ -56,7 +56,32 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
           showBorderBottom ? 'border-b border-white/[0.06]' : ''
         }`}
       >
-        {/* Five column washes — full width of table panel */}
+        {/* Desktop: floating label over left of grid (no separate column) */}
+        <div className="pointer-events-none absolute bottom-0 left-3 top-0 z-20 hidden w-[min(30vw,11rem)] items-center justify-start md:flex">
+          <span
+            className="text-left text-[0.7rem] font-semibold uppercase leading-snug tracking-[0.22em] text-slate-100/95 sm:text-xs sm:leading-tight"
+            style={{
+              textShadow:
+                '0 0 32px rgba(0,0,0,0.95), 0 2px 12px rgba(0,0,0,0.9), 0 1px 2px rgba(0,0,0,1)',
+            }}
+          >
+            {rowLabel}
+          </span>
+        </div>
+        {/* Mobile: centered above track */}
+        <div className="pointer-events-none absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
+          <span
+            className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-100/90"
+            style={{
+              textShadow:
+                '0 0 24px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.85)',
+            }}
+          >
+            {rowLabel}
+          </span>
+        </div>
+
+        {/* Five column washes — full width */}
         <div className="absolute inset-0 flex w-full">
           {SCALE_COLUMNS.map((col) => (
             <div
@@ -162,81 +187,39 @@ export function DebateSliderGrid({
         </div>
       ) : null}
 
-      {/* Grid: labels outside the colored table; centered in left rail */}
-      <div className="flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#030303] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)] md:flex-row md:items-stretch">
-        <aside className="hidden shrink-0 flex-col border-t border-white/[0.08] md:flex md:w-[min(10.5rem,28vw)] md:border-t-0 md:border-r md:border-white/[0.08]">
-          <div
-            className="hidden min-h-[4.75rem] border-b border-white/[0.07] bg-black/50 sm:min-h-[5.5rem] md:block"
-            aria-hidden
-          />
-          {labels.map((label, i) => (
+      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
+          {SCALE_COLUMNS.map((col) => (
             <div
-              key={PANEL_VISUALS[i].key}
-              className="flex min-h-[5.5rem] items-center justify-center border-b border-white/[0.06] px-3 py-4 text-center last:border-b-0 sm:min-h-[6.25rem] md:border-b md:px-2"
+              key={col.label}
+              className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
             >
-              <span className="max-w-[10rem] text-[0.65rem] font-semibold uppercase leading-snug tracking-[0.2em] text-slate-200 sm:text-xs">
-                {label}
+              <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                {col.label}
               </span>
             </div>
           ))}
-        </aside>
+        </div>
 
-        <div className="relative min-w-0 flex-1">
+        <div className="relative">
           <div
-            className="pointer-events-none absolute inset-0 opacity-[0.07] md:rounded-r-2xl"
+            className="pointer-events-none absolute inset-0 opacity-[0.07]"
             style={{
               backgroundImage: `radial-gradient(circle at 20% 30%, rgba(120,40,40,0.15) 0%, transparent 45%),
                 radial-gradient(circle at 80% 70%, rgba(20,80,50,0.12) 0%, transparent 40%)`,
             }}
             aria-hidden
           />
-          {/* Column headers */}
-          <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
-            {SCALE_COLUMNS.map((col) => (
-              <div
-                key={col.label}
-                className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
-              >
-                <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
-                  {col.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Mobile: label above each slider block */}
-          <div className="relative md:hidden">
-            {panelists.map((value, i) => (
-              <div key={PANEL_VISUALS[i].key}>
-                <div className="bg-black/35 px-3 py-2.5 text-center">
-                  <span className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-300">
-                    {labels[i]}
-                  </span>
-                </div>
-                <SliderRow
-                  value={value}
-                  index={i}
-                  iconUrl={panelistIcons[i]}
-                  rowLabel={labels[i]}
-                  showBorderBottom={i < panelists.length - 1}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop: slider rows only */}
-          <div className="relative hidden md:block">
-            {panelists.map((value, i) => (
-              <SliderRow
-                key={PANEL_VISUALS[i].key}
-                value={value}
-                index={i}
-                iconUrl={panelistIcons[i]}
-                rowLabel={labels[i]}
-                showBorderBottom={i < panelists.length - 1}
-              />
-            ))}
-          </div>
+          {panelists.map((value, i) => (
+            <SliderRow
+              key={PANEL_VISUALS[i].key}
+              value={value}
+              index={i}
+              iconUrl={panelistIcons[i]}
+              rowLabel={labels[i]}
+              showBorderBottom={i < panelists.length - 1}
+            />
+          ))}
         </div>
       </div>
     </div>
