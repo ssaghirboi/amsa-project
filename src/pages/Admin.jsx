@@ -638,7 +638,9 @@ export default function Admin() {
           <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-medium text-slate-200">Panelist Sliders</h2>
-              <div className="text-xs text-slate-400">Range: 1 (low) to 5 (high)</div>
+              <div className="text-xs text-slate-400">
+                1 = Strongly Agree, 5 = Strongly Disagree (same left→right as the event screen)
+              </div>
             </div>
 
             <div className="mt-4 space-y-5">
@@ -648,21 +650,23 @@ export default function Admin() {
                     <div className="text-sm font-medium text-slate-200">{panelLabels[i]}</div>
                     <div className="text-sm font-semibold text-indigo-200">{value}</div>
                   </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    value={value}
-                    onChange={(e) => {
-                      const nextVal = Number(e.target.value)
-                      const next = [...panelists]
-                      next[i] = nextVal
-                      setPanelists(next)
-                      commit(prompt, next)
-                    }}
-                    className="h-2 w-full cursor-pointer accent-indigo-400"
-                  />
+                  <div dir="rtl" className="w-full">
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      step={1}
+                      value={value}
+                      onChange={(e) => {
+                        const nextVal = Number(e.target.value)
+                        const next = [...panelists]
+                        next[i] = nextVal
+                        setPanelists(next)
+                        commit(prompt, next)
+                      }}
+                      className="h-2 w-full cursor-pointer accent-indigo-400"
+                    />
+                  </div>
 
                   <div className="space-y-1">
                     <label className="block text-xs font-medium text-slate-400">

@@ -10,17 +10,21 @@ const PANEL_VISUALS = [
   { key: 'P4', dot: 'bg-lime-600', glow: 'shadow-[0_0_32px_rgba(101,163,13,0.5)]' },
 ]
 
-/** Left → right matches value 1 → 5 on the event state sliders */
+/**
+ * Left → right: Strongly Disagree … Strongly Agree (red → green).
+ * Stored values stay 1 = Strongly Agree … 5 = Strongly Disagree; thumb position is mirrored so
+ * agree sits on the green side and disagree on the red side.
+ */
 const SCALE_COLUMNS = [
   {
-    label: 'Strongly Agree',
-    bar: 'from-rose-300 via-rose-200 to-red-200',
-    edge: 'border-rose-400/90',
+    label: 'Strongly Disagree',
+    bar: 'from-red-950 via-red-800 to-rose-900',
+    edge: 'border-red-900/95',
   },
   {
-    label: 'Slightly Agree',
+    label: 'Disagree',
     bar: 'from-orange-300 via-amber-200 to-orange-100',
-    edge: 'border-orange-400/85',
+    edge: 'border-orange-500/80',
   },
   {
     label: 'Neutral',
@@ -28,22 +32,23 @@ const SCALE_COLUMNS = [
     edge: 'border-slate-400/90',
   },
   {
-    label: 'Slightly Disagree',
-    bar: 'from-teal-200 via-emerald-200 to-slate-200',
-    edge: 'border-teal-400/85',
+    label: 'Agree',
+    bar: 'from-teal-200 via-emerald-200 to-green-100',
+    edge: 'border-emerald-500/75',
   },
   {
-    label: 'Strongly Disagree',
-    bar: 'from-emerald-300 via-green-200 to-emerald-200',
-    edge: 'border-emerald-500/80',
+    label: 'Strongly Agree',
+    bar: 'from-emerald-800 via-green-800 to-emerald-950',
+    edge: 'border-emerald-900/95',
   },
 ]
 
-/** Snap thumb to horizontal center of each of the five equal columns (10% … 90%). */
+/** Snap thumb to column centers (10% … 90%). Value 1 = agree (right / green); 5 = disagree (left / red). */
 function valueToThumbPercent(value) {
   const v = typeof value === 'number' ? value : Number(value)
   const clamped = Number.isFinite(v) ? Math.max(1, Math.min(5, Math.round(v))) : 1
-  return ((clamped - 0.5) / 5) * 100
+  const colFromLeft = 5 - clamped
+  return ((colFromLeft + 0.5) / 5) * 100
 }
 
 function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true }) {
@@ -60,7 +65,7 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
         {/* Mobile: centered above track (desktop labels sit in left margin beside table) */}
         <div className="pointer-events-none absolute left-0 right-0 top-1.5 z-20 flex justify-center md:hidden">
           <span
-            className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-800"
+            className="text-base font-semibold uppercase tracking-[0.16em] text-slate-800 sm:text-lg"
             style={{
               textShadow: '0 1px 0 rgba(255,255,255,0.8)',
             }}
@@ -186,7 +191,7 @@ export function DebateSliderGrid({
       <div className="flex w-full justify-center px-3 sm:px-4">
         <div className="relative w-full max-w-6xl">
           {/* Desktop row labels in the left margin (not part of the table card) */}
-          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[13rem] flex-col items-end md:flex lg:mr-5 lg:w-[14rem]">
+          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[15rem] flex-col items-end md:flex lg:mr-5 lg:w-[17rem]">
             {/* Spacer matches the table header row height */}
             <div className="min-h-[4.25rem] shrink-0 sm:min-h-[5rem]" aria-hidden />
             {labels.map((label, i) => (
@@ -194,7 +199,7 @@ export function DebateSliderGrid({
                 key={PANEL_VISUALS[i].key}
                 className="flex min-h-[6rem] items-center justify-end sm:min-h-[6.75rem]"
               >
-                <span className="text-right text-sm font-semibold uppercase leading-tight tracking-[0.16em] text-slate-800 sm:text-base sm:tracking-[0.14em]">
+                <span className="text-right text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-800 sm:text-lg sm:tracking-[0.12em]">
                   {label}
                 </span>
               </div>
@@ -209,7 +214,7 @@ export function DebateSliderGrid({
                   key={col.label}
                   className="border-r border-slate-400/80 px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
                 >
-                  <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-700 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                  <span className="block text-xs font-semibold uppercase leading-tight tracking-[0.1em] text-slate-700 sm:text-sm sm:tracking-[0.12em]">
                     {col.label}
                   </span>
                 </div>
@@ -220,8 +225,8 @@ export function DebateSliderGrid({
               <div
                 className="pointer-events-none absolute inset-0 opacity-[0.45]"
                 style={{
-                  backgroundImage: `radial-gradient(circle at 20% 30%, rgba(251,113,133,0.18) 0%, transparent 45%),
-                radial-gradient(circle at 80% 70%, rgba(52,211,153,0.16) 0%, transparent 40%)`,
+                  backgroundImage: `radial-gradient(circle at 18% 32%, rgba(127,29,29,0.22) 0%, transparent 46%),
+                radial-gradient(circle at 82% 68%, rgba(6,78,59,0.2) 0%, transparent 42%)`,
                 }}
                 aria-hidden
               />

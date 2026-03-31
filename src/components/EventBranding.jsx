@@ -1,4 +1,4 @@
-import eventLogoSvg from '../assets/IS GOD REAL (Print Flyer).svg?url'
+import eventLogoSvg from '../assets/IS GOD REAL (A4).svg?url'
 
 /**
  * Official event logo (SVG). Height-capped so it never dominates the viewport.
@@ -51,8 +51,8 @@ export function EventBranding({
         className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
         decoding="async"
         fetchPriority="high"
-        width={736}
-        height={442}
+        width={746}
+        height={447}
       />
     </div>
   )
