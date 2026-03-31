@@ -253,8 +253,8 @@ export default function McPage() {
           </div>
         ) : null}
 
-        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-6 lg:mt-8 lg:grid lg:min-h-0 lg:grid-cols-[minmax(18rem,28vw)_1fr] lg:items-stretch lg:gap-8">
-          <aside className="flex min-h-[22rem] shrink-0 flex-col rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:min-h-[24rem] sm:p-7 lg:min-h-0 lg:h-full lg:max-h-none">
+        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-hidden lg:mt-8 lg:grid lg:min-h-0 lg:grid-cols-[minmax(18rem,28vw)_1fr] lg:items-stretch lg:gap-8">
+          <aside className="flex min-h-[18rem] shrink-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:min-h-[20rem] sm:p-7 lg:min-h-0 lg:h-full lg:max-h-none">
             <div className="flex shrink-0 items-baseline justify-between gap-3">
               <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-300/90">
                 Panelist questions
@@ -262,7 +262,7 @@ export default function McPage() {
               <span className="text-xs text-slate-500">{mcQuestionsStatus}</span>
             </div>
 
-            <div className="mt-5 grid min-h-0 flex-1 grid-rows-4 gap-3 sm:gap-4 lg:min-h-[12rem]">
+            <div className="mt-5 grid min-h-0 flex-1 grid-rows-4 gap-3 overflow-y-auto pr-1 sm:gap-4 lg:min-h-[12rem]">
               {PANELISTS.map((p) => {
                 const q = mcQuestions?.panelists?.[p.key] ?? null
                 return (
@@ -293,7 +293,7 @@ export default function McPage() {
             </div>
           </aside>
 
-          <section className="flex min-h-[50vh] flex-1 flex-col lg:min-h-0">
+          <section className="flex min-h-0 flex-1 flex-col lg:min-h-0">
             {slideshowActive ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
@@ -339,8 +339,8 @@ export default function McPage() {
                   </button>
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-1 py-8 text-center sm:px-3 sm:py-10 lg:py-12">
-                  <p className="w-full max-w-[min(100%,92vw)] text-balance break-words text-pretty text-[clamp(2.65rem,9.5vw,8.25rem)] font-semibold leading-[1.05] tracking-tight text-slate-50 [overflow-wrap:anywhere]">
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-1 py-6 text-center sm:px-3 sm:py-8 lg:py-10">
+                  <p className="w-full max-w-[min(100%,80vw)] text-balance break-words text-pretty text-[clamp(1.75rem,4.5vw,3.4rem)] font-semibold leading-[1.12] tracking-tight text-slate-50 [overflow-wrap:anywhere]">
                     {prompt?.trim() ? prompt.trim() : 'Waiting for the current prompt…'}
                   </p>
                 </div>

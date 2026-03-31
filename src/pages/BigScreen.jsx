@@ -36,7 +36,10 @@ function RevealPromptChars({ text, visibleCount, className = '' }) {
 }
 
 const FULLSCREEN_PROMPT_BODY =
-  '!text-[clamp(1.45rem,3.8vw,2.5rem)] sm:!text-[clamp(1.65rem,4.2vw,3rem)] md:!text-[clamp(1.85rem,4.8vw,3.5rem)] lg:!text-[clamp(2rem,5.2vw,4rem)] !leading-[1.12]'
+  '!text-[clamp(1.8rem,4.3vw,2.9rem)] sm:!text-[clamp(2rem,4.7vw,3.35rem)] md:!text-[clamp(2.1rem,5vw,3.75rem)] lg:!text-[clamp(2.25rem,5.4vw,4rem)] !leading-[1.12]'
+// Final debate-screen prompt above sliders: slightly more compact than fullscreen intro.
+const DEBATE_PROMPT_BODY =
+  '!text-[clamp(1.4rem,3vw,2.2rem)] sm:!text-[clamp(1.6rem,3.4vw,2.45rem)] md:!text-[clamp(1.75rem,3.6vw,2.7rem)] lg:!text-[clamp(1.9rem,3.8vw,2.9rem)] !leading-[1.14]'
 const FULLSCREEN_PROMPT_INNER =
   '!flex !min-h-0 !flex-col !justify-center !px-6 !py-10 sm:!px-10 sm:!py-14 md:!px-14 md:!py-16'
 
@@ -524,7 +527,7 @@ export default function BigScreen() {
           promptBoxHidden={showOverlay}
           tableOpacity={debateTableOpacity}
           promptInnerClassName={FULLSCREEN_PROMPT_INNER}
-          promptBodyClassName={FULLSCREEN_PROMPT_BODY}
+          promptBodyClassName={DEBATE_PROMPT_BODY}
         />
       </div>
 
