@@ -8,7 +8,7 @@ import {
   writeEventState,
 } from '../supabase/eventState'
 import { clampPresentationSlideIndex } from '../constants/presentationSlides'
-import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
+import { QA_EJAZ_SUBTITLE, QA_EJAZ_TITLE, QA_SLIDE_COUNT, QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
 import {
   GENERAL_TARGET_KEY,
   PANELIST_DISPLAY_NAMES,
@@ -62,6 +62,7 @@ export default function McPage() {
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
+  const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
   const [presentationSlides, setPresentationSlides] = useState([])
   const [status, setStatus] = useState('Connecting…')
   const [error, setError] = useState('')
@@ -87,6 +88,7 @@ export default function McPage() {
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+      setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
       setPresentationSlides(next.presentationSlides ?? [])
       setMcQuestions(incomingMc)
       setMcQuestionsStatus(
@@ -110,6 +112,7 @@ export default function McPage() {
           slideshowActive: Boolean(next.slideshowActive),
           slideshowIndex: next.slideshowIndex ?? 0,
           qaSlideshowActive: Boolean(next.qaSlideshowActive),
+          qaSlideshowIndex: next.qaSlideshowIndex ?? 0,
           mcQuestions: emptyMcQuestions(nextPrompt),
         }).catch(() => {})
       }
@@ -195,6 +198,7 @@ export default function McPage() {
         slideshowActive: false,
         slideshowIndex,
         qaSlideshowActive: false,
+        qaSlideshowIndex: 0,
         mcQuestions: emptyMcQuestions(firstPrompt, { skipDebateIntro: true }),
       })
       setStatus('Live')
@@ -223,6 +227,32 @@ export default function McPage() {
         slideshowIndex,
         qaSlideshowActive: false,
         mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
+      })
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const goQaSlide = async (delta) => {
+    if (!qaSlideshowActive) return
+    const len = QA_SLIDE_COUNT
+    const next = (qaSlideshowIndex + delta + len) % len
+    setStatus('Updating…')
+    setError('')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive: true,
+        qaSlideshowIndex: next,
+        mcQuestions,
       })
       setStatus('Live')
     } catch (e) {
@@ -260,6 +290,7 @@ export default function McPage() {
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
+        qaSlideshowIndex,
         mcQuestions: nextMc,
       })
       setStatus('Live')
@@ -424,13 +455,44 @@ export default function McPage() {
           <section className="flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
-                <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
-                  <div className="shrink-0 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
-                    Q&amp;A — end
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Q&amp;A — end · slide {qaSlideshowIndex + 1}/{QA_SLIDE_COUNT}
                   </div>
-                  <p className="mt-8 text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
-                    {QA_SLIDESHOW_TITLE}
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => goQaSlide(-1)}
+                      disabled={status === 'Updating…'}
+                      className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => goQaSlide(1)}
+                      disabled={status === 'Updating…'}
+                      className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
+                  {qaSlideshowIndex === 0 ? (
+                    <p className="text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
+                      {QA_SLIDESHOW_TITLE}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
+                        {QA_EJAZ_TITLE}
+                      </p>
+                      <p className="mt-4 max-w-xl text-pretty text-lg text-slate-400 sm:text-xl">
+                        {QA_EJAZ_SUBTITLE}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             ) : slideshowActive ? (

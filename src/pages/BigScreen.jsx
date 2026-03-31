@@ -7,7 +7,12 @@ import {
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
-import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
+import {
+  QA_EJAZ_SUBTITLE,
+  QA_EJAZ_TITLE,
+  QA_SLIDE_COUNT,
+  QA_SLIDESHOW_TITLE,
+} from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
 import {
   fetchCurrentEventState,
@@ -52,6 +57,7 @@ export default function BigScreen() {
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
+  const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
   const [presentationSlides, setPresentationSlides] = useState(() =>
     mergePresentationSlidesFromRemote(null),
   )
@@ -100,6 +106,7 @@ export default function BigScreen() {
     setSlideshowActive(Boolean(next.slideshowActive))
     setSlideshowIndex(next.slideshowIndex ?? 0)
     setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+    setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
     setPresentationSlides(
       mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
     )
@@ -484,24 +491,52 @@ export default function BigScreen() {
     </div>
   )
 
+  const qaDots = (
+    <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
+      {Array.from({ length: QA_SLIDE_COUNT }, (_, i) => (
+        <span
+          key={i}
+          className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${
+            i === qaSlideshowIndex
+              ? 'scale-110 bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.45)]'
+              : 'scale-100 bg-slate-300/90'
+          }`}
+          aria-hidden
+        />
+      ))}
+    </div>
+  )
+
   const qaSlideshowContent = (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-800">
       <div className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-20 -translate-x-1/2 drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]">
         <EventBranding variant="presentationCorner" className="shrink-0" />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col items-center px-4 pb-10 pt-[clamp(6.5rem,18vh,11rem)]">
-        <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
-          {QA_SLIDESHOW_TITLE}
-        </h1>
-        <div className="mt-8 flex min-h-0 flex-1 flex-col items-center justify-center sm:mt-10">
-          <img
-            src={qrDoesGodExist}
-            alt=""
-            className="h-[min(58vmin,26rem)] w-[min(58vmin,26rem)] max-w-[92vw] rounded-2xl bg-white shadow-[0_18px_50px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/10"
-            draggable={false}
-          />
+      {qaSlideshowIndex === 0 ? (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-6 pt-[clamp(6.5rem,18vh,11rem)]">
+          <div className="flex flex-col items-center">
+            <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
+              {QA_SLIDESHOW_TITLE}
+            </h1>
+            <img
+              src={qrDoesGodExist}
+              alt=""
+              className="mt-3 h-[min(58vmin,26rem)] w-[min(58vmin,26rem)] max-w-[92vw] rounded-2xl bg-white shadow-[0_18px_50px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/10 sm:mt-4"
+              draggable={false}
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-8 pt-[clamp(6.5rem,18vh,11rem)] text-center">
+          <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
+            {QA_EJAZ_TITLE}
+          </h1>
+          <p className="mt-5 max-w-2xl text-xl text-slate-600 sm:mt-7 sm:text-2xl md:text-3xl lg:text-4xl">
+            {QA_EJAZ_SUBTITLE}
+          </p>
+        </div>
+      )}
+      {qaDots}
     </div>
   )
 

@@ -4,6 +4,7 @@ import {
   PRESENTATION_SLIDE_COUNT,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
+import { QA_SLIDE_COUNT } from '../constants/qaSlideshow'
 import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import {
@@ -13,6 +14,7 @@ import {
   shouldPanelistIconsMigrate,
   shouldPresentationSlidesMigrate,
   shouldSyncPresentationSlidesFromRemote,
+  shouldQaSlideshowIndexMigrate,
   shouldQaSlideshowMigrate,
   shouldSlideshowMigrate,
   subscribeToEventState,
@@ -30,6 +32,7 @@ export default function Admin() {
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
+  const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
   const [presentationSlides, setPresentationSlides] = useState(() =>
     mergePresentationSlidesFromRemote(null),
   )
@@ -52,6 +55,7 @@ export default function Admin() {
     slideshowActive: false,
     slideshowIndex: 0,
     qaSlideshowActive: false,
+    qaSlideshowIndex: 0,
   })
 
   const PANELIST_ICON_BUCKET = 'panelist-icons'
@@ -65,6 +69,7 @@ export default function Admin() {
       slideshowActive,
       slideshowIndex,
       qaSlideshowActive,
+      qaSlideshowIndex,
     }
   })
 
@@ -107,6 +112,7 @@ export default function Admin() {
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
+        qaSlideshowIndex,
       })
       setStatus('Live')
     } catch (e) {
@@ -135,6 +141,7 @@ export default function Admin() {
           setSlideshowActive(Boolean(current.slideshowActive))
           setSlideshowIndex(current.slideshowIndex ?? 0)
           setQaSlideshowActive(Boolean(current.qaSlideshowActive))
+          setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
           setPresentationSlides(
             mergePresentationSlidesFromRemote(current.presentationSlides ?? null),
           )
@@ -149,7 +156,9 @@ export default function Admin() {
         setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
         setShowPanelistIconsMigrateBanner(shouldPanelistIconsMigrate())
         setShowPresentationSlidesMigrateBanner(shouldPresentationSlidesMigrate())
-        setShowQaSlideshowMigrateBanner(shouldQaSlideshowMigrate())
+        setShowQaSlideshowMigrateBanner(
+          shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
+        )
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
@@ -168,6 +177,7 @@ export default function Admin() {
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+      setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
       if (shouldSyncPresentationSlidesFromRemote()) {
         setPresentationSlides(
           mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
@@ -213,6 +223,7 @@ export default function Admin() {
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
+        qaSlideshowIndex,
       })
       setStatus('Live')
     } catch (e) {
@@ -244,6 +255,7 @@ export default function Admin() {
       slideshowActive: ctx.slideshowActive,
       slideshowIndex: ctx.slideshowIndex,
       qaSlideshowActive: ctx.qaSlideshowActive,
+      qaSlideshowIndex: ctx.qaSlideshowIndex,
     }).catch((e) => {
       setError(e?.message || String(e))
     })
@@ -340,6 +352,7 @@ export default function Admin() {
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
+        qaSlideshowIndex,
       })
       setStatus('Live')
     } catch (e) {
@@ -363,6 +376,7 @@ export default function Admin() {
         slideshowActive: next,
         slideshowIndex: idx,
         qaSlideshowActive: next ? false : qaSlideshowActive,
+        qaSlideshowIndex,
       })
       setSlideshowActive(next)
       setSlideshowIndex(idx)
@@ -370,7 +384,9 @@ export default function Admin() {
       setStatus('Live')
       setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
       setShowPresentationSlidesMigrateBanner(shouldPresentationSlidesMigrate())
-      setShowQaSlideshowMigrateBanner(shouldQaSlideshowMigrate())
+      setShowQaSlideshowMigrateBanner(
+        shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
+      )
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -391,11 +407,15 @@ export default function Admin() {
         slideshowActive: next ? false : slideshowActive,
         slideshowIndex,
         qaSlideshowActive: next,
+        qaSlideshowIndex: next ? 0 : qaSlideshowIndex,
       })
       if (next) setSlideshowActive(false)
       setQaSlideshowActive(next)
+      if (next) setQaSlideshowIndex(0)
       setStatus('Live')
-      setShowQaSlideshowMigrateBanner(shouldQaSlideshowMigrate())
+      setShowQaSlideshowMigrateBanner(
+        shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
+      )
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -418,8 +438,35 @@ export default function Admin() {
         slideshowActive: true,
         slideshowIndex: next,
         qaSlideshowActive,
+        qaSlideshowIndex,
       })
       setSlideshowIndex(next)
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const handleQaSlide = async (delta) => {
+    if (!qaSlideshowActive) return
+    const len = QA_SLIDE_COUNT
+    const next = (qaSlideshowIndex + delta + len) % len
+    cancelPendingPresentationSlideSave()
+    setStatus('Updating...')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive: true,
+        qaSlideshowIndex: next,
+      })
+      setQaSlideshowIndex(next)
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
@@ -504,9 +551,9 @@ export default function Admin() {
             <div>
               <h2 className="text-sm font-medium text-slate-900">Q&A and end</h2>
               <p className="mt-1 text-xs text-slate-500">
-                Separate title slide on <code className="text-slate-600">/screen</code> (&quot;Audience Q&amp;A&quot;), centered QR
-                (no label). The ask page shows the same title while this is on. Mutually exclusive with the main
-                slideshow above.
+                Two Q&amp;A end slides on <code className="text-slate-600">/screen</code>: (1) &quot;Audience Q&amp;A&quot; with a
+                centered QR—title sits directly above the code; (2) &quot;Ejaz Arshad&quot; title card with subtext. Use
+                Previous/Next Q&amp;A slide below when this is on. Mutually exclusive with the main slideshow.
               </p>
             </div>
             <button
@@ -523,16 +570,41 @@ export default function Admin() {
             </button>
           </div>
 
+          {qaSlideshowActive ? (
+            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <span className="text-sm text-slate-700">
+                Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleQaSlide(-1)}
+                disabled={status === 'Updating...'}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Previous Q&amp;A slide
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQaSlide(1)}
+                disabled={status === 'Updating...'}
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+              >
+                Next Q&amp;A slide
+              </button>
+            </div>
+          ) : null}
+
           {showQaSlideshowMigrateBanner ? (
             <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
-              <p className="font-medium text-amber-950">Q&A slideshow flag is not saved to the database yet</p>
+              <p className="font-medium text-amber-950">Q&A slideshow columns are not saved to the database yet</p>
               <p className="mt-1 text-amber-900/90">
-                In Supabase → SQL Editor, run:{' '}
-                <code className="rounded bg-black/10 px-1.5 py-0.5 text-xs">
-                  alter table public.event_state add column if not exists qa_slideshow_active boolean default false;
-                </code>{' '}
-                Then refresh this page.
+                In Supabase → SQL Editor, run:
               </p>
+              <pre className="mt-2 overflow-x-auto rounded bg-black/10 p-2 text-[0.65rem] leading-relaxed text-amber-950">
+                {`alter table public.event_state add column if not exists qa_slideshow_active boolean default false;
+alter table public.event_state add column if not exists qa_slideshow_index int default 0;`}
+              </pre>
+              <p className="mt-2 text-amber-900/90">Then refresh this page.</p>
             </div>
           ) : null}
 

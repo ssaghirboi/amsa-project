@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
-import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
+import {
+  QA_EJAZ_SUBTITLE,
+  QA_EJAZ_TITLE,
+  QA_SLIDESHOW_TITLE,
+} from '../constants/qaSlideshow'
 import { GENERAL_TARGET_KEY, PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
@@ -41,6 +45,7 @@ async function insertQuestion(supabase, { targetPanelist, question, prompt }) {
 export default function Audience() {
   const [prompt, setPrompt] = useState('')
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
+  const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
   /** `'general'` or panel index `'1'`…`'4'` */
   const [targetPanel, setTargetPanel] = useState('1')
   const [question, setQuestion] = useState('')
@@ -67,12 +72,14 @@ export default function Audience() {
       if (current) {
         setPrompt(current.prompt)
         setQaSlideshowActive(Boolean(current.qaSlideshowActive))
+        setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
       }
     })()
 
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt)
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+      setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
     })
 
     return () => {
@@ -120,13 +127,26 @@ export default function Audience() {
               <h2 className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-600 sm:text-[0.75rem]">
                 Prompt
               </h2>
-              <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-medium leading-snug tracking-tight text-slate-900">
-                {qaSlideshowActive
-                  ? QA_SLIDESHOW_TITLE
-                  : prompt?.trim()
-                    ? prompt.trim()
-                    : 'Waiting for the prompt...'}
-              </p>
+              {qaSlideshowActive ? (
+                qaSlideshowIndex === 0 ? (
+                  <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-medium leading-snug tracking-tight text-slate-900">
+                    {QA_SLIDESHOW_TITLE}
+                  </p>
+                ) : (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-semibold leading-snug tracking-tight text-slate-900">
+                      {QA_EJAZ_TITLE}
+                    </p>
+                    <p className="text-balance text-[clamp(0.95rem,1.9vw,1.2rem)] font-medium leading-snug text-slate-600">
+                      {QA_EJAZ_SUBTITLE}
+                    </p>
+                  </div>
+                )
+              ) : (
+                <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-medium leading-snug tracking-tight text-slate-900">
+                  {prompt?.trim() ? prompt.trim() : 'Waiting for the prompt...'}
+                </p>
+              )}
             </div>
           </header>
 

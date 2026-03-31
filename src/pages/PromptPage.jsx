@@ -5,11 +5,16 @@ import {
   fetchCurrentEventState,
   subscribeToEventState,
 } from '../supabase/eventState'
-import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
+import {
+  QA_EJAZ_SUBTITLE,
+  QA_EJAZ_TITLE,
+  QA_SLIDESHOW_TITLE,
+} from '../constants/qaSlideshow'
 
 export default function PromptPage() {
   const [prompt, setPrompt] = useState('')
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
+  const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
 
   useEffect(() => {
     let unsubscribe = null
@@ -19,12 +24,14 @@ export default function PromptPage() {
       if (current) {
         setPrompt(current.prompt ?? '')
         setQaSlideshowActive(Boolean(current.qaSlideshowActive))
+        setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
       }
     })()
 
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt ?? '')
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+      setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
     })
 
     const pollMs = 2500
@@ -34,6 +41,7 @@ export default function PromptPage() {
           if (next) {
             setPrompt(next.prompt ?? '')
             setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+            setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
           }
         })
         .catch(() => {})
@@ -45,11 +53,9 @@ export default function PromptPage() {
     }
   }, [])
 
-  const text = qaSlideshowActive
-    ? QA_SLIDESHOW_TITLE
-    : prompt?.trim()
-      ? prompt.trim()
-      : 'Waiting for the current prompt…'
+  const debateText = prompt?.trim()
+    ? prompt.trim()
+    : 'Waiting for the current prompt…'
 
   return (
     <div className="relative min-h-[100dvh] min-h-screen bg-[#010101] text-slate-100">
@@ -61,9 +67,20 @@ export default function PromptPage() {
       </div>
 
       <main className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center px-3 pb-16 pt-[clamp(8rem,22vh,14rem)] sm:px-5 sm:pb-20 md:px-8 lg:px-12">
-        <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
-          {text}
-        </p>
+        {qaSlideshowActive && qaSlideshowIndex === 1 ? (
+          <div className="w-full max-w-[min(100%,92vw)] space-y-6 text-center lg:max-w-[min(100%,85rem)]">
+            <p className="text-balance text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
+              {QA_EJAZ_TITLE}
+            </p>
+            <p className="text-balance text-[clamp(1.25rem,4vw,2.5rem)] font-medium leading-snug text-slate-400">
+              {QA_EJAZ_SUBTITLE}
+            </p>
+          </div>
+        ) : (
+          <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
+            {qaSlideshowActive ? QA_SLIDESHOW_TITLE : debateText}
+          </p>
+        )}
       </main>
     </div>
   )
