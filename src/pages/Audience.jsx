@@ -97,26 +97,22 @@ export default function Audience() {
 
   return (
     <div className="relative min-h-[100dvh] min-h-screen bg-slate-100 text-slate-900">
-      <div
-        className="pointer-events-none fixed z-20 left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))]"
-        aria-hidden
-      >
-        <EventBranding variant="presentationCorner" className="shrink-0" />
-      </div>
-
-      <main className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center px-3 pb-16 pt-[clamp(8rem,22vh,14rem)] sm:px-5 sm:pb-20 md:px-8 lg:px-12">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 rounded-3xl border border-slate-200/80 bg-white/95 p-6 text-sm shadow-[0_22px_80px_rgba(15,23,42,0.18)] backdrop-blur-sm sm:p-8 md:p-10 lg:max-w-5xl lg:text-base">
-          <header className="space-y-3 border-b border-white/10 pb-6 md:pb-7">
+      <main className="flex min-h-[100dvh] min-h-screen w-full items-start justify-center px-3 pb-10 pt-6 sm:px-5 sm:pb-14 sm:pt-8 md:px-8 lg:px-12">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 rounded-[2rem] border border-slate-200/80 bg-white/95 p-5 text-sm shadow-[0_22px_80px_rgba(15,23,42,0.18)] backdrop-blur-sm sm:gap-7 sm:p-7 md:p-8 lg:max-w-5xl lg:text-base">
+          <div className="flex flex-col items-center gap-4 sm:gap-5">
+            <EventBranding centered className="w-full max-w-[18rem] sm:max-w-[20rem]" />
+          </div>
+          <header className="mt-2 w-full space-y-3 border-b border-slate-100 pb-5 md:pb-6">
             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-slate-500 sm:text-xs">
               Share your thoughts
             </p>
-            <p className="text-xs font-medium uppercase tracking-[0.32em] text-slate-500 sm:text-[0.72rem]">
-              Current prompt
-            </p>
-            <div className="mt-2 rounded-2xl border border-slate-300/80 bg-slate-50 px-4 py-4 text-center shadow-inner sm:px-6 sm:py-5">
-              <h1 className="text-balance text-[clamp(1.1rem,2.5vw,1.6rem)] font-semibold leading-snug tracking-tight text-slate-900">
+            <div className="mt-1 rounded-2xl border border-slate-300/80 bg-slate-50 px-4 py-4 text-center shadow-inner sm:px-6 sm:py-5">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-600 sm:text-[0.75rem]">
+                Prompt
+              </h2>
+              <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-medium leading-snug tracking-tight text-slate-900">
                 {prompt?.trim() ? prompt.trim() : 'Waiting for the prompt...'}
-              </h1>
+              </p>
             </div>
           </header>
 

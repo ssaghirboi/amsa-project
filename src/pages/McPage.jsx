@@ -172,6 +172,32 @@ export default function McPage() {
     }
   }
 
+  const goFirstPrompt = async () => {
+    if (slideshowActive) return
+    const firstPrompt = promptSequence?.[0]
+    if (!firstPrompt) return
+
+    setStatus('Updating…')
+    setError('')
+    const resetPanelists = [3, 3, 3, 3]
+    try {
+      await writeEventState(supabase, {
+        prompt: firstPrompt,
+        panelists: resetPanelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        slideshowActive: false,
+        slideshowIndex,
+        mcQuestions: emptyMcQuestions(firstPrompt, { skipDebateIntro: true }),
+      })
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
   const goPrevPrompt = async () => {
     if (slideshowActive) return
     const prevPromptText = prevInfo.prev
@@ -200,6 +226,7 @@ export default function McPage() {
 
   const nextPromptDisabled = status === 'Updating…' || !nextInfo.next
   const prevPromptDisabled = status === 'Updating…' || !prevInfo.prev
+  const firstPromptDisabled = status === 'Updating…' || !promptSequence?.[0]
 
   return (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col bg-[#010101] text-slate-100">
@@ -233,6 +260,14 @@ export default function McPage() {
                   className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-8 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
                 >
                   Previous prompt
+                </button>
+                <button
+                  type="button"
+                  onClick={goFirstPrompt}
+                  disabled={firstPromptDisabled}
+                  className="min-h-[3.25rem] min-w-[8.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-6 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-8 sm:text-lg"
+                >
+                  Reset to first
                 </button>
                 <button
                   type="button"
