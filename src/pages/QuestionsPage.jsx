@@ -311,6 +311,41 @@ export default function QuestionsPage() {
     }
   }
 
+  const clearPushedFromMc = async (panelKey) => {
+    if (!eventState || !pushed) return
+    setPushError('')
+    setPushStatus('Updating…')
+    try {
+      const nextMc = {
+        prompt: String(eventState.prompt ?? ''),
+        panelists: {
+          'Panelist 1': pushed.panelists?.['Panelist 1'] ?? null,
+          'Panelist 2': pushed.panelists?.['Panelist 2'] ?? null,
+          'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
+          'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
+        },
+      }
+      nextMc.panelists[panelKey] = null
+
+      await writeEventState(supabase, {
+        prompt: eventState.prompt ?? '',
+        panelists: eventState.panelists ?? [3, 3, 3, 3],
+        panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
+        promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
+        presentationSlides: eventState.presentationSlides ?? [],
+        slideshowActive: Boolean(eventState.slideshowActive),
+        slideshowIndex: eventState.slideshowIndex ?? 0,
+        mcQuestions: nextMc,
+      })
+
+      setPushStatus('Updated')
+      setTimeout(() => setPushStatus(''), 900)
+    } catch (e) {
+      setPushError(e?.message || String(e))
+      setPushStatus('')
+    }
+  }
+
   const grouped = useMemo(() => {
     // If prompt snapshot exists and at least one question is tagged for the current prompt,
     // show only those. Otherwise, keep showing untagged questions (prevents “flash then disappear”).
@@ -347,48 +382,49 @@ export default function QuestionsPage() {
   }, [questions])
 
   return (
-    <div className="min-h-screen text-slate-100">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-10">
-        <EventBranding centered className="mb-6" />
-
-        <div className="rounded-2xl border border-white/10 bg-slate-900/35 p-6 backdrop-blur sm:p-7">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="min-w-0 text-balance text-3xl font-semibold leading-tight tracking-tight text-slate-50 sm:text-4xl md:text-5xl">
-              {eventPrompt?.trim() ? eventPrompt.trim() : 'Waiting for the current prompt…'}
-            </h1>
-            <div className="shrink-0 text-right">
-              <button
-                type="button"
-                onClick={clearAllQuestions}
-                className="rounded-xl border border-white/15 bg-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={clearStatus === 'Clearing…'}
-                title="Clear all questions"
-              >
-                {clearStatus ? clearStatus : 'Clear'}
-              </button>
-              {pushStatus ? (
-                <div className="mt-2 text-xs font-medium text-indigo-300">• {pushStatus}</div>
-              ) : null}
+    <div className="min-h-screen bg-slate-100 text-slate-900">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-5 sm:py-8 lg:px-10">
+        <div className="sticky top-[max(0.75rem,env(safe-area-inset-top))] z-20 space-y-4 pb-4">
+          <EventBranding centered className="mx-auto w-full max-w-[18rem] sm:max-w-[20rem]" />
+          <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.18)] sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="min-w-0 text-balance text-xl font-semibold leading-snug tracking-tight text-slate-900 sm:text-2xl md:text-[1.75rem]">
+                {eventPrompt?.trim() ? eventPrompt.trim() : 'Waiting for the current prompt…'}
+              </h1>
+              <div className="shrink-0 text-right">
+                <button
+                  type="button"
+                  onClick={clearAllQuestions}
+                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-700 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={clearStatus === 'Clearing…'}
+                  title="Clear all questions"
+                >
+                  {clearStatus ? clearStatus : 'Clear'}
+                </button>
+                {pushStatus ? (
+                  <div className="mt-2 text-xs font-medium text-indigo-600">• {pushStatus}</div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
 
         {error ? (
-          <div className="mt-5 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/95">
+          <div className="mt-4 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm text-red-900">
             {error}
           </div>
         ) : null}
 
         {pushError ? (
-          <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/95">
+          <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-sm text-amber-900">
             {pushError}
           </div>
         ) : null}
 
         {/* MC dashboard (pushed questions) */}
-        <div className="mt-6 rounded-3xl border border-white/10 bg-slate-900/30 p-6 backdrop-blur sm:p-7">
+        <div className="mt-4 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm sm:p-7">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-300/90">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-600">
               Panelist questions
             </h2>
             <span className="text-xs text-slate-500">pushed to MC</span>
@@ -400,20 +436,27 @@ export default function QuestionsPage() {
               return (
                 <div
                   key={p.key}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4"
+                  className="flex flex-col rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
                 >
-                  <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-500">
                     {p.title}
                   </div>
-                  <div className="mt-2 text-sm leading-relaxed text-slate-100">
-                    {q?.question_text ? q.question_text : (
-                      <span className="text-slate-500">No question yet.</span>
-                    )}
+                  <div className="mt-2 text-sm leading-relaxed text-slate-900">
+                    {q?.question_text ? q.question_text : <span className="text-slate-500">No question yet.</span>}
                   </div>
                   {q?.created_at ? (
-                    <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
+                    <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-500">
                       {new Date(q.created_at).toLocaleTimeString()}
                     </div>
+                  ) : null}
+                  {q?.question_text ? (
+                    <button
+                      type="button"
+                      onClick={() => clearPushedFromMc(p.key)}
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Remove from MC
+                    </button>
                   ) : null}
                 </div>
               )
@@ -434,98 +477,84 @@ export default function QuestionsPage() {
             return (
               <section
                 key={p.key}
-                className="rounded-2xl border border-white/10 bg-slate-900/30 backdrop-blur"
+                className="rounded-2xl border border-slate-200 bg-white/95 shadow-sm"
               >
-                <div className="flex items-baseline justify-between gap-3 border-b border-white/10 px-5 py-4">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-200/90">
+                <div className="flex items-baseline justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-700">
                     {p.title}
                   </h2>
-                  <span className="text-xs font-medium text-slate-400">
+                  <span className="text-xs font-medium text-slate-500">
                     {total}
                   </span>
                 </div>
 
-                <div className="border-b border-white/10 px-5 py-4">
-                  <div className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="border-b border-slate-200 px-5 py-4">
+                  <div className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-500">
                     Currently pushed to MC
                   </div>
-                  <div className="mt-2 text-sm text-slate-100">
+                  <div className="mt-2 text-sm text-slate-900">
                     {pushedQ?.question_text ? pushedQ.question_text : (
                       <span className="text-slate-500">None</span>
                     )}
                   </div>
                 </div>
 
-                <div className="max-h-[70vh] overflow-auto px-5 py-4">
+                <div className="max-h-[55vh] overflow-auto px-5 py-4">
                   {loading ? (
                     <div className="text-sm text-slate-400">Loading…</div>
                   ) : total === 0 ? (
                     <div className="text-sm text-slate-400">No questions yet.</div>
                   ) : (
-                    <div className="space-y-4">
-                      {promptGroups.map(([promptKey, items]) => (
-                        <div key={promptKey} className="rounded-xl border border-white/10 bg-black/15">
-                          <div className="border-b border-white/10 px-4 py-3">
-                            <div className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                              Prompt
+                    <div className="space-y-3">
+                      {promptGroups.flatMap(([, items]) =>
+                        items.map((q) => (
+                          <div
+                            key={q.id ?? `${q.created_at}-${q.question_text}`}
+                            className={`rounded-xl border bg-slate-50 px-4 py-3 ${
+                              pushedQ?.id != null &&
+                              q.id != null &&
+                              String(pushedQ.id) === String(q.id)
+                                ? 'border-indigo-400/60'
+                                : 'border-slate-200'
+                            }`}
+                          >
+                            <div className="text-sm leading-relaxed text-slate-900">
+                              {q.question_text}
                             </div>
-                            <div className="mt-1 text-sm font-semibold text-slate-100">
-                              {promptKey}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500">{items.length}</div>
-                          </div>
-                          <ul className="space-y-3 px-4 py-3">
-                            {items.map((q) => (
-                              <li
-                                key={q.id ?? `${q.created_at}-${q.question_text}`}
-                                className={`rounded-xl border bg-black/20 px-4 py-3 ${
-                                  pushedQ?.id != null && q.id != null && String(pushedQ.id) === String(q.id)
-                                    ? 'border-indigo-400/50'
-                                    : 'border-white/10'
-                                }`}
-                              >
-                                <div className="text-sm leading-relaxed text-slate-100">
-                                  {q.question_text}
-                                </div>
-                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                                  <button
-                                    type="button"
-                                    onClick={() => pushToMc(p.key, q)}
-                                    disabled={
-                                      !eventState ||
-                                      (hasPromptColumn &&
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                              <button
+                                type="button"
+                                onClick={() => pushToMc(p.key, q)}
+                                disabled={
+                                  !eventState ||
+                                  (hasPromptColumn &&
+                                    activePromptKey &&
+                                    hasPromptSnapshot(q) &&
+                                    normalizePrompt(q.prompt) !== activePromptKey)
+                                }
+                                title={
+                                  !eventState
+                                    ? 'Connecting to event state…'
+                                    : hasPromptColumn &&
                                         activePromptKey &&
                                         hasPromptSnapshot(q) &&
-                                        normalizePrompt(q.prompt) !== activePromptKey)
-                                    }
-                                    title={
-                                      !eventState
-                                        ? 'Connecting to event state…'
-                                        : hasPromptColumn &&
-                                            activePromptKey &&
-                                            hasPromptSnapshot(q) &&
-                                            normalizePrompt(q.prompt) !== activePromptKey
-                                          ? 'This question was submitted under a different prompt.'
-                                          : 'Push this question to the MC screen'
-                                    }
-                                    className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
-                                  >
-                                    Push to MC
-                                  </button>
-                                  {q.created_at ? (
-                                    <div className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-500">
-                                      {new Date(q.created_at).toLocaleString()}
-                                    </div>
-                                  ) : null}
+                                        normalizePrompt(q.prompt) !== activePromptKey
+                                      ? 'This question was submitted under a different prompt.'
+                                      : 'Push this question to the MC screen'
+                                }
+                                className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Push to MC
+                              </button>
+                              {q.created_at ? (
+                                <div className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-500">
+                                  {new Date(q.created_at).toLocaleString()}
                                 </div>
-                                {q.created_at ? (
-                                  null
-                                ) : null}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
+                              ) : null}
+                            </div>
+                          </div>
+                        )),
+                      )}
                     </div>
                   )}
                 </div>
