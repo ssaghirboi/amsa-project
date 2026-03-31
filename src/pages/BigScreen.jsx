@@ -8,10 +8,8 @@ import {
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
 import {
-  QA_EJAZ_SUBTITLE,
-  QA_EJAZ_TITLE,
   QA_SLIDE_COUNT,
-  QA_SLIDESHOW_TITLE,
+  mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
 import {
@@ -60,6 +58,9 @@ export default function BigScreen() {
   const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
   const [presentationSlides, setPresentationSlides] = useState(() =>
     mergePresentationSlidesFromRemote(null),
+  )
+  const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
+    mergeQaSlidesFromRemote(null),
   )
   // When turning slideshow OFF, keep the logo identical (no jump),
   // then fade in the rest of the debate UI.
@@ -110,6 +111,7 @@ export default function BigScreen() {
     setPresentationSlides(
       mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
     )
+    setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
   }
 
   useEffect(() => {
@@ -514,14 +516,14 @@ export default function BigScreen() {
       </div>
       {qaSlideshowIndex === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-6 pt-[clamp(6.5rem,18vh,11rem)]">
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-10 sm:gap-12">
             <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
-              {QA_SLIDESHOW_TITLE}
+              {qaSlideshowSlides[0]?.title ?? ''}
             </h1>
             <img
               src={qrDoesGodExist}
               alt=""
-              className="mt-3 h-[min(58vmin,26rem)] w-[min(58vmin,26rem)] max-w-[92vw] rounded-2xl bg-white shadow-[0_18px_50px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/10 sm:mt-4"
+              className="h-[min(58vmin,26rem)] w-[min(58vmin,26rem)] max-w-[92vw] rounded-2xl bg-white shadow-[0_18px_50px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/10"
               draggable={false}
             />
           </div>
@@ -529,10 +531,10 @@ export default function BigScreen() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-8 pt-[clamp(6.5rem,18vh,11rem)] text-center">
           <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
-            {QA_EJAZ_TITLE}
+            {qaSlideshowSlides[1]?.title ?? ''}
           </h1>
           <p className="mt-5 max-w-2xl text-xl text-slate-600 sm:mt-7 sm:text-2xl md:text-3xl lg:text-4xl">
-            {QA_EJAZ_SUBTITLE}
+            {qaSlideshowSlides[1]?.subtitle ?? ''}
           </p>
         </div>
       )}

@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
-import {
-  QA_EJAZ_SUBTITLE,
-  QA_EJAZ_TITLE,
-  QA_SLIDESHOW_TITLE,
-} from '../constants/qaSlideshow'
+import { mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
 import { GENERAL_TARGET_KEY, PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
@@ -46,6 +42,9 @@ export default function Audience() {
   const [prompt, setPrompt] = useState('')
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
   const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
+  const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
+    mergeQaSlidesFromRemote(null),
+  )
   /** `'general'` or panel index `'1'`…`'4'` */
   const [targetPanel, setTargetPanel] = useState('1')
   const [question, setQuestion] = useState('')
@@ -73,6 +72,7 @@ export default function Audience() {
         setPrompt(current.prompt)
         setQaSlideshowActive(Boolean(current.qaSlideshowActive))
         setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
+        setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
       }
     })()
 
@@ -80,6 +80,7 @@ export default function Audience() {
       setPrompt(next.prompt)
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
+      setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
     })
 
     return () => {
@@ -130,15 +131,15 @@ export default function Audience() {
               {qaSlideshowActive ? (
                 qaSlideshowIndex === 0 ? (
                   <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-medium leading-snug tracking-tight text-slate-900">
-                    {QA_SLIDESHOW_TITLE}
+                    {qaSlideshowSlides[0]?.title ?? ''}
                   </p>
                 ) : (
                   <div className="mt-2 space-y-2">
                     <p className="text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-semibold leading-snug tracking-tight text-slate-900">
-                      {QA_EJAZ_TITLE}
+                      {qaSlideshowSlides[1]?.title ?? ''}
                     </p>
                     <p className="text-balance text-[clamp(0.95rem,1.9vw,1.2rem)] font-medium leading-snug text-slate-600">
-                      {QA_EJAZ_SUBTITLE}
+                      {qaSlideshowSlides[1]?.subtitle ?? ''}
                     </p>
                   </div>
                 )

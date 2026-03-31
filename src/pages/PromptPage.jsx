@@ -5,16 +5,15 @@ import {
   fetchCurrentEventState,
   subscribeToEventState,
 } from '../supabase/eventState'
-import {
-  QA_EJAZ_SUBTITLE,
-  QA_EJAZ_TITLE,
-  QA_SLIDESHOW_TITLE,
-} from '../constants/qaSlideshow'
+import { mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
 
 export default function PromptPage() {
   const [prompt, setPrompt] = useState('')
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
   const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
+  const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
+    mergeQaSlidesFromRemote(null),
+  )
 
   useEffect(() => {
     let unsubscribe = null
@@ -25,6 +24,7 @@ export default function PromptPage() {
         setPrompt(current.prompt ?? '')
         setQaSlideshowActive(Boolean(current.qaSlideshowActive))
         setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
+        setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
       }
     })()
 
@@ -32,6 +32,7 @@ export default function PromptPage() {
       setPrompt(next.prompt ?? '')
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
+      setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
     })
 
     const pollMs = 2500
@@ -42,6 +43,7 @@ export default function PromptPage() {
             setPrompt(next.prompt ?? '')
             setQaSlideshowActive(Boolean(next.qaSlideshowActive))
             setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
+            setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
           }
         })
         .catch(() => {})
@@ -70,15 +72,15 @@ export default function PromptPage() {
         {qaSlideshowActive && qaSlideshowIndex === 1 ? (
           <div className="w-full max-w-[min(100%,92vw)] space-y-6 text-center lg:max-w-[min(100%,85rem)]">
             <p className="text-balance text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
-              {QA_EJAZ_TITLE}
+              {qaSlideshowSlides[1]?.title ?? ''}
             </p>
             <p className="text-balance text-[clamp(1.25rem,4vw,2.5rem)] font-medium leading-snug text-slate-400">
-              {QA_EJAZ_SUBTITLE}
+              {qaSlideshowSlides[1]?.subtitle ?? ''}
             </p>
           </div>
         ) : (
           <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
-            {qaSlideshowActive ? QA_SLIDESHOW_TITLE : debateText}
+            {qaSlideshowActive ? qaSlideshowSlides[0]?.title ?? '' : debateText}
           </p>
         )}
       </main>

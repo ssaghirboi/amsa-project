@@ -4,7 +4,10 @@ import {
   PRESENTATION_SLIDE_COUNT,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
-import { QA_SLIDE_COUNT } from '../constants/qaSlideshow'
+import {
+  QA_SLIDE_COUNT,
+  mergeQaSlidesFromRemote,
+} from '../constants/qaSlideshow'
 import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import {
@@ -16,7 +19,9 @@ import {
   shouldSyncPresentationSlidesFromRemote,
   shouldQaSlideshowIndexMigrate,
   shouldQaSlideshowMigrate,
+  shouldQaSlideshowSlidesMigrate,
   shouldSlideshowMigrate,
+  shouldSyncQaSlidesFromRemote,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
@@ -36,6 +41,9 @@ export default function Admin() {
   const [presentationSlides, setPresentationSlides] = useState(() =>
     mergePresentationSlidesFromRemote(null),
   )
+  const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
+    mergeQaSlidesFromRemote(null),
+  )
   const [status, setStatus] = useState('Connecting...')
   const [error, setError] = useState('')
   const [showMigrateBanner, setShowMigrateBanner] = useState(false)
@@ -44,14 +52,19 @@ export default function Admin() {
   const [showPresentationSlidesMigrateBanner, setShowPresentationSlidesMigrateBanner] =
     useState(false)
   const [showQaSlideshowMigrateBanner, setShowQaSlideshowMigrateBanner] = useState(false)
+  const [showQaSlidesCopyMigrateBanner, setShowQaSlidesCopyMigrateBanner] = useState(false)
 
   const presentationSlidesSaveTimerRef = useRef(null)
   const presentationSlidesLatestRef = useRef(null)
+  const qaSlidesSaveTimerRef = useRef(null)
+  const qaSlidesLatestRef = useRef(null)
   const writeContextRef = useRef({
     prompt: '',
     panelists: [1, 1, 1, 1],
     panelistIcons: [null, null, null, null],
     promptSequence: DEFAULT_PROMPT_SEQUENCE,
+    presentationSlides: mergePresentationSlidesFromRemote(null),
+    qaSlideshowSlides: mergeQaSlidesFromRemote(null),
     slideshowActive: false,
     slideshowIndex: 0,
     qaSlideshowActive: false,
@@ -66,6 +79,8 @@ export default function Admin() {
       panelists,
       panelistIcons,
       promptSequence,
+      presentationSlides,
+      qaSlideshowSlides,
       slideshowActive,
       slideshowIndex,
       qaSlideshowActive,
@@ -109,6 +124,7 @@ export default function Admin() {
         panelistIcons: next,
         promptSequence,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
@@ -145,6 +161,7 @@ export default function Admin() {
           setPresentationSlides(
             mergePresentationSlidesFromRemote(current.presentationSlides ?? null),
           )
+          setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
           if (current.promptSequence?.length) {
             setPromptSequence(current.promptSequence)
             setPromptSequenceDraft([...current.promptSequence])
@@ -159,6 +176,7 @@ export default function Admin() {
         setShowQaSlideshowMigrateBanner(
           shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
         )
+        setShowQaSlidesCopyMigrateBanner(shouldQaSlideshowSlidesMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
@@ -167,6 +185,7 @@ export default function Admin() {
         setShowPanelistIconsMigrateBanner(false)
         setShowPresentationSlidesMigrateBanner(false)
         setShowQaSlideshowMigrateBanner(false)
+        setShowQaSlidesCopyMigrateBanner(false)
       }
     })()
 
@@ -182,6 +201,9 @@ export default function Admin() {
         setPresentationSlides(
           mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
         )
+      }
+      if (shouldSyncQaSlidesFromRemote()) {
+        setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       }
       if (!next.promptSequence?.length) return
       const remote = next.promptSequence.map((s) => String(s))
@@ -201,6 +223,10 @@ export default function Admin() {
         clearTimeout(presentationSlidesSaveTimerRef.current)
         presentationSlidesSaveTimerRef.current = null
       }
+      if (qaSlidesSaveTimerRef.current) {
+        clearTimeout(qaSlidesSaveTimerRef.current)
+        qaSlidesSaveTimerRef.current = null
+      }
     }
   }, [])
 
@@ -210,6 +236,7 @@ export default function Admin() {
     sequenceToSave = promptSequence,
     nextPanelistIcons = panelistIcons,
     nextPresentationSlides = presentationSlides,
+    nextQaSlideshowSlides = qaSlideshowSlides,
   ) => {
     cancelPendingPresentationSlideSave()
     setStatus('Updating...')
@@ -220,6 +247,7 @@ export default function Admin() {
         panelistIcons: nextPanelistIcons,
         promptSequence: sequenceToSave,
         presentationSlides: nextPresentationSlides,
+        qaSlideshowSlides: nextQaSlideshowSlides,
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
@@ -238,6 +266,11 @@ export default function Admin() {
       presentationSlidesSaveTimerRef.current = null
     }
     presentationSlidesLatestRef.current = null
+    if (qaSlidesSaveTimerRef.current) {
+      clearTimeout(qaSlidesSaveTimerRef.current)
+      qaSlidesSaveTimerRef.current = null
+    }
+    qaSlidesLatestRef.current = null
   }
 
   const flushPresentationSlidesSave = () => {
@@ -252,6 +285,29 @@ export default function Admin() {
       panelistIcons: ctx.panelistIcons,
       promptSequence: ctx.promptSequence,
       presentationSlides: slides,
+      qaSlideshowSlides: ctx.qaSlideshowSlides,
+      slideshowActive: ctx.slideshowActive,
+      slideshowIndex: ctx.slideshowIndex,
+      qaSlideshowActive: ctx.qaSlideshowActive,
+      qaSlideshowIndex: ctx.qaSlideshowIndex,
+    }).catch((e) => {
+      setError(e?.message || String(e))
+    })
+  }
+
+  const flushQaSlidesSave = () => {
+    const slides = qaSlidesLatestRef.current
+    qaSlidesLatestRef.current = null
+    if (!slides) return
+    const ctx = writeContextRef.current
+    setError('')
+    writeEventState(supabase, {
+      prompt: ctx.prompt,
+      panelists: ctx.panelists,
+      panelistIcons: ctx.panelistIcons,
+      promptSequence: ctx.promptSequence,
+      presentationSlides: ctx.presentationSlides,
+      qaSlideshowSlides: slides,
       slideshowActive: ctx.slideshowActive,
       slideshowIndex: ctx.slideshowIndex,
       qaSlideshowActive: ctx.qaSlideshowActive,
@@ -274,6 +330,22 @@ export default function Admin() {
     presentationSlidesSaveTimerRef.current = setTimeout(() => {
       presentationSlidesSaveTimerRef.current = null
       flushPresentationSlidesSave()
+    }, 350)
+  }
+
+  const patchQaSlide = (index, partial) => {
+    const next = qaSlideshowSlides.map((s, i) =>
+      i === index ? { ...s, ...partial } : s,
+    )
+    const normalized = mergeQaSlidesFromRemote(next)
+    setQaSlideshowSlides(normalized)
+    qaSlidesLatestRef.current = normalized
+    if (qaSlidesSaveTimerRef.current) {
+      clearTimeout(qaSlidesSaveTimerRef.current)
+    }
+    qaSlidesSaveTimerRef.current = setTimeout(() => {
+      qaSlidesSaveTimerRef.current = null
+      flushQaSlidesSave()
     }, 350)
   }
 
@@ -349,6 +421,7 @@ export default function Admin() {
         panelistIcons,
         promptSequence: next,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
@@ -373,6 +446,7 @@ export default function Admin() {
         panelistIcons,
         promptSequence,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive: next,
         slideshowIndex: idx,
         qaSlideshowActive: next ? false : qaSlideshowActive,
@@ -387,6 +461,7 @@ export default function Admin() {
       setShowQaSlideshowMigrateBanner(
         shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
       )
+      setShowQaSlidesCopyMigrateBanner(shouldQaSlideshowSlidesMigrate())
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -404,6 +479,7 @@ export default function Admin() {
         panelistIcons,
         promptSequence,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive: next ? false : slideshowActive,
         slideshowIndex,
         qaSlideshowActive: next,
@@ -416,6 +492,7 @@ export default function Admin() {
       setShowQaSlideshowMigrateBanner(
         shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
       )
+      setShowQaSlidesCopyMigrateBanner(shouldQaSlideshowSlidesMigrate())
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -435,6 +512,7 @@ export default function Admin() {
         panelistIcons,
         promptSequence,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive: true,
         slideshowIndex: next,
         qaSlideshowActive,
@@ -461,6 +539,7 @@ export default function Admin() {
         panelistIcons,
         promptSequence,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive: true,
@@ -547,77 +626,16 @@ export default function Admin() {
             </button>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5">
-            <div>
-              <h2 className="text-sm font-medium text-slate-900">Q&A and end</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Two Q&amp;A end slides on <code className="text-slate-600">/screen</code>: (1) &quot;Audience Q&amp;A&quot; with a
-                centered QR—title sits directly above the code; (2) &quot;Ejaz Arshad&quot; title card with subtext. Use
-                Previous/Next Q&amp;A slide below when this is on. Mutually exclusive with the main slideshow.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleToggleQaSlideshow}
-              disabled={status === 'Updating...'}
-              className={
-                qaSlideshowActive
-                  ? 'rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(16,185,129,0.25)] transition hover:bg-emerald-500 disabled:opacity-60'
-                  : 'rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-white disabled:opacity-60'
-              }
-            >
-              {qaSlideshowActive ? 'Q&A slideshow ON' : 'Q&A slideshow OFF'}
-            </button>
-          </div>
-
-          {qaSlideshowActive ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <span className="text-sm text-slate-700">
-                Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleQaSlide(-1)}
-                disabled={status === 'Updating...'}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
-              >
-                Previous Q&amp;A slide
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQaSlide(1)}
-                disabled={status === 'Updating...'}
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
-              >
-                Next Q&amp;A slide
-              </button>
-            </div>
-          ) : null}
-
-          {showQaSlideshowMigrateBanner ? (
-            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
-              <p className="font-medium text-amber-950">Q&A slideshow columns are not saved to the database yet</p>
-              <p className="mt-1 text-amber-900/90">
-                In Supabase → SQL Editor, run:
-              </p>
-              <pre className="mt-2 overflow-x-auto rounded bg-black/10 p-2 text-[0.65rem] leading-relaxed text-amber-950">
-                {`alter table public.event_state add column if not exists qa_slideshow_active boolean default false;
-alter table public.event_state add column if not exists qa_slideshow_index int default 0;`}
-              </pre>
-              <p className="mt-2 text-amber-900/90">Then refresh this page.</p>
-            </div>
-          ) : null}
-
           {slideshowActive ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-black/20 p-3">
-              <span className="text-sm text-slate-300">
+            <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <span className="text-sm text-slate-700">
                 Slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT}
               </span>
               <button
                 type="button"
                 onClick={() => handlePresentationSlide(-1)}
                 disabled={status === 'Updating...'}
-                className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10 disabled:opacity-60"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:opacity-60"
               >
                 Previous slide
               </button>
@@ -625,7 +643,7 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                 type="button"
                 onClick={() => handlePresentationSlide(1)}
                 disabled={status === 'Updating...'}
-                className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:opacity-60"
+                className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-60"
               >
                 Next slide
               </button>
@@ -923,6 +941,127 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
               slideshow to the database (survives refresh).
             </p>
           </div>
+
+          <section className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-sm font-medium text-slate-900">Event screen — Q&amp;A end slideshow</h2>
+                <p className="mt-1 text-xs text-slate-500">
+                  Two slides on <code className="text-slate-600">/screen</code>: (1) title above the QR code; (2) title
+                  card with subtitle. Control slides here only—the MC cannot change them. Mutually exclusive with the main
+                  slideshow.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleQaSlideshow}
+                disabled={status === 'Updating...'}
+                className={
+                  qaSlideshowActive
+                    ? 'rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_20px_rgba(16,185,129,0.25)] transition hover:bg-emerald-500 disabled:opacity-60'
+                    : 'rounded-lg border border-slate-300 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-white disabled:opacity-60'
+                }
+              >
+                {qaSlideshowActive ? 'Q&A slideshow ON' : 'Q&A slideshow OFF'}
+              </button>
+            </div>
+
+            {qaSlideshowActive ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <span className="text-sm text-slate-700">
+                  Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleQaSlide(-1)}
+                  disabled={status === 'Updating...'}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:opacity-60"
+                >
+                  Previous Q&amp;A slide
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQaSlide(1)}
+                  disabled={status === 'Updating...'}
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+                >
+                  Next Q&amp;A slide
+                </button>
+              </div>
+            ) : null}
+
+            {showQaSlideshowMigrateBanner ? (
+              <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
+                <p className="font-medium text-amber-950">Q&amp;A slideshow columns are not saved to the database yet</p>
+                <p className="mt-1 text-amber-900/90">In Supabase → SQL Editor, run:</p>
+                <pre className="mt-2 overflow-x-auto rounded bg-black/10 p-2 text-[0.65rem] leading-relaxed text-amber-950">
+                  {`alter table public.event_state add column if not exists qa_slideshow_active boolean default false;
+alter table public.event_state add column if not exists qa_slideshow_index int default 0;`}
+                </pre>
+                <p className="mt-2 text-amber-900/90">Then refresh this page.</p>
+              </div>
+            ) : null}
+
+            {showQaSlidesCopyMigrateBanner ? (
+              <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
+                <p className="font-medium text-amber-950">Q&amp;A slide text is not saved to the database yet</p>
+                <p className="mt-1 text-amber-900/90">
+                  In Supabase → SQL Editor, run:{' '}
+                  <code className="rounded bg-black/20 px-1.5 py-0.5 text-xs">
+                    alter table public.event_state add column if not exists qa_slideshow_slides jsonb default null;
+                  </code>{' '}
+                  Then refresh. Edited copy syncs to the event screen, /ask, and the MC preview.
+                </p>
+              </div>
+            ) : null}
+
+            <div className="mt-6 space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div>
+                <h3 className="text-sm font-medium text-slate-900">Q&amp;A slideshow text</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Edit what appears on each Q&amp;A end slide on <code className="text-slate-600">/screen</code>. Changes
+                  save after a short pause.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="mb-2 text-xs font-medium text-slate-600">Slide 1 · Audience Q&amp;A + QR</div>
+                  <label className="block space-y-1">
+                    <span className="text-xs text-slate-500">Title</span>
+                    <input
+                      type="text"
+                      value={qaSlideshowSlides[0]?.title ?? ''}
+                      onChange={(e) => patchQaSlide(0, { title: e.target.value })}
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </label>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="mb-2 text-xs font-medium text-slate-600">Slide 2 · Title card</div>
+                  <div className="space-y-2">
+                    <label className="block space-y-1">
+                      <span className="text-xs text-slate-500">Title</span>
+                      <input
+                        type="text"
+                        value={qaSlideshowSlides[1]?.title ?? ''}
+                        onChange={(e) => patchQaSlide(1, { title: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-xs text-slate-500">Subtitle</span>
+                      <input
+                        type="text"
+                        value={qaSlideshowSlides[1]?.subtitle ?? ''}
+                        onChange={(e) => patchQaSlide(1, { subtitle: e.target.value })}
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ import {
   writeEventState,
 } from '../supabase/eventState'
 import { clampPresentationSlideIndex } from '../constants/presentationSlides'
-import { QA_EJAZ_SUBTITLE, QA_EJAZ_TITLE, QA_SLIDE_COUNT, QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
+import { QA_SLIDE_COUNT, mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
 import {
   GENERAL_TARGET_KEY,
   PANELIST_DISPLAY_NAMES,
@@ -68,6 +68,9 @@ export default function McPage() {
   const [error, setError] = useState('')
   const [mcQuestions, setMcQuestions] = useState(null)
   const [mcQuestionsStatus, setMcQuestionsStatus] = useState('—')
+  const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
+    mergeQaSlidesFromRemote(null),
+  )
 
   useEffect(() => {
     let unsubscribe = null
@@ -89,6 +92,7 @@ export default function McPage() {
       setSlideshowIndex(next.slideshowIndex ?? 0)
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
+      setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       setPresentationSlides(next.presentationSlides ?? [])
       setMcQuestions(incomingMc)
       setMcQuestionsStatus(
@@ -113,6 +117,7 @@ export default function McPage() {
           slideshowIndex: next.slideshowIndex ?? 0,
           qaSlideshowActive: Boolean(next.qaSlideshowActive),
           qaSlideshowIndex: next.qaSlideshowIndex ?? 0,
+          qaSlideshowSlides: mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null),
           mcQuestions: emptyMcQuestions(nextPrompt),
         }).catch(() => {})
       }
@@ -168,6 +173,7 @@ export default function McPage() {
         panelistIcons,
         promptSequence: nextInfo.seq,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive: false,
         slideshowIndex,
         qaSlideshowActive: false,
@@ -195,6 +201,7 @@ export default function McPage() {
         panelistIcons,
         promptSequence,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive: false,
         slideshowIndex,
         qaSlideshowActive: false,
@@ -223,36 +230,11 @@ export default function McPage() {
         panelistIcons,
         promptSequence: prevInfo.seq,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive: false,
         slideshowIndex,
         qaSlideshowActive: false,
         mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
-      })
-      setStatus('Live')
-    } catch (e) {
-      setError(e?.message || String(e))
-      setStatus('Live (write failed)')
-    }
-  }
-
-  const goQaSlide = async (delta) => {
-    if (!qaSlideshowActive) return
-    const len = QA_SLIDE_COUNT
-    const next = (qaSlideshowIndex + delta + len) % len
-    setStatus('Updating…')
-    setError('')
-    try {
-      await writeEventState(supabase, {
-        prompt,
-        panelists,
-        panelistIcons,
-        promptSequence,
-        presentationSlides,
-        slideshowActive,
-        slideshowIndex,
-        qaSlideshowActive: true,
-        qaSlideshowIndex: next,
-        mcQuestions,
       })
       setStatus('Live')
     } catch (e) {
@@ -287,6 +269,7 @@ export default function McPage() {
         panelistIcons,
         promptSequence,
         presentationSlides,
+        qaSlideshowSlides,
         slideshowActive,
         slideshowIndex,
         qaSlideshowActive,
@@ -306,11 +289,9 @@ export default function McPage() {
   const prevPromptDisabled = status === 'Updating…' || !prevInfo.prev
   const firstPromptDisabled = status === 'Updating…' || !promptSequence?.[0]
 
-  const generalPushed = mcQuestions?.panelists?.[GENERAL_TARGET_KEY] ?? null
-
   return (
-    <div className="relative flex min-h-[100dvh] min-h-screen flex-col bg-[#010101] text-slate-100">
-      <div className="flex min-h-0 w-full flex-1 flex-col px-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pb-8 lg:px-8 lg:pb-10">
+    <div className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#010101] text-slate-100">
+      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-3 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pb-5 lg:px-8 lg:pb-6">
         <div className="flex shrink-0 flex-col gap-4 sm:gap-5">
           <div className="pl-[max(0px,calc(env(safe-area-inset-left)-0.25rem))] pt-1">
             <EventBranding variant="mc" className="shrink-0" />
@@ -370,126 +351,74 @@ export default function McPage() {
           </div>
         ) : null}
 
-        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-hidden lg:mt-8 lg:grid lg:min-h-0 lg:grid-cols-[minmax(18rem,28vw)_1fr] lg:items-stretch lg:gap-8">
-          <aside className="flex min-h-[18rem] shrink-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:min-h-[20rem] sm:p-7 lg:min-h-0 lg:h-full lg:max-h-none">
+        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:mt-5 lg:grid lg:min-h-0 lg:grid-cols-[minmax(14rem,26vw)_1fr] lg:items-stretch lg:gap-6">
+          <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-4 backdrop-blur sm:p-5 lg:min-h-0">
             <div className="flex shrink-0 items-baseline justify-between gap-3">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-300/90">
+              <h2 className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-300/90 sm:text-xs">
                 Panelist questions
               </h2>
-              <span className="text-xs text-slate-500">{mcQuestionsStatus}</span>
+              <span className="text-[0.65rem] text-slate-500 sm:text-xs">{mcQuestionsStatus}</span>
             </div>
 
-            <div className="mt-5 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
-              <div className="shrink-0 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:py-4">
-                <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                  {GENERAL_SLOT.title}
-                </div>
-                <div
-                  className={`mt-2 min-h-0 leading-snug sm:leading-normal ${
-                    generalPushed?.question_text
-                      ? 'text-[clamp(1rem,2.4vw,1.75rem)] font-semibold text-slate-50'
-                      : 'text-[clamp(0.95rem,2vw,1.125rem)] font-normal text-slate-500'
-                  }`}
-                >
-                  {generalPushed?.question_text ? generalPushed.question_text : 'No question yet.'}
-                </div>
-                {generalPushed?.created_at ? (
-                  <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
-                    {new Date(generalPushed.created_at).toLocaleTimeString()}
-                  </div>
-                ) : null}
-                {generalPushed?.question_text ? (
-                  <button
-                    type="button"
-                    onClick={() => clearPushedSlot(GENERAL_TARGET_KEY)}
-                    disabled={status === 'Updating…'}
-                    className="mt-2 w-full touch-manipulation rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            <div className="mt-3 grid min-h-0 flex-1 grid-rows-5 gap-1.5 overflow-hidden pt-0.5 sm:mt-4 sm:gap-2">
+              {[GENERAL_SLOT, ...PANELIST_ONLY].map((slot) => {
+                const q = mcQuestions?.panelists?.[slot.key] ?? null
+                return (
+                  <div
+                    key={slot.key}
+                    className="flex min-h-0 flex-col justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/20 px-3 py-2 sm:px-3.5 sm:py-2.5"
                   >
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="grid min-h-0 flex-1 grid-rows-4 gap-3 overflow-y-auto pr-1 sm:gap-4 lg:min-h-[12rem]">
-                {PANELIST_ONLY.map((p) => {
-                  const q = mcQuestions?.panelists?.[p.key] ?? null
-                  return (
-                    <div
-                      key={p.key}
-                      className="flex min-h-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:py-4"
-                    >
-                      <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                        {p.title}
-                      </div>
-                      <div
-                        className={`mt-2 min-h-0 leading-snug sm:leading-normal ${
-                          q?.question_text
-                            ? 'text-[clamp(1rem,2.4vw,1.75rem)] font-semibold text-slate-50'
-                            : 'text-[clamp(0.95rem,2vw,1.125rem)] font-normal text-slate-500'
-                        }`}
-                      >
-                        {q?.question_text ? q.question_text : 'No question yet.'}
-                      </div>
-                      {q?.created_at ? (
-                        <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
-                          {new Date(q.created_at).toLocaleTimeString()}
-                        </div>
-                      ) : null}
-                      {q?.question_text ? (
-                        <button
-                          type="button"
-                          onClick={() => clearPushedSlot(p.key)}
-                          disabled={status === 'Updating…'}
-                          className="mt-2 w-full touch-manipulation rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Clear
-                        </button>
-                      ) : null}
+                    <div className="shrink-0 text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-slate-400 sm:text-[0.65rem]">
+                      {slot.title}
                     </div>
-                  )
-                })}
-              </div>
+                    <div
+                      className={`mt-1 min-h-0 flex-1 overflow-hidden leading-snug ${
+                        q?.question_text
+                          ? 'line-clamp-4 text-[clamp(0.68rem,1.35vw,0.9rem)] font-semibold text-slate-50 sm:line-clamp-5'
+                          : 'text-[clamp(0.62rem,1.1vw,0.8rem)] font-normal text-slate-500'
+                      }`}
+                    >
+                      {q?.question_text ? q.question_text : 'No question yet.'}
+                    </div>
+                    {q?.created_at ? (
+                      <div className="mt-1 shrink-0 text-[0.55rem] font-medium uppercase tracking-[0.18em] text-slate-600">
+                        {new Date(q.created_at).toLocaleTimeString()}
+                      </div>
+                    ) : null}
+                    {q?.question_text ? (
+                      <button
+                        type="button"
+                        onClick={() => clearPushedSlot(slot.key)}
+                        disabled={status === 'Updating…'}
+                        className="mt-1.5 w-full shrink-0 touch-manipulation rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Clear
+                      </button>
+                    ) : null}
+                  </div>
+                )
+              })}
             </div>
           </aside>
 
           <section className="flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
-                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-                  <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
-                    Q&amp;A — end · slide {qaSlideshowIndex + 1}/{QA_SLIDE_COUNT}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => goQaSlide(-1)}
-                      disabled={status === 'Updating…'}
-                      className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10 disabled:opacity-50"
-                    >
-                      Prev
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => goQaSlide(1)}
-                      disabled={status === 'Updating…'}
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
-                    >
-                      Next
-                    </button>
-                  </div>
+                <div className="shrink-0 text-center text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500 sm:text-xs">
+                  Q&amp;A — end · slide {qaSlideshowIndex + 1}/{QA_SLIDE_COUNT} (admin controls slides)
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
                   {qaSlideshowIndex === 0 ? (
                     <p className="text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
-                      {QA_SLIDESHOW_TITLE}
+                      {qaSlideshowSlides[0]?.title ?? ''}
                     </p>
                   ) : (
                     <>
                       <p className="text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
-                        {QA_EJAZ_TITLE}
+                        {qaSlideshowSlides[1]?.title ?? ''}
                       </p>
                       <p className="mt-4 max-w-xl text-pretty text-lg text-slate-400 sm:text-xl">
-                        {QA_EJAZ_SUBTITLE}
+                        {qaSlideshowSlides[1]?.subtitle ?? ''}
                       </p>
                     </>
                   )}

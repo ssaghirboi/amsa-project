@@ -2,7 +2,10 @@ import {
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides.js'
-import { clampQaSlideIndex } from '../constants/qaSlideshow.js'
+import {
+  clampQaSlideIndex,
+  mergeQaSlidesFromRemote,
+} from '../constants/qaSlideshow.js'
 
 const DEFAULT_SCHEMA = 'public'
 
@@ -20,6 +23,8 @@ let mcQuestionsColumnsAvailable = null
 let qaSlideshowColumnAvailable = null
 /** Set after fetch: DB has `qa_slideshow_index` column. */
 let qaSlideshowIndexColumnAvailable = null
+/** Set after fetch: DB has `qa_slideshow_slides` column. */
+let qaSlideshowSlidesColumnAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
@@ -34,6 +39,8 @@ const PANELIST_ICON_COLUMNS = [
 const PANELIST_ICON_COLUMNS_SELECT = PANELIST_ICON_COLUMNS.join(',')
 
 const SELECT_VARIANTS = [
+  // With MC + Q&A slideshow + per-slide copy (add columns in Supabase if missing)
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides`,
   // With MC + Q&A slideshow columns (add columns in Supabase if missing)
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index`,
   // With MC question picks + Q&A slideshow flag (add column in Supabase if missing)
@@ -110,6 +117,12 @@ function isMissingQaSlideshowIndexColumnError(error) {
   return /qa_slideshow_index/i.test(msg) && /does not exist/i.test(msg)
 }
 
+function isMissingQaSlideshowSlidesColumnError(error) {
+  if (!error) return false
+  const msg = String(error.message || '')
+  return /qa_slideshow_slides/i.test(msg) && /does not exist/i.test(msg)
+}
+
 /** `false` after fetch detected no `prompt_sequence` column. */
 export function shouldPromptSequenceMigrate() {
   return promptSequenceColumnAvailable === false
@@ -145,9 +158,19 @@ export function shouldQaSlideshowIndexMigrate() {
   return qaSlideshowIndexColumnAvailable === false
 }
 
+/** `false` after fetch detected no `qa_slideshow_slides` column. */
+export function shouldQaSlideshowSlidesMigrate() {
+  return qaSlideshowSlidesColumnAvailable === false
+}
+
 /** Only merge `presentationSlides` from Supabase when the column exists (avoids wiping local edits). */
 export function shouldSyncPresentationSlidesFromRemote() {
   return presentationSlidesColumnsAvailable === true
+}
+
+/** Only merge `qaSlideshowSlides` from Supabase when the column exists. */
+export function shouldSyncQaSlidesFromRemote() {
+  return qaSlideshowSlidesColumnAvailable === true
 }
 
 // Matches your provided SQL:
@@ -205,6 +228,7 @@ export function deriveEventStateFromRow(row) {
   const qaSlideshowActive = row.qa_slideshow_active === true
   const qaSlideshowIndex = clampQaSlideIndex(row.qa_slideshow_index ?? 0)
   const presentationSlides = mergePresentationSlidesFromRemote(row.presentation_slides)
+  const qaSlideshowSlides = mergeQaSlidesFromRemote(row.qa_slideshow_slides)
   const mcQuestions = row.mc_questions ?? null
 
   return {
@@ -217,6 +241,7 @@ export function deriveEventStateFromRow(row) {
     qaSlideshowActive,
     qaSlideshowIndex,
     presentationSlides,
+    qaSlideshowSlides,
     mcQuestions,
     meta: {
       id: row.id,
@@ -242,6 +267,7 @@ export async function fetchCurrentEventState(supabase) {
       mcQuestionsColumnsAvailable = cols.includes('mc_questions')
       qaSlideshowColumnAvailable = cols.includes('qa_slideshow_active')
       qaSlideshowIndexColumnAvailable = cols.includes('qa_slideshow_index')
+      qaSlideshowSlidesColumnAvailable = cols.includes('qa_slideshow_slides')
 
       const row = Array.isArray(data) ? data[0] : data
       return (
@@ -255,6 +281,7 @@ export async function fetchCurrentEventState(supabase) {
           qaSlideshowActive: false,
           qaSlideshowIndex: 0,
           presentationSlides: mergePresentationSlidesFromRemote(null),
+          qaSlideshowSlides: mergeQaSlidesFromRemote(null),
           mcQuestions: null,
           meta: { id: EVENT_STATE_ID },
         }
@@ -298,6 +325,7 @@ export async function writeEventState(
     panelistIcons,
     promptSequence,
     presentationSlides,
+    qaSlideshowSlides,
     slideshowActive = false,
     slideshowIndex = 0,
     qaSlideshowActive = false,
@@ -345,6 +373,10 @@ export async function writeEventState(
 
   if (presentationSlidesColumnsAvailable !== false) {
     payload.presentation_slides = mergePresentationSlidesFromRemote(presentationSlides)
+  }
+
+  if (qaSlideshowSlidesColumnAvailable !== false) {
+    payload.qa_slideshow_slides = mergeQaSlidesFromRemote(qaSlideshowSlides)
   }
 
   if (mcQuestionsColumnsAvailable !== false) {
@@ -412,6 +444,17 @@ export async function writeEventState(
   ) {
     presentationSlidesColumnsAvailable = false
     delete payload.presentation_slides
+    const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = second.error
+  }
+
+  if (
+    error &&
+    isMissingQaSlideshowSlidesColumnError(error) &&
+    qaSlideshowSlidesColumnAvailable !== false
+  ) {
+    qaSlideshowSlidesColumnAvailable = false
+    delete payload.qa_slideshow_slides
     const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
     error = second.error
   }
