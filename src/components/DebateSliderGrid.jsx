@@ -28,20 +28,20 @@ const SCALE_COLUMNS = [
   {
     id: 'disagree',
     label: 'Disagree',
-    bar: 'from-red-100 via-rose-50 to-red-50',
-    edge: 'border-rose-200/85',
+    bar: 'from-red-200 via-rose-100 to-red-100',
+    edge: 'border-rose-400/90',
   },
   {
     id: 'neutral',
     label: 'Neutral',
-    bar: 'from-amber-100 via-yellow-50 to-amber-50',
-    edge: 'border-amber-300/70',
+    bar: 'from-amber-200 via-yellow-100 to-amber-100',
+    edge: 'border-amber-500/80',
   },
   {
     id: 'agree',
     label: 'Agree',
-    bar: 'from-emerald-200 via-emerald-100 to-teal-100',
-    edge: 'border-emerald-500/60',
+    bar: 'from-emerald-400 via-emerald-300 to-teal-200',
+    edge: 'border-emerald-600/75',
   },
   {
     id: 'strongly-agree',
