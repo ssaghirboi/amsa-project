@@ -4,38 +4,38 @@ import { PromptBox } from './PromptBox'
 const DEFAULT_ROW_LABELS = ['Islam', 'Christianity', 'Atheism', 'Hinduism']
 
 const PANEL_VISUALS = [
-  { key: 'P1', dot: 'bg-fuchsia-600', glow: 'shadow-[0_0_24px_rgba(192,38,211,0.35)]' },
-  { key: 'P2', dot: 'bg-cyan-600', glow: 'shadow-[0_0_24px_rgba(8,145,178,0.35)]' },
-  { key: 'P3', dot: 'bg-amber-600', glow: 'shadow-[0_0_24px_rgba(217,119,6,0.35)]' },
-  { key: 'P4', dot: 'bg-lime-600', glow: 'shadow-[0_0_24px_rgba(101,163,13,0.35)]' },
+  { key: 'P1', dot: 'bg-fuchsia-600', glow: 'shadow-[0_0_32px_rgba(192,38,211,0.5)]' },
+  { key: 'P2', dot: 'bg-cyan-600', glow: 'shadow-[0_0_32px_rgba(8,145,178,0.48)]' },
+  { key: 'P3', dot: 'bg-amber-600', glow: 'shadow-[0_0_32px_rgba(217,119,6,0.48)]' },
+  { key: 'P4', dot: 'bg-lime-600', glow: 'shadow-[0_0_32px_rgba(101,163,13,0.5)]' },
 ]
 
 /** Left → right matches value 1 → 5 on the event state sliders */
 const SCALE_COLUMNS = [
   {
     label: 'Strongly Agree',
-    bar: 'from-rose-100 via-rose-50 to-red-50',
-    edge: 'border-rose-200/70',
+    bar: 'from-rose-300 via-rose-200 to-red-200',
+    edge: 'border-rose-400/90',
   },
   {
     label: 'Slightly Agree',
-    bar: 'from-orange-100 via-amber-50 to-stone-50',
-    edge: 'border-orange-200/60',
+    bar: 'from-orange-300 via-amber-200 to-orange-100',
+    edge: 'border-orange-400/85',
   },
   {
     label: 'Neutral',
-    bar: 'from-slate-100 via-slate-50 to-slate-100',
-    edge: 'border-slate-200/80',
+    bar: 'from-slate-300 via-slate-200 to-slate-300',
+    edge: 'border-slate-400/90',
   },
   {
     label: 'Slightly Disagree',
-    bar: 'from-emerald-50 via-teal-50 to-slate-50',
-    edge: 'border-teal-200/55',
+    bar: 'from-teal-200 via-emerald-200 to-slate-200',
+    edge: 'border-teal-400/85',
   },
   {
     label: 'Strongly Disagree',
-    bar: 'from-emerald-100 via-green-50 to-emerald-50',
-    edge: 'border-emerald-300/65',
+    bar: 'from-emerald-300 via-green-200 to-emerald-200',
+    edge: 'border-emerald-500/80',
   },
 ]
 
@@ -51,16 +51,16 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
   const thumbLeftPct = valueToThumbPercent(value)
 
   return (
-    <div className="group relative min-h-[5.5rem] w-full sm:min-h-[6.25rem]">
+    <div className="group relative min-h-[6rem] w-full sm:min-h-[6.75rem]">
       <div
-        className={`relative flex min-h-[5.5rem] w-full items-center sm:min-h-[6.25rem] ${
-          showBorderBottom ? 'border-b border-slate-200/90' : ''
+        className={`relative flex min-h-[6rem] w-full items-center sm:min-h-[6.75rem] ${
+          showBorderBottom ? 'border-b border-slate-500/75' : ''
         }`}
       >
         {/* Mobile: centered above track (desktop labels sit in left margin beside table) */}
-        <div className="pointer-events-none absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
+        <div className="pointer-events-none absolute left-0 right-0 top-1.5 z-20 flex justify-center md:hidden">
           <span
-            className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-700"
+            className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-800"
             style={{
               textShadow: '0 1px 0 rgba(255,255,255,0.8)',
             }}
@@ -74,7 +74,7 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
           {SCALE_COLUMNS.map((col) => (
             <div
               key={col.label}
-              className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r border-slate-300/50 last:border-r-0`}
+              className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r border-slate-500/65 last:border-r-0`}
             >
               {/* Fine mesh */}
               <div
@@ -93,8 +93,8 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
         </div>
 
         {/* Track + ticks — full width (no horizontal padding) so % matches column boxes */}
-        <div className="relative z-10 w-full pb-1 pt-7 md:pb-2 md:pt-2">
-          <div className="relative mx-auto h-11 w-full max-w-full md:h-12">
+        <div className="relative z-10 w-full pb-1 pt-8 md:pb-2 md:pt-2">
+          <div className="relative mx-auto h-12 w-full max-w-full md:h-[3.25rem]">
             {/* Tick marks at column centers: (i + ½) / 5 */}
             {[0, 1, 2, 3, 4].map((i) => (
               <div
@@ -103,12 +103,12 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
                 style={{ left: `${((i + 0.5) / 5) * 100}%` }}
                 aria-hidden
               >
-                <div className="h-full w-px bg-gradient-to-b from-transparent via-slate-400/45 to-transparent" />
+                <div className="h-full w-px bg-gradient-to-b from-transparent via-slate-600/55 to-transparent" />
               </div>
             ))}
 
             {/* Horizontal rail */}
-            <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-slate-300/40 via-slate-400/55 to-slate-300/40 shadow-[0_0_8px_rgba(15,23,42,0.06)]" />
+            <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-slate-400/70 via-slate-500/85 to-slate-400/70 shadow-[0_0_8px_rgba(15,23,42,0.08)]" />
 
             {/* Thumb — same % as ticks for each discrete value */}
             <div
@@ -117,7 +117,7 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
               aria-label={`${rowLabel} position ${value} of 5`}
             >
               <div className={`rounded-full ${visuals.glow}`}>
-                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-slate-300/90 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/80 backdrop-blur-sm sm:h-16 sm:w-16">
+                <div className="relative h-[4.25rem] w-[4.25rem] overflow-hidden rounded-full border border-slate-400/95 bg-white shadow-[0_10px_32px_rgba(15,23,42,0.14)] ring-2 ring-slate-300/90 backdrop-blur-sm sm:h-[4.75rem] sm:w-[4.75rem]">
                   {iconUrl ? (
                     <img
                       src={iconUrl}
@@ -185,15 +185,15 @@ export function DebateSliderGrid({
       <div className="flex w-full justify-center px-3 sm:px-4">
         <div className="relative w-full max-w-6xl">
           {/* Desktop row labels in the left margin (not part of the table card) */}
-          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[10.5rem] flex-col items-end md:flex lg:mr-4">
+          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[13rem] flex-col items-end md:flex lg:mr-5 lg:w-[14rem]">
             {/* Spacer matches the table header row height */}
             <div className="min-h-[4.25rem] shrink-0 sm:min-h-[5rem]" aria-hidden />
             {labels.map((label, i) => (
               <div
                 key={PANEL_VISUALS[i].key}
-                className="flex min-h-[5.5rem] items-center justify-end sm:min-h-[6.25rem]"
+                className="flex min-h-[6rem] items-center justify-end sm:min-h-[6.75rem]"
               >
-                <span className="text-right text-[0.65rem] font-semibold uppercase leading-none tracking-[0.2em] text-slate-600 sm:text-xs">
+                <span className="text-right text-sm font-semibold uppercase leading-tight tracking-[0.16em] text-slate-800 sm:text-base sm:tracking-[0.14em]">
                   {label}
                 </span>
               </div>
@@ -201,14 +201,14 @@ export function DebateSliderGrid({
           </div>
 
           {/* Rounded table card only (no labels inside) */}
-          <div className="w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]">
-            <div className="relative grid grid-cols-5 gap-0 border-b border-slate-200/90 bg-slate-50/90">
+          <div className="w-full overflow-hidden rounded-2xl border border-slate-400/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]">
+            <div className="relative grid grid-cols-5 gap-0 border-b border-slate-500/70 bg-slate-100/95">
               {SCALE_COLUMNS.map((col) => (
                 <div
                   key={col.label}
-                  className="border-r border-slate-200/70 px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+                  className="border-r border-slate-400/80 px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
                 >
-                  <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-600 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                  <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-700 sm:text-[0.65rem] sm:tracking-[0.14em]">
                     {col.label}
                   </span>
                 </div>
@@ -217,10 +217,10 @@ export function DebateSliderGrid({
 
             <div className="relative">
               <div
-                className="pointer-events-none absolute inset-0 opacity-[0.35]"
+                className="pointer-events-none absolute inset-0 opacity-[0.45]"
                 style={{
-                  backgroundImage: `radial-gradient(circle at 20% 30%, rgba(251,113,133,0.12) 0%, transparent 45%),
-                radial-gradient(circle at 80% 70%, rgba(52,211,153,0.1) 0%, transparent 40%)`,
+                  backgroundImage: `radial-gradient(circle at 20% 30%, rgba(251,113,133,0.18) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(52,211,153,0.16) 0%, transparent 40%)`,
                 }}
                 aria-hidden
               />
