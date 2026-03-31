@@ -7,6 +7,7 @@ import {
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
+import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
 import {
   fetchCurrentEventState,
@@ -50,6 +51,7 @@ export default function BigScreen() {
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
+  const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
   const [presentationSlides, setPresentationSlides] = useState(() =>
     mergePresentationSlidesFromRemote(null),
   )
@@ -97,6 +99,7 @@ export default function BigScreen() {
     setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
     setSlideshowActive(Boolean(next.slideshowActive))
     setSlideshowIndex(next.slideshowIndex ?? 0)
+    setQaSlideshowActive(Boolean(next.qaSlideshowActive))
     setPresentationSlides(
       mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
     )
@@ -193,6 +196,18 @@ export default function BigScreen() {
   // 2) fade in the rest of the debate assets
   // Use `useLayoutEffect` to avoid a flash (blank -> fade) when toggling quickly.
   useLayoutEffect(() => {
+    if (qaSlideshowActive) {
+      if (presentationOffTimeoutRef.current) {
+        clearTimeout(presentationOffTimeoutRef.current)
+        presentationOffTimeoutRef.current = null
+      }
+      queueMicrotask(() => {
+        setPresentationOffTransition(false)
+        setPresentationOffFade(1)
+      })
+      return
+    }
+
     const slide =
       presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
       presentationSlides[0]
@@ -266,11 +281,11 @@ export default function BigScreen() {
     }
   // Logo layout follows slide index; omit presentationSlides text-only edits from deps.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slideshowActive, slideshowIndex])
+  }, [slideshowActive, slideshowIndex, qaSlideshowActive])
 
   /** When prompt changes (after first non-empty sync), run intro sequence */
   useEffect(() => {
-    if (slideshowActive) return
+    if (slideshowActive || qaSlideshowActive) return
 
     const next = (prompt ?? '').trim()
     const prev = (prevPromptRef.current ?? '').trim()
@@ -306,22 +321,22 @@ export default function BigScreen() {
       setDebateTableOpacity(0)
       setIntroPhase('typing')
     })
-  }, [prompt, slideshowActive])
+  }, [prompt, slideshowActive, qaSlideshowActive])
 
   /** Cancel debate intro when presentation mode is on */
   useEffect(() => {
-    if (!slideshowActive) return
+    if (!slideshowActive && !qaSlideshowActive) return
     queueMicrotask(() => {
       setIntroPhase('idle')
       setFlyTo(null)
       setRevealedCount(0)
       setDebateTableOpacity(1)
     })
-  }, [slideshowActive])
+  }, [slideshowActive, qaSlideshowActive])
 
   /** Typewriter: reveal characters in stable final layout; then optional FLIP handoff */
   useEffect(() => {
-    if (slideshowActive) return
+    if (slideshowActive || qaSlideshowActive) return
     if (introPhase !== 'typing') return
 
     const full = prompt ?? ''
@@ -385,7 +400,7 @@ export default function BigScreen() {
     }, TYPE_MS)
 
     return () => clearInterval(id)
-  }, [introPhase, prompt, slideshowActive])
+  }, [introPhase, prompt, slideshowActive, qaSlideshowActive])
 
   /** After shrink animation: drop overlay, keep prompt visible, fade in sliders */
   useEffect(() => {
@@ -402,7 +417,9 @@ export default function BigScreen() {
   }, [introPhase])
 
   const showOverlay =
-    !slideshowActive && (introPhase === 'typing' || introPhase === 'shrinking')
+    !slideshowActive &&
+    !qaSlideshowActive &&
+    (introPhase === 'typing' || introPhase === 'shrinking')
 
   const logoSlide =
     presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
@@ -464,6 +481,27 @@ export default function BigScreen() {
           aria-hidden
         />
       ))}
+    </div>
+  )
+
+  const qaSlideshowContent = (
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-800">
+      <div className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-20 -translate-x-1/2 drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]">
+        <EventBranding variant="presentationCorner" className="shrink-0" />
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col items-center px-4 pb-10 pt-[clamp(6.5rem,18vh,11rem)]">
+        <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
+          {QA_SLIDESHOW_TITLE}
+        </h1>
+        <div className="mt-8 flex min-h-0 flex-1 flex-col items-center justify-center sm:mt-10">
+          <img
+            src={qrDoesGodExist}
+            alt=""
+            className="h-[min(58vmin,26rem)] w-[min(58vmin,26rem)] max-w-[92vw] rounded-2xl bg-white shadow-[0_18px_50px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/10"
+            draggable={false}
+          />
+        </div>
+      </div>
     </div>
   )
 
@@ -598,9 +636,13 @@ export default function BigScreen() {
         backgroundAttachment: 'fixed',
       }}
     >
-      {fixedLogo}
-      {slideshowActive ? slideshowContent : debateContent}
-      {!slideshowActive ? (
+      {!qaSlideshowActive ? fixedLogo : null}
+      {qaSlideshowActive
+        ? qaSlideshowContent
+        : slideshowActive
+          ? slideshowContent
+          : debateContent}
+      {!slideshowActive && !qaSlideshowActive ? (
         <div
           className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] pointer-events-none"
           aria-hidden

@@ -292,6 +292,7 @@ export default function QuestionsPage() {
         presentationSlides: eventState.presentationSlides ?? [],
         slideshowActive: Boolean(eventState.slideshowActive),
         slideshowIndex: eventState.slideshowIndex ?? 0,
+        qaSlideshowActive: Boolean(eventState.qaSlideshowActive),
         mcQuestions: nextMc,
       })
 
@@ -339,6 +340,7 @@ export default function QuestionsPage() {
         presentationSlides: eventState.presentationSlides ?? [],
         slideshowActive: Boolean(eventState.slideshowActive),
         slideshowIndex: eventState.slideshowIndex ?? 0,
+        qaSlideshowActive: Boolean(eventState.qaSlideshowActive),
         mcQuestions: nextMc,
       })
 

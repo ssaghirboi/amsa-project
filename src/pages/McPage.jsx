@@ -8,6 +8,7 @@ import {
   writeEventState,
 } from '../supabase/eventState'
 import { clampPresentationSlideIndex } from '../constants/presentationSlides'
+import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
 import {
   GENERAL_TARGET_KEY,
   PANELIST_DISPLAY_NAMES,
@@ -60,6 +61,7 @@ export default function McPage() {
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
+  const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
   const [presentationSlides, setPresentationSlides] = useState([])
   const [status, setStatus] = useState('Connecting…')
   const [error, setError] = useState('')
@@ -84,6 +86,7 @@ export default function McPage() {
       setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
+      setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       setPresentationSlides(next.presentationSlides ?? [])
       setMcQuestions(incomingMc)
       setMcQuestionsStatus(
@@ -106,6 +109,7 @@ export default function McPage() {
           presentationSlides: next.presentationSlides ?? [],
           slideshowActive: Boolean(next.slideshowActive),
           slideshowIndex: next.slideshowIndex ?? 0,
+          qaSlideshowActive: Boolean(next.qaSlideshowActive),
           mcQuestions: emptyMcQuestions(nextPrompt),
         }).catch(() => {})
       }
@@ -147,7 +151,7 @@ export default function McPage() {
   }, [presentationSlides, slideshowIndex])
 
   const goNextPrompt = async () => {
-    if (slideshowActive) return
+    if (slideshowActive || qaSlideshowActive) return
     const nextPrompt = nextInfo.next
     if (!nextPrompt) return
 
@@ -163,6 +167,7 @@ export default function McPage() {
         presentationSlides,
         slideshowActive: false,
         slideshowIndex,
+        qaSlideshowActive: false,
         mcQuestions: emptyMcQuestions(nextPrompt),
       })
       setStatus('Live')
@@ -173,7 +178,7 @@ export default function McPage() {
   }
 
   const goFirstPrompt = async () => {
-    if (slideshowActive) return
+    if (slideshowActive || qaSlideshowActive) return
     const firstPrompt = promptSequence?.[0]
     if (!firstPrompt) return
 
@@ -189,6 +194,7 @@ export default function McPage() {
         presentationSlides,
         slideshowActive: false,
         slideshowIndex,
+        qaSlideshowActive: false,
         mcQuestions: emptyMcQuestions(firstPrompt, { skipDebateIntro: true }),
       })
       setStatus('Live')
@@ -199,7 +205,7 @@ export default function McPage() {
   }
 
   const goPrevPrompt = async () => {
-    if (slideshowActive) return
+    if (slideshowActive || qaSlideshowActive) return
     const prevPromptText = prevInfo.prev
     if (!prevPromptText) return
 
@@ -215,6 +221,7 @@ export default function McPage() {
         presentationSlides,
         slideshowActive: false,
         slideshowIndex,
+        qaSlideshowActive: false,
         mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
       })
       setStatus('Live')
@@ -252,6 +259,7 @@ export default function McPage() {
         presentationSlides,
         slideshowActive,
         slideshowIndex,
+        qaSlideshowActive,
         mcQuestions: nextMc,
       })
       setStatus('Live')
@@ -284,15 +292,17 @@ export default function McPage() {
               </div>
               <div className="mt-1.5 text-sm text-slate-300 sm:text-[0.9375rem]">
                 Status: <span className="text-indigo-300">{status}</span>
-                {slideshowActive ? (
+                {qaSlideshowActive ? (
+                  <span className="ml-2 text-emerald-300/90">• Q&amp;A end ON</span>
+                ) : slideshowActive ? (
                   <span className="ml-2 text-amber-200/90">• Slideshow ON</span>
                 ) : (
-                  <span className="ml-2 text-slate-400">• Slideshow OFF</span>
+                  <span className="ml-2 text-slate-400">• Presentation off</span>
                 )}
               </div>
             </div>
 
-            {!slideshowActive ? (
+            {!slideshowActive && !qaSlideshowActive ? (
               <div className="flex flex-wrap items-center justify-end gap-3">
                 <button
                   type="button"
@@ -412,7 +422,18 @@ export default function McPage() {
           </aside>
 
           <section className="flex min-h-0 flex-1 flex-col lg:min-h-0">
-            {slideshowActive ? (
+            {qaSlideshowActive ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
+                  <div className="shrink-0 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Q&amp;A — end
+                  </div>
+                  <p className="mt-8 text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
+                    {QA_SLIDESHOW_TITLE}
+                  </p>
+                </div>
+              </div>
+            ) : slideshowActive ? (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
                   <div className="shrink-0 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">

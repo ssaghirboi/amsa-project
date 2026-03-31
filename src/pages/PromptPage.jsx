@@ -5,27 +5,36 @@ import {
   fetchCurrentEventState,
   subscribeToEventState,
 } from '../supabase/eventState'
+import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
 
 export default function PromptPage() {
   const [prompt, setPrompt] = useState('')
+  const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
 
   useEffect(() => {
     let unsubscribe = null
 
     ;(async () => {
       const current = await fetchCurrentEventState(supabase).catch(() => null)
-      if (current) setPrompt(current.prompt ?? '')
+      if (current) {
+        setPrompt(current.prompt ?? '')
+        setQaSlideshowActive(Boolean(current.qaSlideshowActive))
+      }
     })()
 
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt ?? '')
+      setQaSlideshowActive(Boolean(next.qaSlideshowActive))
     })
 
     const pollMs = 2500
     const pollId = setInterval(() => {
       fetchCurrentEventState(supabase)
         .then((next) => {
-          if (next) setPrompt(next.prompt ?? '')
+          if (next) {
+            setPrompt(next.prompt ?? '')
+            setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+          }
         })
         .catch(() => {})
     }, pollMs)
@@ -36,9 +45,11 @@ export default function PromptPage() {
     }
   }, [])
 
-  const text = prompt?.trim()
-    ? prompt.trim()
-    : 'Waiting for the current prompt…'
+  const text = qaSlideshowActive
+    ? QA_SLIDESHOW_TITLE
+    : prompt?.trim()
+      ? prompt.trim()
+      : 'Waiting for the current prompt…'
 
   return (
     <div className="relative min-h-[100dvh] min-h-screen bg-[#010101] text-slate-100">

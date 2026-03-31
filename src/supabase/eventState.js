@@ -15,6 +15,8 @@ let panelistIconsColumnsAvailable = null
 let presentationSlidesColumnsAvailable = null
 /** Set after fetch: DB has `mc_questions` column. */
 let mcQuestionsColumnsAvailable = null
+/** Set after fetch: DB has `qa_slideshow_active` column. */
+let qaSlideshowColumnAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
@@ -29,6 +31,8 @@ const PANELIST_ICON_COLUMNS = [
 const PANELIST_ICON_COLUMNS_SELECT = PANELIST_ICON_COLUMNS.join(',')
 
 const SELECT_VARIANTS = [
+  // With MC question picks + Q&A slideshow flag (add column in Supabase if missing)
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active`,
   // With MC question picks
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions`,
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,mc_questions`,
@@ -89,6 +93,12 @@ function isMissingMcQuestionsColumnError(error) {
   return /mc_questions/i.test(msg) && /does not exist/i.test(msg)
 }
 
+function isMissingQaSlideshowColumnError(error) {
+  if (!error) return false
+  const msg = String(error.message || '')
+  return /qa_slideshow_active/i.test(msg) && /does not exist/i.test(msg)
+}
+
 /** `false` after fetch detected no `prompt_sequence` column. */
 export function shouldPromptSequenceMigrate() {
   return promptSequenceColumnAvailable === false
@@ -112,6 +122,11 @@ export function shouldPresentationSlidesMigrate() {
 /** `false` after fetch detected no `mc_questions` column. */
 export function shouldMcQuestionsMigrate() {
   return mcQuestionsColumnsAvailable === false
+}
+
+/** `false` after fetch detected no `qa_slideshow_active` column. */
+export function shouldQaSlideshowMigrate() {
+  return qaSlideshowColumnAvailable === false
 }
 
 /** Only merge `presentationSlides` from Supabase when the column exists (avoids wiping local edits). */
@@ -171,6 +186,7 @@ export function deriveEventStateFromRow(row) {
 
   const slideshowActive = row.slideshow_active === true
   const slideshowIndex = clampPresentationSlideIndex(row.slideshow_index ?? 0)
+  const qaSlideshowActive = row.qa_slideshow_active === true
   const presentationSlides = mergePresentationSlidesFromRemote(row.presentation_slides)
   const mcQuestions = row.mc_questions ?? null
 
@@ -181,6 +197,7 @@ export function deriveEventStateFromRow(row) {
     promptSequence,
     slideshowActive,
     slideshowIndex,
+    qaSlideshowActive,
     presentationSlides,
     mcQuestions,
     meta: {
@@ -205,6 +222,7 @@ export async function fetchCurrentEventState(supabase) {
       panelistIconsColumnsAvailable = cols.includes('panelist_1_icon_url')
       presentationSlidesColumnsAvailable = cols.includes('presentation_slides')
       mcQuestionsColumnsAvailable = cols.includes('mc_questions')
+      qaSlideshowColumnAvailable = cols.includes('qa_slideshow_active')
 
       const row = Array.isArray(data) ? data[0] : data
       return (
@@ -215,6 +233,7 @@ export async function fetchCurrentEventState(supabase) {
           promptSequence: DEFAULT_PROMPT_SEQUENCE,
           slideshowActive: false,
           slideshowIndex: 0,
+          qaSlideshowActive: false,
           presentationSlides: mergePresentationSlidesFromRemote(null),
           mcQuestions: null,
           meta: { id: EVENT_STATE_ID },
@@ -261,6 +280,7 @@ export async function writeEventState(
     presentationSlides,
     slideshowActive = false,
     slideshowIndex = 0,
+    qaSlideshowActive = false,
     mcQuestions = null,
   },
 ) {
@@ -294,6 +314,10 @@ export async function writeEventState(
     payload.slideshow_index = clampPresentationSlideIndex(slideshowIndex)
   }
 
+  if (qaSlideshowColumnAvailable !== false) {
+    payload.qa_slideshow_active = Boolean(qaSlideshowActive)
+  }
+
   if (presentationSlidesColumnsAvailable !== false) {
     payload.presentation_slides = mergePresentationSlidesFromRemote(presentationSlides)
   }
@@ -317,6 +341,13 @@ export async function writeEventState(
     delete payload.slideshow_index
     const third = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
     error = third.error
+  }
+
+  if (error && isMissingQaSlideshowColumnError(error) && qaSlideshowColumnAvailable !== false) {
+    qaSlideshowColumnAvailable = false
+    delete payload.qa_slideshow_active
+    const qaRetry = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = qaRetry.error
   }
 
   if (error && isMissingMcQuestionsColumnError(error) && mcQuestionsColumnsAvailable !== false) {
