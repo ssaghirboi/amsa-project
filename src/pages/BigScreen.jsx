@@ -81,8 +81,13 @@ export default function BigScreen() {
   const promptAnchorCardRef = useRef(null)
   const prevPromptRef = useRef('')
   const hasSeededRef = useRef(false)
+  /** Set when MC navigates to previous prompt — skip typewriter + FLIP on BigScreen */
+  const skipDebateIntroRef = useRef(false)
 
   function applyEventStateFromRemote(next) {
+    if (next.mcQuestions?.skipDebateIntro === true) {
+      skipDebateIntroRef.current = true
+    }
     setPrompt(next.prompt)
     setPanelists(next.panelists)
     setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
@@ -272,6 +277,18 @@ export default function BigScreen() {
       return
     }
 
+    if (skipDebateIntroRef.current) {
+      skipDebateIntroRef.current = false
+      prevPromptRef.current = prompt
+      queueMicrotask(() => {
+        setIntroPhase('idle')
+        setFlyTo(null)
+        setRevealedCount(0)
+        setDebateTableOpacity(1)
+      })
+      return
+    }
+
     if (next === prev) return
     if (!next) {
       prevPromptRef.current = prompt
@@ -320,6 +337,7 @@ export default function BigScreen() {
         clearInterval(id)
         queueMicrotask(() => {
           requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
             const intro = introCardRef.current
             const target = promptAnchorCardRef.current
             let nextFly = null
@@ -335,9 +353,9 @@ export default function BigScreen() {
               const destLeft = b.left + (b.width - scaledW) / 2
               const destTop = b.top + (b.height - scaledH) / 2
               nextFly = {
-                dx: destLeft - a.left,
-                dy: destTop - a.top,
-                s,
+                dx: Math.round(destLeft - a.left),
+                dy: Math.round(destTop - a.top),
+                s: Math.round(s * 10000) / 10000,
               }
             } else {
               nextFly = { dx: 0, dy: -120, s: 0.45 }
@@ -356,6 +374,7 @@ export default function BigScreen() {
               setFlyTo(nextFly)
               setIntroPhase('shrinking')
             }
+            })
           })
         })
       }
@@ -449,12 +468,12 @@ export default function BigScreen() {
       <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
         {!cornerLayout ? (
           <div
-            className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-2xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
+            className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-3xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
             aria-hidden={!textSlide.tagline}
             style={{ opacity: textOpacity }}
           >
             {textSlide.tagline ? (
-              <p className="text-xl font-medium tracking-wide text-slate-600 sm:text-2xl md:text-3xl">
+              <p className="text-2xl font-medium tracking-wide text-slate-600 sm:text-3xl md:text-4xl lg:text-5xl">
                 {textSlide.tagline}
               </p>
             ) : null}
@@ -465,10 +484,10 @@ export default function BigScreen() {
             className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(6rem,16vh,10rem)] text-center sm:pt-[clamp(6rem,14vh,9rem)]"
             style={{ opacity: textOpacity }}
           >
-            <h1 className="max-w-3xl text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
+            <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
               {textSlide.title}
             </h1>
-            <p className="mt-4 max-w-xl text-lg text-slate-600 sm:mt-6 sm:text-xl md:text-2xl">
+            <p className="mt-5 max-w-2xl text-xl text-slate-600 sm:mt-7 sm:text-2xl md:text-3xl lg:text-4xl">
               {textSlide.subtitle}
             </p>
           </div>
@@ -504,6 +523,8 @@ export default function BigScreen() {
           promptBoxCardRef={promptAnchorCardRef}
           promptBoxHidden={showOverlay}
           tableOpacity={debateTableOpacity}
+          promptInnerClassName={FULLSCREEN_PROMPT_INNER}
+          promptBodyClassName={FULLSCREEN_PROMPT_BODY}
         />
       </div>
 

@@ -617,29 +617,20 @@ export default function Admin() {
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
-            <label className="block text-sm font-medium text-slate-200">
-              Current Prompt
-            </label>
-            <input
-              className="mt-2 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-slate-100 outline-none placeholder:text-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-              placeholder="Enter the debate prompt..."
-              value={prompt}
-              onChange={(e) => {
-                const next = e.target.value
-                setPrompt(next)
-                commit(next, panelists)
-              }}
-            />
-            <div className="mt-3 text-xs text-slate-400">
-              Tip: changes save to Supabase immediately. Prompt list uses Update below.
-            </div>
+            <div className="text-sm font-medium text-slate-200">Current prompt</div>
+            <p className="mt-2 min-h-[2.75rem] rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm leading-relaxed text-slate-100">
+              {prompt?.trim() ? prompt.trim() : '—'}
+            </p>
+            <p className="mt-2 text-xs text-slate-500">
+              Prompt is controlled from the MC screen (Next / Previous). Edit the ordered list below.
+            </p>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-medium text-slate-200">Panelist Sliders</h2>
               <div className="text-xs text-slate-400">
-                1 = Strongly Agree, 5 = Strongly Disagree (same left→right as the event screen)
+                1 = Strongly Agree (left), 5 = Strongly Disagree (right)
               </div>
             </div>
 
@@ -650,7 +641,7 @@ export default function Admin() {
                     <div className="text-sm font-medium text-slate-200">{panelLabels[i]}</div>
                     <div className="text-sm font-semibold text-indigo-200">{value}</div>
                   </div>
-                  <div dir="rtl" className="w-full">
+                  <div className="w-full">
                     <input
                       type="range"
                       min={1}

@@ -13,8 +13,8 @@ function normalizePrompt(s) {
   return String(s ?? '').trim().toLowerCase()
 }
 
-function emptyMcQuestions(nextPrompt) {
-  return {
+function emptyMcQuestions(nextPrompt, options = {}) {
+  const base = {
     prompt: String(nextPrompt ?? ''),
     panelists: {
       'Panelist 1': null,
@@ -23,6 +23,10 @@ function emptyMcQuestions(nextPrompt) {
       'Panelist 4': null,
     },
   }
+  if (options.skipDebateIntro) {
+    base.skipDebateIntro = true
+  }
+  return base
 }
 
 function getNextPrompt(current, sequence) {
@@ -31,6 +35,15 @@ function getNextPrompt(current, sequence) {
   const idx = seq.findIndex((p) => normalizePrompt(p) === cur)
   const nextIndex = idx >= 0 ? (idx + 1) % seq.length : 0
   return { next: String(seq[nextIndex] ?? ''), nextIndex, total: seq.length, seq }
+}
+
+function getPrevPrompt(current, sequence) {
+  const seq = Array.isArray(sequence) && sequence.length > 0 ? sequence : DEFAULT_PROMPT_SEQUENCE
+  if (seq.length === 0) return { prev: '', prevIndex: -1, total: 0, seq }
+  const cur = normalizePrompt(current)
+  const idx = seq.findIndex((p) => normalizePrompt(p) === cur)
+  const prevIndex = idx >= 0 ? (idx - 1 + seq.length) % seq.length : seq.length - 1
+  return { prev: String(seq[prevIndex] ?? ''), prevIndex, total: seq.length, seq }
 }
 
 const PANELISTS = [
@@ -126,6 +139,7 @@ export default function McPage() {
   }, [])
 
   const nextInfo = useMemo(() => getNextPrompt(prompt, promptSequence), [prompt, promptSequence])
+  const prevInfo = useMemo(() => getPrevPrompt(prompt, promptSequence), [prompt, promptSequence])
   const currentSlide = useMemo(() => {
     if (!Array.isArray(presentationSlides) || presentationSlides.length === 0) return null
     const idx = clampPresentationSlideIndex(slideshowIndex)
@@ -158,7 +172,34 @@ export default function McPage() {
     }
   }
 
+  const goPrevPrompt = async () => {
+    if (slideshowActive) return
+    const prevPromptText = prevInfo.prev
+    if (!prevPromptText) return
+
+    setStatus('Updating…')
+    setError('')
+    const resetPanelists = [3, 3, 3, 3]
+    try {
+      await writeEventState(supabase, {
+        prompt: prevPromptText,
+        panelists: resetPanelists,
+        panelistIcons,
+        promptSequence: prevInfo.seq,
+        presentationSlides,
+        slideshowActive: false,
+        slideshowIndex,
+        mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
+      })
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
   const nextPromptDisabled = status === 'Updating…' || !nextInfo.next
+  const prevPromptDisabled = status === 'Updating…' || !prevInfo.prev
 
   return (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col bg-[#010101] text-slate-100">
@@ -184,14 +225,24 @@ export default function McPage() {
             </div>
 
             {!slideshowActive ? (
-              <button
-                type="button"
-                onClick={goNextPrompt}
-                disabled={nextPromptDisabled}
-                className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl bg-indigo-500 px-8 py-3.5 text-base font-semibold text-slate-950 shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
-              >
-                Next prompt
-              </button>
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={goPrevPrompt}
+                  disabled={prevPromptDisabled}
+                  className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-8 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
+                >
+                  Previous prompt
+                </button>
+                <button
+                  type="button"
+                  onClick={goNextPrompt}
+                  disabled={nextPromptDisabled}
+                  className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl bg-indigo-500 px-8 py-3.5 text-base font-semibold text-slate-950 shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
+                >
+                  Next prompt
+                </button>
+              </div>
             ) : null}
           </div>
         </div>

@@ -163,6 +163,9 @@ export function DebateSliderGrid({
   promptBoxHidden = false,
   /** Fade sliders + labels + error after intro (0 … 1) */
   tableOpacity = 1,
+  /** Match BigScreen intro PromptBox sizing for FLIP alignment (e.g. fullscreen clamp classes) */
+  promptInnerClassName = '',
+  promptBodyClassName = '',
 }) {
   const labels = useMemo(() => {
     return panelists.map((_, i) => rowLabels[i] ?? `Panel ${i + 1}`)
@@ -177,7 +180,11 @@ export function DebateSliderGrid({
         }`}
         aria-hidden={promptBoxHidden}
       >
-        <PromptBox cardRef={promptBoxCardRef}>
+        <PromptBox
+          cardRef={promptBoxCardRef}
+          innerClassName={prompt?.trim() ? promptInnerClassName : ''}
+          bodyClassName={prompt?.trim() ? promptBodyClassName : ''}
+        >
           {prompt?.trim() ? prompt : (
             <span className="text-lg font-normal text-slate-500/95 md:text-xl">
               Waiting for the current prompt…
