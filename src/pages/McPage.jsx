@@ -224,6 +224,45 @@ export default function McPage() {
     }
   }
 
+  const clearPushedSlot = async (panelKey) => {
+    const pushed = mcQuestions
+    if (!pushed?.panelists) return
+    if (!pushed.panelists[panelKey]?.question_text) return
+
+    setStatus('Updating…')
+    setError('')
+    try {
+      const nextMc = {
+        prompt: String(prompt ?? ''),
+        panelists: {
+          [GENERAL_TARGET_KEY]: pushed.panelists?.[GENERAL_TARGET_KEY] ?? null,
+          'Panelist 1': pushed.panelists?.['Panelist 1'] ?? null,
+          'Panelist 2': pushed.panelists?.['Panelist 2'] ?? null,
+          'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
+          'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
+        },
+      }
+      nextMc.panelists[panelKey] = null
+
+      await writeEventState(supabase, {
+        prompt: prompt ?? '',
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        slideshowActive,
+        slideshowIndex,
+        mcQuestions: nextMc,
+      })
+      setStatus('Live')
+      setMcQuestionsStatus('Cleared')
+      setTimeout(() => setMcQuestionsStatus('—'), 1500)
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
   const nextPromptDisabled = status === 'Updating…' || !nextInfo.next
   const prevPromptDisabled = status === 'Updating…' || !prevInfo.prev
   const firstPromptDisabled = status === 'Updating…' || !promptSequence?.[0]
@@ -318,6 +357,16 @@ export default function McPage() {
                     {new Date(generalPushed.created_at).toLocaleTimeString()}
                   </div>
                 ) : null}
+                {generalPushed?.question_text ? (
+                  <button
+                    type="button"
+                    onClick={() => clearPushedSlot(GENERAL_TARGET_KEY)}
+                    disabled={status === 'Updating…'}
+                    className="mt-2 w-full touch-manipulation rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Clear
+                  </button>
+                ) : null}
               </div>
 
               <div className="grid min-h-0 flex-1 grid-rows-4 gap-3 overflow-y-auto pr-1 sm:gap-4 lg:min-h-[12rem]">
@@ -344,6 +393,16 @@ export default function McPage() {
                         <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
                           {new Date(q.created_at).toLocaleTimeString()}
                         </div>
+                      ) : null}
+                      {q?.question_text ? (
+                        <button
+                          type="button"
+                          onClick={() => clearPushedSlot(p.key)}
+                          disabled={status === 'Updating…'}
+                          className="mt-2 w-full touch-manipulation rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Clear
+                        </button>
                       ) : null}
                     </div>
                   )

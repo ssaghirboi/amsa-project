@@ -48,11 +48,11 @@ export default function Audience() {
 
   const panelOptions = useMemo(
     () => [
-      { value: 'general', label: 'General' },
       ...PANELIST_DISPLAY_NAMES.map((label, i) => ({
         value: String(i + 1),
         label,
       })),
+      { value: 'general', label: 'General' },
     ],
     [],
   )
