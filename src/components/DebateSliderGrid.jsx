@@ -172,10 +172,10 @@ export function DebateSliderGrid({
   }, [panelists, rowLabels])
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
+    <div className="mx-auto w-full max-w-6xl">
       {/* Prompt — large, centered */}
       <div
-        className={`mb-10 flex w-full justify-center px-3 sm:px-4 ${
+        className={`mb-8 flex w-full justify-center px-3 sm:px-4 ${
           promptBoxHidden ? 'pointer-events-none opacity-0' : ''
         }`}
         aria-hidden={promptBoxHidden}

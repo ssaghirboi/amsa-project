@@ -37,9 +37,9 @@ function RevealPromptChars({ text, visibleCount, className = '' }) {
 
 const FULLSCREEN_PROMPT_BODY =
   '!text-[clamp(1.8rem,4.3vw,2.9rem)] sm:!text-[clamp(2rem,4.7vw,3.35rem)] md:!text-[clamp(2.1rem,5vw,3.75rem)] lg:!text-[clamp(2.25rem,5.4vw,4rem)] !leading-[1.12]'
-// Final debate-screen prompt above sliders: fixed-height box; text scales but stays inside.
+// Final debate-screen prompt above sliders: static, smaller box (no scroll).
 const DEBATE_PROMPT_BODY =
-  '!text-[clamp(1.45rem,3vw,2.15rem)] sm:!text-[clamp(1.6rem,3.3vw,2.4rem)] md:!text-[clamp(1.8rem,3.6vw,2.65rem)] lg:!text-[clamp(1.9rem,3.8vw,2.8rem)] !leading-[1.14] !max-h-[9.5rem] !overflow-y-auto !pr-1'
+  '!text-[clamp(1.3rem,2.6vw,2rem)] sm:!text-[clamp(1.45rem,2.8vw,2.15rem)] md:!text-[clamp(1.6rem,3vw,2.3rem)] lg:!text-[clamp(1.7rem,3.2vw,2.45rem)] !leading-[1.16]'
 const FULLSCREEN_PROMPT_INNER =
   '!flex !min-h-0 !flex-col !justify-center !px-6 !py-10 sm:!px-10 sm:!py-14 md:!px-14 md:!py-16'
 
@@ -503,33 +503,33 @@ export default function BigScreen() {
   const debateContent = (
     <>
       <div className="relative min-h-screen text-slate-800">
-      {/* Invisible twin for hero→strip transition; matches on-screen top-centre logo slot */}
-      <div
-        ref={eventHeaderLogoMeasureRef}
-        className="pointer-events-none fixed z-[15] left-1/2 top-[max(1rem,env(safe-area-inset-top))] -translate-x-1/2 opacity-0"
-        aria-hidden
-      >
-        <EventBranding variant="presentationCorner" className="shrink-0" />
-      </div>
-      <div
-        className="mx-auto max-w-7xl px-3 pb-10 pt-[clamp(10rem,28vh,16rem)] transition-opacity duration-400 ease-in-out sm:px-6 lg:px-10"
-        style={{
-          opacity: presentationOffFade,
-          pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
-        }}
-      >
-        <DebateSliderGrid
-          prompt={prompt}
-          panelists={panelists}
-          panelistIcons={panelistIcons}
-          error={error}
-          promptBoxCardRef={promptAnchorCardRef}
-          promptBoxHidden={showOverlay}
-          tableOpacity={debateTableOpacity}
-          promptInnerClassName={FULLSCREEN_PROMPT_INNER}
-          promptBodyClassName={DEBATE_PROMPT_BODY}
-        />
-      </div>
+        {/* Invisible twin for hero→strip transition; matches on-screen top-centre logo slot */}
+        <div
+          ref={eventHeaderLogoMeasureRef}
+          className="pointer-events-none fixed z-[15] left-1/2 top-[max(1rem,env(safe-area-inset-top))] -translate-x-1/2 opacity-0"
+          aria-hidden
+        >
+          <EventBranding variant="presentationCorner" className="shrink-0" />
+        </div>
+        <div
+          className="mx-auto flex min-h-screen max-w-7xl flex-col px-3 pb-10 pt-[clamp(8rem,22vh,13rem)] transition-opacity duration-400 ease-in-out sm:px-6 lg:px-10"
+          style={{
+            opacity: presentationOffFade,
+            pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
+          }}
+        >
+          <DebateSliderGrid
+            prompt={prompt}
+            panelists={panelists}
+            panelistIcons={panelistIcons}
+            error={error}
+            promptBoxCardRef={promptAnchorCardRef}
+            promptBoxHidden={showOverlay}
+            tableOpacity={debateTableOpacity}
+            promptInnerClassName={FULLSCREEN_PROMPT_INNER}
+            promptBodyClassName={DEBATE_PROMPT_BODY}
+          />
+        </div>
 
       {showOverlay ? (
         <>
