@@ -192,8 +192,8 @@ export function DebateSliderGrid({
         <div className="relative w-full max-w-6xl">
           {/* Desktop row labels in the left margin (not part of the table card) */}
           <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[15rem] flex-col items-end md:flex lg:mr-5 lg:w-[17rem]">
-            {/* Spacer matches the table header row height */}
-            <div className="min-h-[4.25rem] shrink-0 sm:min-h-[5rem]" aria-hidden />
+            {/* Spacer matches the table header row height (same type scale as denomination labels) */}
+            <div className="min-h-[5rem] shrink-0 sm:min-h-[5.75rem]" aria-hidden />
             {labels.map((label, i) => (
               <div
                 key={PANEL_VISUALS[i].key}
@@ -212,9 +212,9 @@ export function DebateSliderGrid({
               {SCALE_COLUMNS.map((col) => (
                 <div
                   key={col.label}
-                  className="border-r border-slate-400/80 px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+                  className="border-r border-slate-400/80 px-1 py-4 text-center last:border-r-0 sm:px-2 sm:py-5"
                 >
-                  <span className="block text-xs font-semibold uppercase leading-tight tracking-[0.1em] text-slate-700 sm:text-sm sm:tracking-[0.12em]">
+                  <span className="block text-balance text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-800 sm:text-lg sm:tracking-[0.12em]">
                     {col.label}
                   </span>
                 </div>
