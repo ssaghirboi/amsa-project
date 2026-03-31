@@ -15,29 +15,38 @@ const PANEL_VISUALS = [
  * Stored values stay 1 = Strongly Agree … 5 = Strongly Disagree; thumb position is mirrored so
  * agree sits on the green side and disagree on the red side.
  */
+const HEADER_LABEL_CLASS =
+  'text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-800 sm:text-lg sm:tracking-[0.12em]'
+
 const SCALE_COLUMNS = [
   {
+    id: 'strongly-disagree',
     label: 'Strongly Disagree',
     bar: 'from-red-950 via-red-800 to-rose-900',
     edge: 'border-red-900/95',
   },
   {
+    id: 'disagree',
     label: 'Disagree',
-    bar: 'from-orange-300 via-amber-200 to-orange-100',
-    edge: 'border-orange-500/80',
+    bar: 'from-red-100 via-rose-50 to-red-50',
+    edge: 'border-rose-200/85',
   },
   {
+    id: 'neutral',
     label: 'Neutral',
-    bar: 'from-slate-300 via-slate-200 to-slate-300',
-    edge: 'border-slate-400/90',
+    bar: 'from-amber-100 via-yellow-50 to-amber-50',
+    edge: 'border-amber-300/70',
   },
   {
+    id: 'agree',
     label: 'Agree',
-    bar: 'from-teal-200 via-emerald-200 to-green-100',
-    edge: 'border-emerald-500/75',
+    bar: 'from-emerald-200 via-emerald-100 to-teal-100',
+    edge: 'border-emerald-500/60',
   },
   {
+    id: 'strongly-agree',
     label: 'Strongly Agree',
+    headerLines: ['Strongly', 'Agree'],
     bar: 'from-emerald-800 via-green-800 to-emerald-950',
     edge: 'border-emerald-900/95',
   },
@@ -78,7 +87,7 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
         <div className="absolute inset-0 flex w-full">
           {SCALE_COLUMNS.map((col) => (
             <div
-              key={col.label}
+              key={col.id}
               className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r border-slate-500/65 last:border-r-0`}
             >
               {/* Fine mesh */}
@@ -192,8 +201,8 @@ export function DebateSliderGrid({
         <div className="relative w-full max-w-6xl">
           {/* Desktop row labels in the left margin (not part of the table card) */}
           <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[15rem] flex-col items-end md:flex lg:mr-5 lg:w-[17rem]">
-            {/* Spacer matches the table header row height (same type scale as denomination labels) */}
-            <div className="min-h-[5rem] shrink-0 sm:min-h-[5.75rem]" aria-hidden />
+            {/* Spacer matches the table header row height (incl. two-line “Strongly / Agree”) */}
+            <div className="min-h-[6.25rem] shrink-0 sm:min-h-[6.75rem]" aria-hidden />
             {labels.map((label, i) => (
               <div
                 key={PANEL_VISUALS[i].key}
@@ -211,12 +220,20 @@ export function DebateSliderGrid({
             <div className="relative grid grid-cols-5 gap-0 border-b border-slate-500/70 bg-slate-100/95">
               {SCALE_COLUMNS.map((col) => (
                 <div
-                  key={col.label}
-                  className="border-r border-slate-400/80 px-1 py-4 text-center last:border-r-0 sm:px-2 sm:py-5"
+                  key={col.id}
+                  className="relative flex min-h-[6.25rem] flex-col items-center justify-center border-r border-slate-400/80 px-1 py-3 text-center last:border-r-0 sm:min-h-[6.75rem] sm:px-2 sm:py-4"
                 >
-                  <span className="block text-balance text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-800 sm:text-lg sm:tracking-[0.12em]">
-                    {col.label}
-                  </span>
+                  {col.headerLines ? (
+                    <span className={`block w-full text-balance ${HEADER_LABEL_CLASS}`}>
+                      {col.headerLines[0]}
+                      <br />
+                      {col.headerLines[1]}
+                    </span>
+                  ) : (
+                    <span className={`block w-full max-w-[min(100%,11rem)] text-balance ${HEADER_LABEL_CLASS}`}>
+                      {col.label}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
