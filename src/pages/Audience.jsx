@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
+import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
 
@@ -46,12 +47,11 @@ export default function Audience() {
   const [justSubmitted, setJustSubmitted] = useState(false)
 
   const panelOptions = useMemo(
-    () => [
-      { value: 1, label: 'Panelist 1' },
-      { value: 2, label: 'Panelist 2' },
-      { value: 3, label: 'Panelist 3' },
-      { value: 4, label: 'Panelist 4' },
-    ],
+    () =>
+      PANELIST_DISPLAY_NAMES.map((label, i) => ({
+        value: i + 1,
+        label,
+      })),
     [],
   )
 

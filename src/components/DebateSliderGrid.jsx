@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { PromptBox } from './PromptBox'
 
-const DEFAULT_ROW_LABELS = ['Islam', 'Christianity', 'Atheism', 'Hinduism']
+const DEFAULT_ROW_LABELS = PANELIST_DISPLAY_NAMES
 
 const PANEL_VISUALS = [
   { key: 'P1', dot: 'bg-fuchsia-600', glow: 'shadow-[0_0_32px_rgba(192,38,211,0.5)]' },

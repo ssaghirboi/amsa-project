@@ -7,13 +7,12 @@ import {
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
+import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 
-const PANELISTS = [
-  { key: 'Panelist 1', title: 'Panelist 1' },
-  { key: 'Panelist 2', title: 'Panelist 2' },
-  { key: 'Panelist 3', title: 'Panelist 3' },
-  { key: 'Panelist 4', title: 'Panelist 4' },
-]
+const PANELISTS = [1, 2, 3, 4].map((n, i) => ({
+  key: `Panelist ${n}`,
+  title: PANELIST_DISPLAY_NAMES[i],
+}))
 
 function normalizeTarget(raw) {
   const s = String(raw ?? '').trim()

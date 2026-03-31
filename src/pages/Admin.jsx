@@ -4,6 +4,7 @@ import {
   PRESENTATION_SLIDE_COUNT,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
+import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import {
   DEFAULT_PROMPT_SEQUENCE,
@@ -608,7 +609,7 @@ export default function Admin() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium text-slate-800">
-                      Panelist {i + 1}
+                      {PANELIST_DISPLAY_NAMES[i]}
                     </div>
                     <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                       {storedValue} / 5
@@ -650,7 +651,7 @@ export default function Admin() {
                 <div key={panelLabels[i]} className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
-                      Panelist {i + 1}
+                      {PANELIST_DISPLAY_NAMES[i]}
                     </div>
                     {panelistIcons[i] ? (
                       <img

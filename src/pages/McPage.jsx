@@ -8,6 +8,7 @@ import {
   writeEventState,
 } from '../supabase/eventState'
 import { clampPresentationSlideIndex } from '../constants/presentationSlides'
+import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 
 function normalizePrompt(s) {
   return String(s ?? '').trim().toLowerCase()
@@ -46,12 +47,10 @@ function getPrevPrompt(current, sequence) {
   return { prev: String(seq[prevIndex] ?? ''), prevIndex, total: seq.length, seq }
 }
 
-const PANELISTS = [
-  { key: 'Panelist 1', title: 'Panelist 1' },
-  { key: 'Panelist 2', title: 'Panelist 2' },
-  { key: 'Panelist 3', title: 'Panelist 3' },
-  { key: 'Panelist 4', title: 'Panelist 4' },
-]
+const PANELISTS = [1, 2, 3, 4].map((n, i) => ({
+  key: `Panelist ${n}`,
+  title: PANELIST_DISPLAY_NAMES[i],
+}))
 
 export default function McPage() {
   const [prompt, setPrompt] = useState('')
