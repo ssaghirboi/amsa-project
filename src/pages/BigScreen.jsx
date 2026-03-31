@@ -38,7 +38,7 @@ function RevealPromptChars({ text, visibleCount, className = '' }) {
 const FULLSCREEN_PROMPT_BODY =
   '!text-[clamp(1.45rem,3.8vw,2.5rem)] sm:!text-[clamp(1.65rem,4.2vw,3rem)] md:!text-[clamp(1.85rem,4.8vw,3.5rem)] lg:!text-[clamp(2rem,5.2vw,4rem)] !leading-[1.12]'
 const FULLSCREEN_PROMPT_INNER =
-  '!flex !min-h-0 !flex-1 !flex-col !justify-center !px-6 !py-10 sm:!px-10 sm:!py-14 md:!px-14 md:!py-16'
+  '!flex !min-h-0 !flex-col !justify-center !px-6 !py-10 sm:!px-10 sm:!py-14 md:!px-14 md:!py-16'
 
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
@@ -75,8 +75,9 @@ export default function BigScreen() {
   const [debateTableOpacity, setDebateTableOpacity] = useState(1)
   /** FLIP target: fly fullscreen intro PromptBox down to DebateSliderGrid prompt anchor */
   const [flyTo, setFlyTo] = useState(null)
-  const introPromptRef = useRef(null)
-  const promptAnchorRef = useRef(null)
+  /** FLIP: measure the prompt shell (blur + card), not a tall min-height wrapper */
+  const introCardRef = useRef(null)
+  const promptAnchorCardRef = useRef(null)
   const prevPromptRef = useRef('')
   const hasSeededRef = useRef(false)
 
@@ -318,8 +319,8 @@ export default function BigScreen() {
         clearInterval(id)
         queueMicrotask(() => {
           requestAnimationFrame(() => {
-            const intro = introPromptRef.current
-            const target = promptAnchorRef.current
+            const intro = introCardRef.current
+            const target = promptAnchorCardRef.current
             let nextFly = null
             if (intro && target) {
               const a = intro.getBoundingClientRect()
@@ -496,7 +497,7 @@ export default function BigScreen() {
           panelists={panelists}
           panelistIcons={panelistIcons}
           error={error}
-          promptBoxRef={promptAnchorRef}
+          promptBoxCardRef={promptAnchorCardRef}
           promptBoxHidden={showOverlay}
           tableOpacity={debateTableOpacity}
         />
@@ -513,10 +514,10 @@ export default function BigScreen() {
             aria-live="polite"
             aria-busy={introPhase === 'typing'}
           >
-            <div className="flex min-h-0 w-full flex-1 flex-col">
+            <div className="flex min-h-0 w-full flex-1 flex-col justify-center min-h-[min(88dvh,920px)]">
             <PromptBox
               key={prompt}
-              ref={introPromptRef}
+              cardRef={introCardRef}
               maxWidthClass="max-w-none"
               innerClassName={FULLSCREEN_PROMPT_INNER}
               bodyClassName={
@@ -524,10 +525,10 @@ export default function BigScreen() {
                   ? FULLSCREEN_PROMPT_BODY
                   : ''
               }
-              className={`relative flex h-full min-h-[min(88dvh,920px)] w-full flex-1 flex-col justify-center ${
+              cardClassName={
                 introPhase === 'shrinking' && flyTo ? 'bigscreen-prompt-fly-to-target' : ''
-              }`}
-              style={
+              }
+              cardStyle={
                 introPhase === 'shrinking' && flyTo
                   ? {
                       '--fly-dx': `${flyTo.dx}px`,
@@ -536,6 +537,7 @@ export default function BigScreen() {
                     }
                   : undefined
               }
+              className="relative flex w-full max-w-none flex-col justify-center"
             >
               {introPhase === 'typing' ? (
                 <RevealPromptChars

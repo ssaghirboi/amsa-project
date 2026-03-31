@@ -143,7 +143,8 @@ export function DebateSliderGrid({
   panelistIcons,
   rowLabels = DEFAULT_ROW_LABELS,
   error,
-  promptBoxRef,
+  /** Ref on the prompt shell (blur + card) for FLIP handoff on BigScreen */
+  promptBoxCardRef,
   /** Hide in-flow prompt (e.g. BigScreen intro overlay shows it) while keeping layout for measurement */
   promptBoxHidden = false,
   /** Fade sliders + labels + error after intro (0 … 1) */
@@ -162,7 +163,7 @@ export function DebateSliderGrid({
         }`}
         aria-hidden={promptBoxHidden}
       >
-        <PromptBox ref={promptBoxRef}>
+        <PromptBox cardRef={promptBoxCardRef}>
           {prompt?.trim() ? prompt : (
             <span className="text-lg font-normal text-slate-500/95 md:text-xl">
               Waiting for the current prompt…
