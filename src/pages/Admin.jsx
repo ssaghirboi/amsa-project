@@ -596,7 +596,12 @@ export default function Admin() {
             </p>
 
             <div className="mt-4 space-y-5">
-              {panelists.map((value, i) => (
+              {panelists.map((storedValue, i) => {
+                // Screen uses 1 = Strongly Agree (right), 5 = Strongly Disagree (left).
+                // For this admin slider, we show 1 = Strongly Disagree (left) … 5 = Strongly Agree (right),
+                // so we invert when reading/writing.
+                const uiValue = 6 - storedValue
+                return (
                 <div
                   key={panelLabels[i]}
                   className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
@@ -606,7 +611,7 @@ export default function Admin() {
                       Panelist {i + 1}
                     </div>
                     <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      {value} / 5
+                      {storedValue} / 5
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -619,18 +624,19 @@ export default function Admin() {
                     min={1}
                     max={5}
                     step={1}
-                    value={value}
+                    value={uiValue}
                     onChange={(e) => {
-                      const nextVal = Number(e.target.value)
+                      const nextUiVal = Number(e.target.value)
+                      const nextStoredVal = 6 - nextUiVal
                       const next = [...panelists]
-                      next[i] = nextVal
+                      next[i] = nextStoredVal
                       setPanelists(next)
                       commit(prompt, next)
                     }}
                     className="mt-1 h-2 w-full cursor-pointer accent-indigo-500"
                   />
                 </div>
-              ))}
+              )})}
             </div>
           </section>
 
