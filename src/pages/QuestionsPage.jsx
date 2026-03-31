@@ -7,16 +7,24 @@ import {
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
-import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
+import {
+  GENERAL_TARGET_KEY,
+  PANELIST_DISPLAY_NAMES,
+  getEmptyMcQuestionSlots,
+} from '../constants/panelists'
 
-const PANELISTS = [1, 2, 3, 4].map((n, i) => ({
-  key: `Panelist ${n}`,
-  title: PANELIST_DISPLAY_NAMES[i],
-}))
+const PANELISTS = [
+  { key: GENERAL_TARGET_KEY, title: 'General' },
+  ...[1, 2, 3, 4].map((n, i) => ({
+    key: `Panelist ${n}`,
+    title: PANELIST_DISPLAY_NAMES[i],
+  })),
+]
 
 function normalizeTarget(raw) {
   const s = String(raw ?? '').trim()
   if (!s) return null
+  if (/^general$/i.test(s)) return GENERAL_TARGET_KEY
   // Accept either “Panelist 1” or just “1”
   const m = s.match(/panelist\s*(\d)/i) ?? s.match(/^(\d)$/)
   if (!m) return s
@@ -64,12 +72,7 @@ function isSameId(a, b) {
 function emptyMcQuestions(nextPrompt) {
   return {
     prompt: String(nextPrompt ?? ''),
-    panelists: {
-      'Panelist 1': null,
-      'Panelist 2': null,
-      'Panelist 3': null,
-      'Panelist 4': null,
-    },
+    panelists: getEmptyMcQuestionSlots(),
   }
 }
 
@@ -265,6 +268,7 @@ export default function QuestionsPage() {
         ? {
             prompt: String(eventState.prompt ?? ''),
             panelists: {
+              [GENERAL_TARGET_KEY]: pushed?.panelists?.[GENERAL_TARGET_KEY] ?? null,
               'Panelist 1': pushed?.panelists?.['Panelist 1'] ?? null,
               'Panelist 2': pushed?.panelists?.['Panelist 2'] ?? null,
               'Panelist 3': pushed?.panelists?.['Panelist 3'] ?? null,
@@ -318,6 +322,7 @@ export default function QuestionsPage() {
       const nextMc = {
         prompt: String(eventState.prompt ?? ''),
         panelists: {
+          [GENERAL_TARGET_KEY]: pushed.panelists?.[GENERAL_TARGET_KEY] ?? null,
           'Panelist 1': pushed.panelists?.['Panelist 1'] ?? null,
           'Panelist 2': pushed.panelists?.['Panelist 2'] ?? null,
           'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
@@ -378,7 +383,7 @@ export default function QuestionsPage() {
     }
 
     return panelMap
-  }, [questions])
+  }, [questions, hasPromptColumn, activePromptKey])
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
@@ -429,7 +434,7 @@ export default function QuestionsPage() {
             <span className="text-xs text-slate-500">pushed to MC</span>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {PANELISTS.map((p) => {
               const q = pushedFor(p.key)
               return (

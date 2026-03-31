@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
-import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
+import { GENERAL_TARGET_KEY, PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
 
@@ -11,17 +11,16 @@ function isMissingColumnError(error) {
   return /does not exist/i.test(msg) && /column/i.test(msg)
 }
 
-async function insertQuestion(supabase, { panelist, question, prompt }) {
+async function insertQuestion(supabase, { targetPanelist, question, prompt }) {
   // Matches your provided SQL:
   // questions(
-  //   target_panelist TEXT, -- 'Panelist 1' .. 'Panelist 4'
+  //   target_panelist TEXT, -- 'General', 'Panelist 1' .. 'Panelist 4'
   //   question_text TEXT
   // )
-  const target = `Panelist ${panelist}`
 
   // Try to include prompt snapshot (enables /questions grouping by prompt if column exists).
   const payload = {
-    target_panelist: target,
+    target_panelist: targetPanelist,
     question_text: question,
     prompt: prompt ?? null,
   }
@@ -40,18 +39,21 @@ async function insertQuestion(supabase, { panelist, question, prompt }) {
 
 export default function Audience() {
   const [prompt, setPrompt] = useState('')
-  const [panelist, setPanelist] = useState(1)
+  /** `'general'` or panel index `'1'`…`'4'` */
+  const [targetPanel, setTargetPanel] = useState('1')
   const [question, setQuestion] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
   const [justSubmitted, setJustSubmitted] = useState(false)
 
   const panelOptions = useMemo(
-    () =>
-      PANELIST_DISPLAY_NAMES.map((label, i) => ({
-        value: i + 1,
+    () => [
+      { value: 'general', label: 'General' },
+      ...PANELIST_DISPLAY_NAMES.map((label, i) => ({
+        value: String(i + 1),
         label,
       })),
+    ],
     [],
   )
 
@@ -82,7 +84,9 @@ export default function Audience() {
     setJustSubmitted(false)
 
     try {
-      await insertQuestion(supabase, { panelist, question: text, prompt })
+      const targetPanelist =
+        targetPanel === 'general' ? GENERAL_TARGET_KEY : `Panelist ${targetPanel}`
+      await insertQuestion(supabase, { targetPanelist, question: text, prompt })
       setQuestion('')
       setJustSubmitted(true)
       setTimeout(() => {
@@ -127,8 +131,8 @@ export default function Audience() {
                 </p>
                 <select
                   className="mt-3 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[16px] text-slate-900 outline-none ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
-                  value={panelist}
-                  onChange={(e) => setPanelist(Number(e.target.value))}
+                  value={targetPanel}
+                  onChange={(e) => setTargetPanel(e.target.value)}
                 >
                   {panelOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>

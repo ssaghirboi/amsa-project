@@ -8,7 +8,11 @@ import {
   writeEventState,
 } from '../supabase/eventState'
 import { clampPresentationSlideIndex } from '../constants/presentationSlides'
-import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
+import {
+  GENERAL_TARGET_KEY,
+  PANELIST_DISPLAY_NAMES,
+  getEmptyMcQuestionSlots,
+} from '../constants/panelists'
 
 function normalizePrompt(s) {
   return String(s ?? '').trim().toLowerCase()
@@ -17,12 +21,7 @@ function normalizePrompt(s) {
 function emptyMcQuestions(nextPrompt, options = {}) {
   const base = {
     prompt: String(nextPrompt ?? ''),
-    panelists: {
-      'Panelist 1': null,
-      'Panelist 2': null,
-      'Panelist 3': null,
-      'Panelist 4': null,
-    },
+    panelists: getEmptyMcQuestionSlots(),
   }
   if (options.skipDebateIntro) {
     base.skipDebateIntro = true
@@ -47,7 +46,9 @@ function getPrevPrompt(current, sequence) {
   return { prev: String(seq[prevIndex] ?? ''), prevIndex, total: seq.length, seq }
 }
 
-const PANELISTS = [1, 2, 3, 4].map((n, i) => ({
+const GENERAL_SLOT = { key: GENERAL_TARGET_KEY, title: 'General' }
+
+const PANELIST_ONLY = [1, 2, 3, 4].map((n, i) => ({
   key: `Panelist ${n}`,
   title: PANELIST_DISPLAY_NAMES[i],
 }))
@@ -227,6 +228,8 @@ export default function McPage() {
   const prevPromptDisabled = status === 'Updating…' || !prevInfo.prev
   const firstPromptDisabled = status === 'Updating…' || !promptSequence?.[0]
 
+  const generalPushed = mcQuestions?.panelists?.[GENERAL_TARGET_KEY] ?? null
+
   return (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col bg-[#010101] text-slate-100">
       <div className="flex min-h-0 w-full flex-1 flex-col px-3 pb-6 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pb-8 lg:px-8 lg:pb-10">
@@ -296,34 +299,56 @@ export default function McPage() {
               <span className="text-xs text-slate-500">{mcQuestionsStatus}</span>
             </div>
 
-            <div className="mt-5 grid min-h-0 flex-1 grid-rows-4 gap-3 overflow-y-auto pr-1 sm:gap-4 lg:min-h-[12rem]">
-              {PANELISTS.map((p) => {
-                const q = mcQuestions?.panelists?.[p.key] ?? null
-                return (
-                  <div
-                    key={p.key}
-                    className="flex min-h-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:py-4"
-                  >
-                    <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
-                      {p.title}
-                    </div>
-                    <div
-                      className={`mt-2 min-h-0 leading-snug sm:leading-normal ${
-                        q?.question_text
-                          ? 'text-[clamp(1rem,2.4vw,1.75rem)] font-semibold text-slate-50'
-                          : 'text-[clamp(0.95rem,2vw,1.125rem)] font-normal text-slate-500'
-                      }`}
-                    >
-                      {q?.question_text ? q.question_text : 'No question yet.'}
-                    </div>
-                    {q?.created_at ? (
-                      <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
-                        {new Date(q.created_at).toLocaleTimeString()}
-                      </div>
-                    ) : null}
+            <div className="mt-5 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
+              <div className="shrink-0 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:py-4">
+                <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  {GENERAL_SLOT.title}
+                </div>
+                <div
+                  className={`mt-2 min-h-0 leading-snug sm:leading-normal ${
+                    generalPushed?.question_text
+                      ? 'text-[clamp(1rem,2.4vw,1.75rem)] font-semibold text-slate-50'
+                      : 'text-[clamp(0.95rem,2vw,1.125rem)] font-normal text-slate-500'
+                  }`}
+                >
+                  {generalPushed?.question_text ? generalPushed.question_text : 'No question yet.'}
+                </div>
+                {generalPushed?.created_at ? (
+                  <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
+                    {new Date(generalPushed.created_at).toLocaleTimeString()}
                   </div>
-                )
-              })}
+                ) : null}
+              </div>
+
+              <div className="grid min-h-0 flex-1 grid-rows-4 gap-3 overflow-y-auto pr-1 sm:gap-4 lg:min-h-[12rem]">
+                {PANELIST_ONLY.map((p) => {
+                  const q = mcQuestions?.panelists?.[p.key] ?? null
+                  return (
+                    <div
+                      key={p.key}
+                      className="flex min-h-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/20 px-4 py-3 sm:py-4"
+                    >
+                      <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                        {p.title}
+                      </div>
+                      <div
+                        className={`mt-2 min-h-0 leading-snug sm:leading-normal ${
+                          q?.question_text
+                            ? 'text-[clamp(1rem,2.4vw,1.75rem)] font-semibold text-slate-50'
+                            : 'text-[clamp(0.95rem,2vw,1.125rem)] font-normal text-slate-500'
+                        }`}
+                      >
+                        {q?.question_text ? q.question_text : 'No question yet.'}
+                      </div>
+                      {q?.created_at ? (
+                        <div className="mt-2 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-600">
+                          {new Date(q.created_at).toLocaleTimeString()}
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </aside>
 
