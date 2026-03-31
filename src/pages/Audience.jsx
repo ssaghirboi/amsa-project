@@ -91,7 +91,7 @@ export default function Audience() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] min-h-screen bg-[#010101] text-slate-100">
+    <div className="relative min-h-[100dvh] min-h-screen bg-slate-100 text-slate-900">
       <div
         className="pointer-events-none fixed z-20 left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))]"
         aria-hidden
@@ -100,20 +100,19 @@ export default function Audience() {
       </div>
 
       <main className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center px-3 pb-16 pt-[clamp(8rem,22vh,14rem)] sm:px-5 sm:pb-20 md:px-8 lg:px-12">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 rounded-3xl border border-white/10 bg-black/40 p-6 text-sm shadow-[0_22px_80px_rgba(0,0,0,0.7)] backdrop-blur-md sm:p-8 md:p-10 lg:max-w-5xl lg:text-base">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 rounded-3xl border border-slate-200/80 bg-white/95 p-6 text-sm shadow-[0_22px_80px_rgba(15,23,42,0.18)] backdrop-blur-sm sm:p-8 md:p-10 lg:max-w-5xl lg:text-base">
           <header className="space-y-3 border-b border-white/10 pb-6 md:pb-7">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-slate-400 sm:text-xs">
-              Audience Q&A
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-slate-500 sm:text-xs">
+              Share your thoughts
             </p>
             <p className="text-xs font-medium uppercase tracking-[0.32em] text-slate-500 sm:text-[0.72rem]">
               Current prompt
             </p>
-            <h1 className="mt-1 text-balance text-lg font-semibold leading-snug tracking-tight text-slate-50 sm:text-xl md:text-2xl">
-              {prompt?.trim() ? prompt.trim() : 'Waiting for the prompt...'}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-[0.95rem]">
-              Ask a question and direct it towards any of the four panelists.
-            </p>
+            <div className="mt-2 rounded-2xl border border-slate-300/80 bg-slate-50 px-4 py-4 text-center shadow-inner sm:px-6 sm:py-5">
+              <h1 className="text-balance text-[clamp(1.1rem,2.5vw,1.6rem)] font-semibold leading-snug tracking-tight text-slate-900">
+                {prompt?.trim() ? prompt.trim() : 'Waiting for the prompt...'}
+              </h1>
+            </div>
           </header>
 
           <form
@@ -122,11 +121,11 @@ export default function Audience() {
           >
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
-                  Select a Panelist
-                </label>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  Select a panelist to direct your question or comment towards
+                </p>
                 <select
-                  className="mt-2 w-full rounded-xl border border-white/12 bg-black/40 px-3.5 py-2.5 text-sm text-slate-100 outline-none ring-1 ring-white/5 transition hover:border-white/25 hover:bg-black/50 focus:border-indigo-400/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
+                  className="mt-3 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
                   value={panelist}
                   onChange={(e) => setPanelist(Number(e.target.value))}
                 >
@@ -139,12 +138,9 @@ export default function Audience() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
-                  Your question
-                </label>
                 <textarea
-                  className="mt-2 min-h-[130px] w-full resize-none rounded-xl border border-white/12 bg-black/40 px-3.5 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-500 ring-1 ring-white/5 transition hover:border-white/25 hover:bg-black/50 focus:border-indigo-400/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
-                  placeholder="Type your question..."
+                  className="mt-2 min-h-[130px] w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500 ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
+                  placeholder="Type your question or comment..."
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                 />
@@ -153,20 +149,28 @@ export default function Audience() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-500 px-4 py-2.75 text-sm font-semibold text-slate-950 shadow-[0_18px_45px_rgba(79,70,229,0.55)] transition hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60 sm:text-[0.95rem]"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-500 px-4 py-2.75 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(79,70,229,0.45)] transition hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[0.95rem]"
               >
                 {submitting ? 'Sending…' : 'Submit question'}
               </button>
             </div>
 
-            <aside className="space-y-3 rounded-2xl border border-white/12 bg-black/40 p-4 text-sm text-slate-300 ring-1 ring-white/5 sm:p-5">
+            <aside className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-100 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
                 What to keep in mind
               </p>
-              <ul className="mt-2 space-y-2 text-[0.85rem] leading-relaxed text-slate-300 sm:text-[0.9rem]">
+              <ul className="mt-2 space-y-2 text-[0.85rem] leading-relaxed text-slate-700 sm:text-[0.9rem]">
                 <li>Keep your question concise and focused on the current prompt.</li>
-                <li>Choose the panelist you most want to answer.</li>
                 <li>Questions may be edited for clarity or length before being asked.</li>
+                <li>
+                  Our moderators will select questions that best represent the audience&apos;s interests and foster a
+                  balanced discussion among the four representatives.
+                </li>
+                <li>
+                  We welcome all questions, but please ensure they are phrased respectfully. This symposium is a space
+                  for constructive dialogue and mutual understanding. Questions containing hate speech, personal attacks,
+                  or inflammatory language will not be considered.
+                </li>
               </ul>
 
               {notice ? (
