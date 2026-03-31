@@ -255,19 +255,19 @@ export default function McPage() {
               <div className="flex flex-wrap items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={goPrevPrompt}
-                  disabled={prevPromptDisabled}
-                  className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-8 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
-                >
-                  Previous prompt
-                </button>
-                <button
-                  type="button"
                   onClick={goFirstPrompt}
                   disabled={firstPromptDisabled}
                   className="min-h-[3.25rem] min-w-[8.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-6 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-8 sm:text-lg"
                 >
                   Reset to first
+                </button>
+                <button
+                  type="button"
+                  onClick={goPrevPrompt}
+                  disabled={prevPromptDisabled}
+                  className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-8 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
+                >
+                  Previous prompt
                 </button>
                 <button
                   type="button"

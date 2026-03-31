@@ -83,7 +83,7 @@ export default function Audience() {
 
     try {
       await insertQuestion(supabase, { panelist, question: text, prompt })
-      setQuestion('')
+      setQuestion('Sent.')
       setJustSubmitted(true)
       setTimeout(() => {
         setJustSubmitted(false)
