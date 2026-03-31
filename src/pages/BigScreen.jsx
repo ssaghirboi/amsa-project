@@ -604,14 +604,14 @@ export default function BigScreen() {
         className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] pointer-events-none"
         aria-hidden
       >
-        <div className="rounded-2xl bg-white/95 shadow-[0_10px_28px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 p-3">
-          <div className="text-center text-[13px] font-semibold tracking-tight text-slate-900">
+        <div className="rounded-2xl bg-white/95 shadow-[0_10px_28px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 p-4">
+          <div className="text-center text-sm font-semibold tracking-tight text-slate-900">
             Share your thoughts
           </div>
           <img
             src={qrDoesGodExist}
             alt=""
-            className="mt-2 h-32 w-32 rounded-xl bg-white"
+            className="mt-2.5 h-48 w-48 rounded-xl bg-white sm:h-52 sm:w-52"
             draggable={false}
           />
         </div>
