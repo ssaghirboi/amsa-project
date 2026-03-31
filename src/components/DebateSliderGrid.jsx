@@ -4,38 +4,38 @@ import { PromptBox } from './PromptBox'
 const DEFAULT_ROW_LABELS = ['Islam', 'Christianity', 'Atheism', 'Hinduism']
 
 const PANEL_VISUALS = [
-  { key: 'P1', dot: 'bg-fuchsia-500', glow: 'shadow-[0_0_28px_rgba(232,121,249,0.45)]' },
-  { key: 'P2', dot: 'bg-cyan-400', glow: 'shadow-[0_0_28px_rgba(34,211,238,0.4)]' },
-  { key: 'P3', dot: 'bg-amber-400', glow: 'shadow-[0_0_28px_rgba(251,191,36,0.4)]' },
-  { key: 'P4', dot: 'bg-lime-400', glow: 'shadow-[0_0_28px_rgba(163,230,53,0.45)]' },
+  { key: 'P1', dot: 'bg-fuchsia-600', glow: 'shadow-[0_0_24px_rgba(192,38,211,0.35)]' },
+  { key: 'P2', dot: 'bg-cyan-600', glow: 'shadow-[0_0_24px_rgba(8,145,178,0.35)]' },
+  { key: 'P3', dot: 'bg-amber-600', glow: 'shadow-[0_0_24px_rgba(217,119,6,0.35)]' },
+  { key: 'P4', dot: 'bg-lime-600', glow: 'shadow-[0_0_24px_rgba(101,163,13,0.35)]' },
 ]
 
 /** Left → right matches value 1 → 5 on the event state sliders */
 const SCALE_COLUMNS = [
   {
     label: 'Strongly Agree',
-    bar: 'from-[#3a0a0c] via-[#5c1218] to-[#2a080a]',
-    edge: 'border-rose-900/40',
+    bar: 'from-rose-100 via-rose-50 to-red-50',
+    edge: 'border-rose-200/70',
   },
   {
     label: 'Slightly Agree',
-    bar: 'from-[#2a1818] via-[#3d2420] to-[#221818]',
-    edge: 'border-orange-900/25',
+    bar: 'from-orange-100 via-amber-50 to-stone-50',
+    edge: 'border-orange-200/60',
   },
   {
     label: 'Neutral',
-    bar: 'from-[#1f1a14] via-[#2d2618] to-[#18140f]',
-    edge: 'border-amber-900/20',
+    bar: 'from-slate-100 via-slate-50 to-slate-100',
+    edge: 'border-slate-200/80',
   },
   {
     label: 'Slightly Disagree',
-    bar: 'from-[#0f1a14] via-[#142820] to-[#0c1510]',
-    edge: 'border-emerald-900/25',
+    bar: 'from-emerald-50 via-teal-50 to-slate-50',
+    edge: 'border-teal-200/55',
   },
   {
     label: 'Strongly Disagree',
-    bar: 'from-[#061a10] via-[#0c2818] to-[#041208]',
-    edge: 'border-emerald-800/35',
+    bar: 'from-emerald-100 via-green-50 to-emerald-50',
+    edge: 'border-emerald-300/65',
   },
 ]
 
@@ -54,16 +54,15 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
     <div className="group relative min-h-[5.5rem] w-full sm:min-h-[6.25rem]">
       <div
         className={`relative flex min-h-[5.5rem] w-full items-center sm:min-h-[6.25rem] ${
-          showBorderBottom ? 'border-b border-white/[0.06]' : ''
+          showBorderBottom ? 'border-b border-slate-200/90' : ''
         }`}
       >
         {/* Mobile: centered above track (desktop labels sit in left margin beside table) */}
         <div className="pointer-events-none absolute left-0 right-0 top-2 z-20 flex justify-center md:hidden">
           <span
-            className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-100/90"
+            className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-700"
             style={{
-              textShadow:
-                '0 0 24px rgba(0,0,0,0.95), 0 2px 10px rgba(0,0,0,0.85)',
+              textShadow: '0 1px 0 rgba(255,255,255,0.8)',
             }}
           >
             {rowLabel}
@@ -75,15 +74,15 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
           {SCALE_COLUMNS.map((col) => (
             <div
               key={col.label}
-              className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r border-black/20 last:border-r-0`}
+              className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r border-slate-300/50 last:border-r-0`}
             >
               {/* Fine mesh */}
               <div
-                className="pointer-events-none absolute inset-0 opacity-[0.14]"
+                className="pointer-events-none absolute inset-0 opacity-[0.2]"
                 style={{
                   backgroundImage: `
-                    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+                    linear-gradient(rgba(15,23,42,0.04) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(15,23,42,0.04) 1px, transparent 1px)
                   `,
                   backgroundSize: '5px 5px',
                 }}
@@ -104,12 +103,12 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
                 style={{ left: `${((i + 0.5) / 5) * 100}%` }}
                 aria-hidden
               >
-                <div className="h-full w-px bg-gradient-to-b from-transparent via-white/40 to-transparent" />
+                <div className="h-full w-px bg-gradient-to-b from-transparent via-slate-400/45 to-transparent" />
               </div>
             ))}
 
             {/* Horizontal rail */}
-            <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-white/5 via-white/25 to-white/5 shadow-[0_0_12px_rgba(255,255,255,0.06)]" />
+            <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-slate-300/40 via-slate-400/55 to-slate-300/40 shadow-[0_0_8px_rgba(15,23,42,0.06)]" />
 
             {/* Thumb — same % as ticks for each discrete value */}
             <div
@@ -118,7 +117,7 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
               aria-label={`${rowLabel} position ${value} of 5`}
             >
               <div className={`rounded-full ${visuals.glow}`}>
-                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-white/25 bg-[#0a0a0a]/90 shadow-[0_8px_32px_rgba(0,0,0,0.65)] ring-1 ring-white/10 backdrop-blur-sm sm:h-16 sm:w-16">
+                <div className="relative h-14 w-14 overflow-hidden rounded-full border border-slate-300/90 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/80 backdrop-blur-sm sm:h-16 sm:w-16">
                   {iconUrl ? (
                     <img
                       src={iconUrl}
@@ -165,7 +164,7 @@ export function DebateSliderGrid({
       >
         <PromptBox ref={promptBoxRef}>
           {prompt?.trim() ? prompt : (
-            <span className="text-lg font-normal text-slate-500 md:text-xl">
+            <span className="text-lg font-normal text-slate-500/95 md:text-xl">
               Waiting for the current prompt…
             </span>
           )}
@@ -177,7 +176,7 @@ export function DebateSliderGrid({
         style={{ opacity: tableOpacity }}
       >
       {error ? (
-        <div className="mb-6 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-100/95">
+        <div className="mb-6 rounded-xl border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
         </div>
       ) : null}
@@ -194,7 +193,7 @@ export function DebateSliderGrid({
                 key={PANEL_VISUALS[i].key}
                 className="flex min-h-[5.5rem] items-center justify-end sm:min-h-[6.25rem]"
               >
-                <span className="text-right text-[0.65rem] font-semibold uppercase leading-none tracking-[0.2em] text-slate-300 sm:text-xs">
+                <span className="text-right text-[0.65rem] font-semibold uppercase leading-none tracking-[0.2em] text-slate-600 sm:text-xs">
                   {label}
                 </span>
               </div>
@@ -202,14 +201,14 @@ export function DebateSliderGrid({
           </div>
 
           {/* Rounded table card only (no labels inside) */}
-          <div className="w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050505] shadow-[0_24px_80px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <div className="relative grid grid-cols-5 gap-0 border-b border-white/[0.07] bg-black/40">
+          <div className="w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]">
+            <div className="relative grid grid-cols-5 gap-0 border-b border-slate-200/90 bg-slate-50/90">
               {SCALE_COLUMNS.map((col) => (
                 <div
                   key={col.label}
-                  className="border-r border-white/[0.05] px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
+                  className="border-r border-slate-200/70 px-1 py-3 text-center last:border-r-0 sm:px-2 sm:py-4"
                 >
-                  <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-400/95 sm:text-[0.65rem] sm:tracking-[0.14em]">
+                  <span className="block text-[0.58rem] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-600 sm:text-[0.65rem] sm:tracking-[0.14em]">
                     {col.label}
                   </span>
                 </div>
@@ -218,10 +217,10 @@ export function DebateSliderGrid({
 
             <div className="relative">
               <div
-                className="pointer-events-none absolute inset-0 opacity-[0.07]"
+                className="pointer-events-none absolute inset-0 opacity-[0.35]"
                 style={{
-                  backgroundImage: `radial-gradient(circle at 20% 30%, rgba(120,40,40,0.15) 0%, transparent 45%),
-                radial-gradient(circle at 80% 70%, rgba(20,80,50,0.12) 0%, transparent 40%)`,
+                  backgroundImage: `radial-gradient(circle at 20% 30%, rgba(251,113,133,0.12) 0%, transparent 45%),
+                radial-gradient(circle at 80% 70%, rgba(52,211,153,0.1) 0%, transparent 40%)`,
                 }}
                 aria-hidden
               />

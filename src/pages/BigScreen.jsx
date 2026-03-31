@@ -25,7 +25,7 @@ function RevealPromptChars({ text, visibleCount, className = '' }) {
       {chars.map((ch, i) => (
         <span
           key={`${i}-${ch}`}
-          className={i < visibleCount ? 'text-slate-50' : 'text-transparent'}
+          className={i < visibleCount ? 'text-slate-900' : 'text-transparent'}
           aria-hidden={i >= visibleCount}
         >
           {ch}
@@ -408,7 +408,7 @@ export default function BigScreen() {
 
   const fixedLogo = (
     <div
-      className="presentation-logo-shell presentation-branding-transition fixed z-20 flex pointer-events-none"
+      className="presentation-logo-shell presentation-branding-transition fixed z-20 flex pointer-events-none drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]"
       style={fixedLogoPos}
     >
       <EventBranding
@@ -430,8 +430,8 @@ export default function BigScreen() {
           key={i}
           className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${
             i === slideshowIndex
-              ? 'scale-110 bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
-              : 'scale-100 bg-white/20'
+              ? 'scale-110 bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.45)]'
+              : 'scale-100 bg-slate-300/90'
           }`}
           aria-hidden
         />
@@ -440,7 +440,7 @@ export default function BigScreen() {
   )
 
   const slideshowContent = (
-    <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-100">
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-800">
       <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
         {!cornerLayout ? (
           <div
@@ -449,7 +449,7 @@ export default function BigScreen() {
             style={{ opacity: textOpacity }}
           >
             {textSlide.tagline ? (
-              <p className="text-xl font-medium tracking-wide text-slate-200/95 sm:text-2xl md:text-3xl">
+              <p className="text-xl font-medium tracking-wide text-slate-600 sm:text-2xl md:text-3xl">
                 {textSlide.tagline}
               </p>
             ) : null}
@@ -460,10 +460,10 @@ export default function BigScreen() {
             className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(6rem,16vh,10rem)] text-center sm:pt-[clamp(6rem,14vh,9rem)]"
             style={{ opacity: textOpacity }}
           >
-            <h1 className="max-w-3xl text-balance text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl md:text-5xl">
+            <h1 className="max-w-3xl text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
               {textSlide.title}
             </h1>
-            <p className="mt-4 max-w-xl text-lg text-slate-300/95 sm:mt-6 sm:text-xl md:text-2xl">
+            <p className="mt-4 max-w-xl text-lg text-slate-600 sm:mt-6 sm:text-xl md:text-2xl">
               {textSlide.subtitle}
             </p>
           </div>
@@ -475,7 +475,7 @@ export default function BigScreen() {
 
   const debateContent = (
     <>
-      <div className="relative min-h-screen text-slate-100">
+      <div className="relative min-h-screen text-slate-800">
       {/* Invisible twin for center→corner transition; matches on-screen corner logo slot */}
       <div
         ref={eventHeaderLogoMeasureRef}
@@ -505,7 +505,7 @@ export default function BigScreen() {
       {showOverlay ? (
         <>
           <div
-            className="fixed inset-0 z-50 bg-[#030202]/88 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-slate-100/90 backdrop-blur-sm"
             aria-hidden
           />
           <div
@@ -555,7 +555,18 @@ export default function BigScreen() {
   );
 
   return (
-    <div className="relative min-h-screen text-slate-100">
+    <div
+      className="relative min-h-screen text-slate-800"
+      style={{
+        backgroundColor: '#f8fafc',
+        backgroundImage: `
+          radial-gradient(ellipse 110% 55% at 50% 105%, rgba(148, 163, 184, 0.22) 0%, transparent 52%),
+          radial-gradient(ellipse 70% 40% at 50% -5%, rgba(203, 213, 225, 0.35) 0%, transparent 48%),
+          linear-gradient(180deg, #f8fafc 0%, #f1f5f9 38%, #e8eef5 72%, #f8fafc 100%)
+        `,
+        backgroundAttachment: 'fixed',
+      }}
+    >
       {fixedLogo}
       {slideshowActive ? slideshowContent : debateContent}
     </div>
