@@ -28,8 +28,8 @@ const SCALE_COLUMNS = [
   {
     id: 'disagree',
     label: 'Disagree',
-    bar: 'from-red-200 via-rose-100 to-red-100',
-    edge: 'border-rose-400/90',
+    bar: 'from-red-400 via-red-300 to-red-200',
+    edge: 'border-rose-500/90',
   },
   {
     id: 'neutral',

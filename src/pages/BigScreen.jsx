@@ -56,7 +56,8 @@ export default function BigScreen() {
   const presentationOffTimeoutRef = useRef(null)
   const wasSlideshowActiveRef = useRef(false)
   const [presentationOffLogoLayout, setPresentationOffLogoLayout] = useState('corner') // 'hero' | 'corner'
-  const [eventHeaderLogoPos, setEventHeaderLogoPos] = useState(null) // { left, top } px — corner target during center→corner
+  /** Measured target `top` (px) when animating hero logo → top-centre header strip */
+  const [eventHeaderLogoPos, setEventHeaderLogoPos] = useState(null)
   const eventHeaderLogoMeasureRef = useRef(null)
   const [textSlideIndex, setTextSlideIndex] = useState(0)
   const [textOpacity, setTextOpacity] = useState(1)
@@ -227,17 +228,17 @@ export default function BigScreen() {
 
     const moveDurationMs = 850
     if (isCornerLayout) {
-      // Logo already top-left: fade debate in.
+      // Logo already top-centre: fade debate in.
       presentationOffTimeoutRef.current = setTimeout(() => {
         setPresentationOffFade(1)
         setPresentationOffTransition(false)
         presentationOffTimeoutRef.current = null
       }, 420)
     } else {
-      // Hero slide: animate logo from center to the measured header corner, then fade debate in.
+      // Hero slide: animate logo from centre to measured top-centre strip, then fade debate in.
       requestAnimationFrame(() => {
         const rect = eventHeaderLogoMeasureRef.current?.getBoundingClientRect()
-        if (rect) setEventHeaderLogoPos({ left: rect.left, top: rect.top })
+        if (rect) setEventHeaderLogoPos({ top: rect.top })
         setPresentationOffLogoLayout('corner')
 
         presentationOffTimeoutRef.current = setTimeout(() => {
@@ -390,16 +391,19 @@ export default function BigScreen() {
     logoSlide.kind === 'segment' ||
     (logoSlide.title != null && logoSlide.subtitle != null)
 
-  // Debate / main screen: same top-left slot + size as slideshow corner slides.
-  // Slideshow hero: centered large logo only while presentation is on.
+  // Debate / slideshow “strip” layout: same top-centre slot + size (not top-left).
+  // Slideshow hero: large logo centred in viewport while presentation is on.
   const logoUsesCornerSlot =
     !slideshowActive || presentationOffLogoLayout === 'corner'
 
   const fixedLogoPos = logoUsesCornerSlot
     ? {
-        left: eventHeaderLogoPos?.left ?? 'max(1rem, env(safe-area-inset-left))',
-        top: eventHeaderLogoPos?.top ?? 'max(1rem, env(safe-area-inset-top))',
-        transform: 'translate(0, 0)',
+        left: '50%',
+        top:
+          eventHeaderLogoPos?.top != null
+            ? `${eventHeaderLogoPos.top}px`
+            : 'max(1rem, env(safe-area-inset-top))',
+        transform: 'translate(-50%, 0)',
       }
     : {
         left: '50%',
@@ -477,10 +481,10 @@ export default function BigScreen() {
   const debateContent = (
     <>
       <div className="relative min-h-screen text-slate-800">
-      {/* Invisible twin for center→corner transition; matches on-screen corner logo slot */}
+      {/* Invisible twin for hero→strip transition; matches on-screen top-centre logo slot */}
       <div
         ref={eventHeaderLogoMeasureRef}
-        className="pointer-events-none fixed z-[15] left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))] opacity-0"
+        className="pointer-events-none fixed z-[15] left-1/2 top-[max(1rem,env(safe-area-inset-top))] -translate-x-1/2 opacity-0"
         aria-hidden
       >
         <EventBranding variant="presentationCorner" className="shrink-0" />
