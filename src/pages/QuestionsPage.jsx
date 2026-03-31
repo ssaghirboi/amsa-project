@@ -384,8 +384,8 @@ export default function QuestionsPage() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-5 sm:py-8 lg:px-10">
-        <div className="sticky top-[max(0.75rem,env(safe-area-inset-top))] z-20 space-y-4 pb-4">
-          <EventBranding centered className="mx-auto w-full max-w-[18rem] sm:max-w-[20rem]" />
+        <EventBranding centered className="mx-auto mb-4 w-full max-w-[18rem] sm:mb-5 sm:max-w-[20rem]" />
+        <div className="sticky top-[max(0,env(safe-area-inset-top))] z-20 pb-4">
           <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.18)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <h1 className="min-w-0 text-balance text-xl font-semibold leading-snug tracking-tight text-slate-900 sm:text-2xl md:text-[1.75rem]">
