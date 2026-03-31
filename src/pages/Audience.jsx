@@ -43,6 +43,7 @@ export default function Audience() {
   const [question, setQuestion] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
+  const [justSubmitted, setJustSubmitted] = useState(false)
 
   const panelOptions = useMemo(
     () => [
@@ -78,11 +79,15 @@ export default function Audience() {
 
     setSubmitting(true)
     setNotice('')
+    setJustSubmitted(false)
 
     try {
       await insertQuestion(supabase, { panelist, question: text, prompt })
       setQuestion('')
-      setNotice('Question sent.')
+      setJustSubmitted(true)
+      setTimeout(() => {
+        setJustSubmitted(false)
+      }, 1100)
     } catch (e2) {
       setNotice(e2?.message || String(e2))
     } finally {
@@ -125,7 +130,7 @@ export default function Audience() {
                   Select a panelist to direct your question or comment towards
                 </p>
                 <select
-                  className="mt-3 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
+                  className="mt-3 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[16px] text-slate-900 outline-none ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
                   value={panelist}
                   onChange={(e) => setPanelist(Number(e.target.value))}
                 >
@@ -139,7 +144,9 @@ export default function Audience() {
 
               <div>
                 <textarea
-                  className="mt-2 min-h-[130px] w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500 ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
+                  className={`mt-2 min-h-[130px] w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[16px] text-slate-900 outline-none placeholder:text-slate-500 ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem] ${
+                    justSubmitted ? 'ask-textarea-submitted' : ''
+                  }`}
                   placeholder="Type your question or comment..."
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
@@ -149,7 +156,7 @@ export default function Audience() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-500 px-4 py-2.75 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(79,70,229,0.45)] transition hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[0.95rem]"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-500 px-4 py-2.75 text-[16px] font-semibold text-white shadow-[0_18px_45px_rgba(79,70,229,0.45)] transition hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[0.95rem]"
               >
                 {submitting ? 'Sending…' : 'Submit question'}
               </button>
@@ -173,7 +180,7 @@ export default function Audience() {
                 </li>
               </ul>
 
-              {notice ? (
+              {notice && !justSubmitted ? (
                 <div
                   className={`mt-3 rounded-xl border px-3.5 py-2.5 text-[0.85rem] ${
                     notice === 'Question sent.'
