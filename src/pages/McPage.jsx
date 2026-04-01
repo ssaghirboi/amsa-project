@@ -14,6 +14,7 @@ import {
   PANELIST_DISPLAY_NAMES,
   getEmptyMcQuestionSlots,
 } from '../constants/panelists'
+import { getSliderPositionStep } from '../constants/debateSliderScale'
 
 function normalizePrompt(s) {
   return String(s ?? '').trim().toLowerCase()
@@ -71,6 +72,7 @@ export default function McPage() {
   const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
     mergeQaSlidesFromRemote(null),
   )
+  const [debateRevealAck, setDebateRevealAck] = useState(false)
 
   useEffect(() => {
     let unsubscribe = null
@@ -94,6 +96,7 @@ export default function McPage() {
       setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       setPresentationSlides(next.presentationSlides ?? [])
+      setDebateRevealAck(Boolean(next.debateRevealAck))
       setMcQuestions(incomingMc)
       setMcQuestionsStatus(
         incomingMc
@@ -367,38 +370,67 @@ export default function McPage() {
             <div className="mt-3 grid min-h-0 flex-1 grid-rows-5 gap-1.5 overflow-hidden pt-0.5 sm:mt-4 sm:gap-2">
               {[GENERAL_SLOT, ...PANELIST_ONLY].map((slot) => {
                 const q = mcQuestions?.panelists?.[slot.key] ?? null
+                const panelistIdx =
+                  slot.key === GENERAL_TARGET_KEY
+                    ? -1
+                    : Math.max(0, Number(slot.key.replace('Panelist ', '')) - 1)
+                const sliderValue =
+                  panelistIdx >= 0 ? panelists[panelistIdx] ?? 3 : null
+                const step =
+                  sliderValue != null ? getSliderPositionStep(sliderValue) : null
                 return (
                   <div
                     key={slot.key}
-                    className="flex min-h-0 flex-col justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/20 px-3 py-2 sm:px-3.5 sm:py-2.5"
+                    className="flex min-h-0 gap-2 overflow-hidden"
                   >
-                    <div className="shrink-0 text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-slate-400 sm:text-[0.65rem]">
-                      {slot.title}
-                    </div>
-                    <div
-                      className={`mt-1 min-h-0 flex-1 overflow-hidden leading-snug ${
-                        q?.question_text
-                          ? 'line-clamp-4 text-[clamp(0.68rem,1.35vw,0.9rem)] font-semibold text-slate-50 sm:line-clamp-5'
-                          : 'text-[clamp(0.62rem,1.1vw,0.8rem)] font-normal text-slate-500'
-                      }`}
-                    >
-                      {q?.question_text ? q.question_text : 'No question yet.'}
-                    </div>
-                    {q?.created_at ? (
-                      <div className="mt-1 shrink-0 text-[0.55rem] font-medium uppercase tracking-[0.18em] text-slate-600">
-                        {new Date(q.created_at).toLocaleTimeString()}
+                    {debateRevealAck ? (
+                      panelistIdx < 0 ? (
+                        <div
+                          className="flex min-h-[2.75rem] w-11 shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/25 px-1 text-[0.6rem] text-slate-500 sm:min-h-[3rem] sm:w-14"
+                          title="No panel slider (General)"
+                        >
+                          —
+                        </div>
+                      ) : (
+                        <div
+                          className={`flex min-h-[2.75rem] w-[4.25rem] shrink-0 flex-col items-center justify-center rounded-xl px-1 py-1 text-center sm:min-h-[3rem] sm:w-[5rem] ${step.boxClass}`}
+                          title={step.label}
+                        >
+                          <span className="line-clamp-2 max-w-full text-[0.42rem] font-extrabold leading-tight sm:text-[0.46rem]">
+                            {step.label}
+                          </span>
+                        </div>
+                      )
+                    ) : null}
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/20 px-3 py-2 sm:px-3.5 sm:py-2.5">
+                      <div className="shrink-0 text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-slate-400 sm:text-[0.65rem]">
+                        {slot.title}
                       </div>
-                    ) : null}
-                    {q?.question_text ? (
-                      <button
-                        type="button"
-                        onClick={() => clearPushedSlot(slot.key)}
-                        disabled={status === 'Updating…'}
-                        className="mt-1.5 w-full shrink-0 touch-manipulation rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      <div
+                        className={`mt-1 min-h-0 flex-1 overflow-hidden leading-snug ${
+                          q?.question_text
+                            ? 'line-clamp-4 text-[clamp(0.68rem,1.35vw,0.9rem)] font-semibold text-slate-50 sm:line-clamp-5'
+                            : 'text-[clamp(0.62rem,1.1vw,0.8rem)] font-normal text-slate-500'
+                        }`}
                       >
-                        Clear
-                      </button>
-                    ) : null}
+                        {q?.question_text ? q.question_text : 'No question yet.'}
+                      </div>
+                      {q?.created_at ? (
+                        <div className="mt-1 shrink-0 text-[0.55rem] font-medium uppercase tracking-[0.18em] text-slate-600">
+                          {new Date(q.created_at).toLocaleTimeString()}
+                        </div>
+                      ) : null}
+                      {q?.question_text ? (
+                        <button
+                          type="button"
+                          onClick={() => clearPushedSlot(slot.key)}
+                          disabled={status === 'Updating…'}
+                          className="mt-1.5 w-full shrink-0 touch-manipulation rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Clear
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 )
               })}

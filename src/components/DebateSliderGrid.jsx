@@ -130,7 +130,7 @@ function SliderRow({ value, rowLabel, showBorderBottom = true }) {
               style={{ left: `${thumbLeftPct}%` }}
               aria-label={`${rowLabel} position ${value} of 5`}
             >
-              <div className="h-2 w-2 rounded-full bg-slate-500 shadow-[0_0_0_1px_rgba(15,23,42,0.12)] ring-1 ring-slate-400/80 sm:h-2.5 sm:w-2.5" />
+              <div className="h-4 w-4 rounded-full bg-slate-500 shadow-[0_0_0_1px_rgba(15,23,42,0.12)] ring-2 ring-slate-400/85 sm:h-5 sm:w-5" />
             </div>
           </div>
         </div>
