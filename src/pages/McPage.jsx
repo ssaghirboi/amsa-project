@@ -424,7 +424,7 @@ export default function McPage() {
     setStatus('Updating…')
     setError('')
     try {
-      await writeEventState(supabase, {
+      const snap = await writeEventState(supabase, {
         prompt,
         panelists,
         panelistIcons,
@@ -439,13 +439,13 @@ export default function McPage() {
         debateRevealAck,
         mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
-      setSlideshowIndex(nextIdx)
-      slideshowIndexRef.current = nextIdx
-      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
-      if (refreshed) {
-        const v = clampPresentationSlideIndex(refreshed.slideshowIndex ?? nextIdx)
+      if (snap) {
+        const v = clampPresentationSlideIndex(snap.slideshowIndex ?? nextIdx)
         setSlideshowIndex(v)
         slideshowIndexRef.current = v
+      } else {
+        setSlideshowIndex(nextIdx)
+        slideshowIndexRef.current = nextIdx
       }
       setStatus('Live')
     } catch (e) {
@@ -465,7 +465,7 @@ export default function McPage() {
     setStatus('Updating…')
     setError('')
     try {
-      await writeEventState(supabase, {
+      const snap = await writeEventState(supabase, {
         prompt,
         panelists,
         panelistIcons,
@@ -480,13 +480,13 @@ export default function McPage() {
         debateRevealAck,
         mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
-      setQaSlideshowIndex(nextIdx)
-      qaSlideshowIndexRef.current = nextIdx
-      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
-      if (refreshed) {
-        const v = clampQaSlideIndex(refreshed.qaSlideshowIndex ?? nextIdx)
+      if (snap) {
+        const v = clampQaSlideIndex(snap.qaSlideshowIndex ?? nextIdx)
         setQaSlideshowIndex(v)
         qaSlideshowIndexRef.current = v
+      } else {
+        setQaSlideshowIndex(nextIdx)
+        qaSlideshowIndexRef.current = nextIdx
       }
       setStatus('Live')
     } catch (e) {

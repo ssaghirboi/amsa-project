@@ -33,6 +33,7 @@ import {
 export default function Admin() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
+  const panelistsRef = useRef(panelists)
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [promptSequenceDraft, setPromptSequenceDraft] = useState(
@@ -79,6 +80,10 @@ export default function Admin() {
   })
 
   const PANELIST_ICON_BUCKET = 'panelist-icons'
+
+  useEffect(() => {
+    panelistsRef.current = panelists
+  }, [panelists])
 
   useEffect(() => {
     writeContextRef.current = {
@@ -255,7 +260,7 @@ export default function Admin() {
     setStatus('Updating...')
     const promptChanged = nextPrompt !== prompt
     try {
-      await writeEventState(supabase, {
+      const snap = await writeEventState(supabase, {
         prompt: nextPrompt,
         panelists: nextPanelists,
         panelistIcons: nextPanelistIcons,
@@ -268,8 +273,28 @@ export default function Admin() {
         qaSlideshowIndex,
         debateRevealAck: promptChanged ? false : undefined,
       })
+      if (snap) {
+        setPrompt(snap.prompt)
+        setPanelists(snap.panelists)
+        panelistsRef.current = snap.panelists
+        setPanelistIcons(snap.panelistIcons ?? [null, null, null, null])
+        const seq =
+          snap.promptSequence?.length > 0
+            ? snap.promptSequence.map((s) => String(s))
+            : DEFAULT_PROMPT_SEQUENCE
+        setPromptSequence(seq)
+        setPromptSequenceDraft([...seq])
+        setPresentationSlides(mergePresentationSlidesFromRemote(snap.presentationSlides ?? null))
+        setQaSlideshowSlides(mergeQaSlidesFromRemote(snap.qaSlideshowSlides ?? null))
+        setSlideshowActive(Boolean(snap.slideshowActive))
+        setSlideshowIndex(snap.slideshowIndex ?? 0)
+        setQaSlideshowActive(Boolean(snap.qaSlideshowActive))
+        setQaSlideshowIndex(snap.qaSlideshowIndex ?? 0)
+        setDebateRevealAck(Boolean(snap.debateRevealAck))
+      } else if (promptChanged) {
+        setDebateRevealAck(false)
+      }
       setStatus('Live')
-      if (promptChanged) setDebateRevealAck(false)
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -893,8 +918,9 @@ export default function Admin() {
                       onChange={(e) => {
                         const nextUiVal = Number(e.target.value)
                         const nextStoredVal = 6 - nextUiVal
-                        const next = [...panelists]
+                        const next = [...panelistsRef.current]
                         next[i] = nextStoredVal
+                        panelistsRef.current = next
                         setPanelists(next)
                         commit(prompt, next)
                       }}
