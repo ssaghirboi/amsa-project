@@ -54,6 +54,8 @@ export const PRESENTATION_SLIDES = [
     subtitle:
       "President of the Ahmadiyya Muslim Students' Association",
   },
+  /** Slide 10 — same hero layout + tagline as slide 2 */
+  { kind: 'hero', tagline: 'Text inspired by Jubilee' },
 ]
 
 export const PRESENTATION_SLIDE_COUNT = PRESENTATION_SLIDES.length
