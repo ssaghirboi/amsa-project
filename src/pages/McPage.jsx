@@ -119,6 +119,9 @@ export default function McPage() {
   const qaSlideshowIndexRef = useRef(0)
   const presentationSlideNavRef = useRef(false)
   const qaSlideNavRef = useRef(false)
+  /** Ignore stale `slideshow_index` / `qa_slideshow_index` reads briefly after a local step. */
+  const presentationSlideEchoIgnoreUntilRef = useRef(0)
+  const qaSlideEchoIgnoreUntilRef = useRef(0)
   /** Expected `current_prompt` after MC uses Next/Previous/Reset; ignore stale realtime rows until this matches. */
   const mcPromptPendingRef = useRef(null)
   const applyLatestRef = useRef(null)
@@ -232,15 +235,27 @@ export default function McPage() {
       setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
       setSlideshowActive(Boolean(next.slideshowActive))
       if (!presentationSlideNavRef.current) {
-        const si = next.slideshowIndex ?? 0
-        setSlideshowIndex(si)
-        slideshowIndexRef.current = si
+        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0)
+        const ignoreStaleSlide =
+          Boolean(next.slideshowActive) &&
+          Date.now() < presentationSlideEchoIgnoreUntilRef.current &&
+          si !== slideshowIndexRef.current
+        if (!ignoreStaleSlide) {
+          setSlideshowIndex(si)
+          slideshowIndexRef.current = si
+        }
       }
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       if (!qaSlideNavRef.current) {
-        const qi = next.qaSlideshowIndex ?? 0
-        setQaSlideshowIndex(qi)
-        qaSlideshowIndexRef.current = qi
+        const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
+        const ignoreStaleQa =
+          Boolean(next.qaSlideshowActive) &&
+          Date.now() < qaSlideEchoIgnoreUntilRef.current &&
+          qi !== qaSlideshowIndexRef.current
+        if (!ignoreStaleQa) {
+          setQaSlideshowIndex(qi)
+          qaSlideshowIndexRef.current = qi
+        }
       }
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       setPresentationSlides(next.presentationSlides ?? [])
@@ -477,6 +492,7 @@ export default function McPage() {
     presentationSlideNavRef.current = true
     setSlideshowIndex(nextIdx)
     slideshowIndexRef.current = nextIdx
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 550
     setError('')
     try {
       await writeEventState(supabase, {
@@ -519,6 +535,7 @@ export default function McPage() {
     qaSlideNavRef.current = true
     setQaSlideshowIndex(nextIdx)
     qaSlideshowIndexRef.current = nextIdx
+    qaSlideEchoIgnoreUntilRef.current = Date.now() + 550
     setError('')
     try {
       await writeEventState(supabase, {

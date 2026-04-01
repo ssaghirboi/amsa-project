@@ -10,6 +10,7 @@ import {
 } from '../constants/presentationSlides'
 import {
   QA_SLIDE_COUNT,
+  clampQaSlideIndex,
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
@@ -119,6 +120,11 @@ export default function BigScreen() {
   const [introRestartKick, setIntroRestartKick] = useState(0)
   const lastIntroRestartTokenRef = useRef(null)
   const eventStateHydratedRef = useRef(false)
+  /** Last applied slide indices; reject briefly regressions from stale fetches while presentation is on. */
+  const slideshowIndexAppliedRef = useRef(0)
+  const qaSlideshowIndexAppliedRef = useRef(0)
+  const presentationSlideStaleIgnoreUntilRef = useRef(0)
+  const qaSlideStaleIgnoreUntilRef = useRef(0)
 
   function applyEventStateFromRemote(next) {
     if (next.mcQuestions?.skipDebateIntro === true) {
@@ -139,9 +145,34 @@ export default function BigScreen() {
     setDebateRevealAck(Boolean(next.debateRevealAck))
     setPanelists(next.panelists)
     setSlideshowActive(Boolean(next.slideshowActive))
-    setSlideshowIndex(next.slideshowIndex ?? 0)
+
+    const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0)
+    const skipPres =
+      Boolean(next.slideshowActive) &&
+      Date.now() < presentationSlideStaleIgnoreUntilRef.current &&
+      si !== slideshowIndexAppliedRef.current
+    if (!skipPres) {
+      if (Boolean(next.slideshowActive) && si !== slideshowIndexAppliedRef.current) {
+        presentationSlideStaleIgnoreUntilRef.current = Date.now() + 400
+      }
+      slideshowIndexAppliedRef.current = si
+      setSlideshowIndex(si)
+    }
+
     setQaSlideshowActive(Boolean(next.qaSlideshowActive))
-    setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
+
+    const qaIdx = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
+    const skipQa =
+      Boolean(next.qaSlideshowActive) &&
+      Date.now() < qaSlideStaleIgnoreUntilRef.current &&
+      qaIdx !== qaSlideshowIndexAppliedRef.current
+    if (!skipQa) {
+      if (Boolean(next.qaSlideshowActive) && qaIdx !== qaSlideshowIndexAppliedRef.current) {
+        qaSlideStaleIgnoreUntilRef.current = Date.now() + 400
+      }
+      qaSlideshowIndexAppliedRef.current = qaIdx
+      setQaSlideshowIndex(qaIdx)
+    }
     setPresentationSlides(
       mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
     )

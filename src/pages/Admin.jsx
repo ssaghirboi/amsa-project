@@ -47,6 +47,10 @@ export default function Admin() {
   const panelistCommitTimerRef = useRef(null)
   /** Brief window after a local slider write: ignore conflicting realtime rows for the same debate prompt (stale read). */
   const panelistsProtectUntilRef = useRef(0)
+  const slideshowIndexRef = useRef(0)
+  const qaSlideshowIndexRef = useRef(0)
+  const presentationSlideEchoIgnoreUntilRef = useRef(0)
+  const qaSlideEchoIgnoreUntilRef = useRef(0)
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [promptSequenceDraft, setPromptSequenceDraft] = useState(
@@ -101,6 +105,14 @@ export default function Admin() {
   useEffect(() => {
     promptRef.current = prompt
   }, [prompt])
+
+  useEffect(() => {
+    slideshowIndexRef.current = slideshowIndex
+  }, [slideshowIndex])
+
+  useEffect(() => {
+    qaSlideshowIndexRef.current = qaSlideshowIndex
+  }, [qaSlideshowIndex])
 
   useEffect(() => {
     return () => {
@@ -251,9 +263,27 @@ export default function Admin() {
       }
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
-      setSlideshowIndex(next.slideshowIndex ?? 0)
+      {
+        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0)
+        const ignoreStaleSlide =
+          Boolean(next.slideshowActive) &&
+          Date.now() < presentationSlideEchoIgnoreUntilRef.current &&
+          si !== slideshowIndexRef.current
+        if (!ignoreStaleSlide) {
+          setSlideshowIndex(si)
+        }
+      }
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
-      setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
+      {
+        const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
+        const ignoreStaleQa =
+          Boolean(next.qaSlideshowActive) &&
+          Date.now() < qaSlideEchoIgnoreUntilRef.current &&
+          qi !== qaSlideshowIndexRef.current
+        if (!ignoreStaleQa) {
+          setQaSlideshowIndex(qi)
+        }
+      }
       if (shouldSyncPresentationSlidesFromRemote()) {
         setPresentationSlides(
           mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
@@ -616,6 +646,8 @@ export default function Admin() {
     const next = clampPresentationSlideIndex(slideshowIndex + delta)
     if (next === slideshowIndex) return
     await cancelPendingPresentationSlideSave()
+    slideshowIndexRef.current = next
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 550
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -643,6 +675,8 @@ export default function Admin() {
     const next = clampQaSlideIndex(qaSlideshowIndex + delta)
     if (next === qaSlideshowIndex) return
     await cancelPendingPresentationSlideSave()
+    qaSlideshowIndexRef.current = next
+    qaSlideEchoIgnoreUntilRef.current = Date.now() + 550
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
