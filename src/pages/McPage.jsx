@@ -111,6 +111,18 @@ export default function McPage() {
   const [notesBySlide, setNotesBySlide] = useState(loadNotesBySlideFromStorage)
   const mcNotesAreaFocusedRef = useRef(false)
   const writeCtxRef = useRef({})
+  /** Latest indices for step handlers (avoids stale state if realtime lags). */
+  const slideshowIndexRef = useRef(0)
+  const qaSlideshowIndexRef = useRef(0)
+  const presentationSlideNavRef = useRef(false)
+  const qaSlideNavRef = useRef(false)
+
+  useEffect(() => {
+    slideshowIndexRef.current = slideshowIndex
+  }, [slideshowIndex])
+  useEffect(() => {
+    qaSlideshowIndexRef.current = qaSlideshowIndex
+  }, [qaSlideshowIndex])
 
   writeCtxRef.current = {
     prompt,
@@ -179,9 +191,17 @@ export default function McPage() {
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
       setSlideshowActive(Boolean(next.slideshowActive))
-      setSlideshowIndex(next.slideshowIndex ?? 0)
+      if (!presentationSlideNavRef.current) {
+        const si = next.slideshowIndex ?? 0
+        setSlideshowIndex(si)
+        slideshowIndexRef.current = si
+      }
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
-      setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
+      if (!qaSlideNavRef.current) {
+        const qi = next.qaSlideshowIndex ?? 0
+        setQaSlideshowIndex(qi)
+        qaSlideshowIndexRef.current = qi
+      }
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       setPresentationSlides(next.presentationSlides ?? [])
       setDebateRevealAck(Boolean(next.debateRevealAck))
@@ -226,8 +246,10 @@ export default function McPage() {
             : 'Pushed'
           : '—',
       )
-      setStatus('Live')
-      setError('')
+      if (!presentationSlideNavRef.current && !qaSlideNavRef.current) {
+        setStatus('Live')
+        setError('')
+      }
 
       if (promptMismatch) {
         // Fire-and-forget reset; avoid blocking the MC view.
@@ -267,7 +289,7 @@ export default function McPage() {
           if (next) apply(next)
         })
         .catch(() => {})
-    }, 2500)
+    }, 8000)
 
     return () => {
       if (unsubscribe) unsubscribe()
@@ -394,9 +416,11 @@ export default function McPage() {
   const mcSlideBusy = status === 'Updating…'
 
   const stepPresentationSlide = async (delta) => {
-    if (!slideshowActive || qaSlideshowActive) return
-    const nextIdx = clampPresentationSlideIndex(slideshowIndex + delta)
-    if (nextIdx === slideshowIndex) return
+    if (!slideshowActive || qaSlideshowActive || presentationSlideNavRef.current) return
+    const current = slideshowIndexRef.current
+    const nextIdx = clampPresentationSlideIndex(current + delta)
+    if (nextIdx === current) return
+    presentationSlideNavRef.current = true
     setStatus('Updating…')
     setError('')
     try {
@@ -410,22 +434,34 @@ export default function McPage() {
         slideshowActive: true,
         slideshowIndex: nextIdx,
         qaSlideshowActive,
-        qaSlideshowIndex,
+        qaSlideshowIndex: qaSlideshowIndexRef.current,
         mcQuestions,
         debateRevealAck,
         mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
+      setSlideshowIndex(nextIdx)
+      slideshowIndexRef.current = nextIdx
+      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
+      if (refreshed) {
+        const v = clampPresentationSlideIndex(refreshed.slideshowIndex ?? nextIdx)
+        setSlideshowIndex(v)
+        slideshowIndexRef.current = v
+      }
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+    } finally {
+      presentationSlideNavRef.current = false
     }
   }
 
   const stepQaSlide = async (delta) => {
-    if (!qaSlideshowActive) return
-    const nextIdx = clampQaSlideIndex(qaSlideshowIndex + delta)
-    if (nextIdx === qaSlideshowIndex) return
+    if (!qaSlideshowActive || qaSlideNavRef.current) return
+    const current = qaSlideshowIndexRef.current
+    const nextIdx = clampQaSlideIndex(current + delta)
+    if (nextIdx === current) return
+    qaSlideNavRef.current = true
     setStatus('Updating…')
     setError('')
     try {
@@ -437,17 +473,27 @@ export default function McPage() {
         presentationSlides,
         qaSlideshowSlides,
         slideshowActive,
-        slideshowIndex,
+        slideshowIndex: slideshowIndexRef.current,
         qaSlideshowActive: true,
         qaSlideshowIndex: nextIdx,
         mcQuestions,
         debateRevealAck,
         mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
+      setQaSlideshowIndex(nextIdx)
+      qaSlideshowIndexRef.current = nextIdx
+      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
+      if (refreshed) {
+        const v = clampQaSlideIndex(refreshed.qaSlideshowIndex ?? nextIdx)
+        setQaSlideshowIndex(v)
+        qaSlideshowIndexRef.current = v
+      }
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+    } finally {
+      qaSlideNavRef.current = false
     }
   }
 
