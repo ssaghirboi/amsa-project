@@ -267,6 +267,7 @@ export default function Admin() {
         debateRevealAck: promptChanged ? false : undefined,
       })
       setStatus('Live')
+      if (promptChanged) setDebateRevealAck(false)
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')

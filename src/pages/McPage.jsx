@@ -7,7 +7,10 @@ import {
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
-import { clampPresentationSlideIndex } from '../constants/presentationSlides'
+import {
+  PRESENTATION_SLIDE_COUNT,
+  clampPresentationSlideIndex,
+} from '../constants/presentationSlides'
 import { QA_SLIDE_COUNT, mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
 import {
   GENERAL_TARGET_KEY,
@@ -298,9 +301,11 @@ export default function McPage() {
         slideshowActive: false,
         slideshowIndex,
         qaSlideshowActive: false,
+        qaSlideshowIndex: 0,
         mcQuestions: emptyMcQuestions(nextPrompt),
         debateRevealAck: false,
       })
+      setDebateRevealAck(false)
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
@@ -331,6 +336,7 @@ export default function McPage() {
         mcQuestions: emptyMcQuestions(firstPrompt, { skipDebateIntro: true }),
         debateRevealAck: false,
       })
+      setDebateRevealAck(false)
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
@@ -357,8 +363,70 @@ export default function McPage() {
         slideshowActive: false,
         slideshowIndex,
         qaSlideshowActive: false,
+        qaSlideshowIndex: 0,
         mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
         debateRevealAck: false,
+      })
+      setDebateRevealAck(false)
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const mcSlideBusy = status === 'Updating…'
+
+  const stepPresentationSlide = async (delta) => {
+    if (!slideshowActive || qaSlideshowActive) return
+    const len = PRESENTATION_SLIDE_COUNT
+    const nextIdx = (slideshowIndex + delta + len) % len
+    setStatus('Updating…')
+    setError('')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive: true,
+        slideshowIndex: nextIdx,
+        qaSlideshowActive,
+        qaSlideshowIndex,
+        mcQuestions,
+        debateRevealAck,
+        mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
+      })
+      setStatus('Live')
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const stepQaSlide = async (delta) => {
+    if (!qaSlideshowActive) return
+    const len = QA_SLIDE_COUNT
+    const nextIdx = (qaSlideshowIndex + delta + len) % len
+    setStatus('Updating…')
+    setError('')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive: true,
+        qaSlideshowIndex: nextIdx,
+        mcQuestions,
+        debateRevealAck,
+        mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
       setStatus('Live')
     } catch (e) {
@@ -466,6 +534,56 @@ export default function McPage() {
                 </button>
               </div>
             ) : null}
+
+            {qaSlideshowActive ? (
+              <div className="flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+                <span className="text-xs text-slate-400 sm:mr-auto">
+                  Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => stepQaSlide(-1)}
+                    disabled={mcSlideBusy}
+                    className="min-h-[2.75rem] rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Previous slide
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => stepQaSlide(1)}
+                    disabled={mcSlideBusy}
+                    className="min-h-[2.75rem] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next slide
+                  </button>
+                </div>
+              </div>
+            ) : slideshowActive ? (
+              <div className="flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+                <span className="text-xs text-slate-400 sm:mr-auto">
+                  Presentation slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => stepPresentationSlide(-1)}
+                    disabled={mcSlideBusy}
+                    className="min-h-[2.75rem] rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Previous slide
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => stepPresentationSlide(1)}
+                    disabled={mcSlideBusy}
+                    className="min-h-[2.75rem] rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-md transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next slide
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -557,7 +675,7 @@ export default function McPage() {
           <section className="relative flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
               <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
-                <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(15rem,48vw)] sm:px-6 sm:pt-4">
+                <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(20rem,58vw)] sm:px-6 sm:pt-4 lg:pr-[min(22rem,50vw)]">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
                     Notes for Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
                   </p>
@@ -590,23 +708,23 @@ export default function McPage() {
                   className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-3 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-4 sm:text-[1.05rem]"
                 />
                 <div
-                  className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(13.5rem,42vw)] max-w-[90%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-2.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:p-3"
+                  className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(19.5rem,88vw)] max-w-[94%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-3.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:w-[min(22rem,54vw)] sm:max-w-[92%] sm:p-4"
                   aria-hidden
                 >
-                  <div className="text-center text-[0.5rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[0.55rem]">
+                  <div className="text-center text-[0.55rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[0.62rem]">
                     Q&amp;A · {qaSlideshowIndex + 1}/{QA_SLIDE_COUNT}
                   </div>
-                  <div className="mt-1.5 text-center">
+                  <div className="mt-2 text-center">
                     {qaSlideshowIndex === 0 ? (
-                      <p className="line-clamp-4 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                      <p className="line-clamp-5 text-pretty text-[0.72rem] font-semibold leading-snug text-slate-50 sm:text-[0.82rem]">
                         {qaSlideshowSlides[0]?.title ?? ''}
                       </p>
                     ) : (
                       <>
-                        <p className="line-clamp-3 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                        <p className="line-clamp-4 text-pretty text-[0.72rem] font-semibold leading-snug text-slate-50 sm:text-[0.82rem]">
                           {qaSlideshowSlides[1]?.title ?? ''}
                         </p>
-                        <p className="mt-1 line-clamp-2 text-pretty text-[0.52rem] text-slate-400 sm:text-[0.56rem]">
+                        <p className="mt-1.5 line-clamp-3 text-pretty text-[0.62rem] text-slate-400 sm:text-[0.7rem]">
                           {qaSlideshowSlides[1]?.subtitle ?? ''}
                         </p>
                       </>
@@ -616,7 +734,7 @@ export default function McPage() {
               </div>
             ) : slideshowActive ? (
               <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
-                <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(15rem,48vw)] sm:px-6 sm:pt-4">
+                <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(20rem,58vw)] sm:px-6 sm:pt-4 lg:pr-[min(22rem,50vw)]">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
                     Notes for presentation slide {slideshowIndex + 1}
                     {Array.isArray(presentationSlides) && presentationSlides.length > 0
@@ -652,26 +770,26 @@ export default function McPage() {
                   className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-3 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-4 sm:text-[1.05rem]"
                 />
                 <div
-                  className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(13.5rem,42vw)] max-w-[90%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-2.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:p-3"
+                  className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(19.5rem,88vw)] max-w-[94%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-3.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:w-[min(22rem,54vw)] sm:max-w-[92%] sm:p-4"
                   aria-hidden
                 >
-                  <div className="text-center text-[0.5rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[0.55rem]">
+                  <div className="text-center text-[0.55rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[0.62rem]">
                     Slide {slideshowIndex + 1}
                     {Array.isArray(presentationSlides) && presentationSlides.length > 0
                       ? ` / ${presentationSlides.length}`
                       : ''}
                   </div>
-                  <div className="mt-1.5 text-center">
+                  <div className="mt-2 text-center">
                     {currentSlide?.kind === 'hero' ? (
-                      <p className="line-clamp-5 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                      <p className="line-clamp-6 text-pretty text-[0.72rem] font-semibold leading-snug text-slate-50 sm:text-[0.82rem]">
                         {currentSlide.tagline || ' '}
                       </p>
                     ) : (
                       <>
-                        <h2 className="line-clamp-3 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                        <h2 className="line-clamp-4 text-pretty text-[0.72rem] font-semibold leading-snug text-slate-50 sm:text-[0.82rem]">
                           {currentSlide?.title || ' '}
                         </h2>
-                        <p className="mt-1 line-clamp-3 text-pretty text-[0.52rem] text-slate-400 sm:text-[0.56rem]">
+                        <p className="mt-1.5 line-clamp-4 text-pretty text-[0.62rem] text-slate-400 sm:text-[0.7rem]">
                           {currentSlide?.subtitle || ' '}
                         </p>
                       </>
