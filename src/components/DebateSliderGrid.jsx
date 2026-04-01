@@ -61,8 +61,7 @@ function valueToThumbPercent(value) {
   return ((colFromLeft + 0.5) / 5) * 100
 }
 
-function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true }) {
-  const visuals = PANEL_VISUALS[index]
+function SliderRow({ value, rowLabel, showBorderBottom = true }) {
   const thumbLeftPct = valueToThumbPercent(value)
 
   return (
@@ -131,19 +130,7 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
               style={{ left: `${thumbLeftPct}%` }}
               aria-label={`${rowLabel} position ${value} of 5`}
             >
-              <div className={`rounded-full ${visuals.glow}`}>
-                <div className="relative h-[4.25rem] w-[4.25rem] overflow-hidden rounded-full border border-slate-400/95 bg-white shadow-[0_10px_32px_rgba(15,23,42,0.14)] ring-2 ring-slate-300/90 backdrop-blur-sm sm:h-[4.75rem] sm:w-[4.75rem]">
-                  {iconUrl ? (
-                    <img
-                      src={iconUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className={`h-full w-full ${visuals.dot} opacity-90`} />
-                  )}
-                </div>
-              </div>
+              <div className="h-2 w-2 rounded-full bg-slate-500 shadow-[0_0_0_1px_rgba(15,23,42,0.12)] ring-1 ring-slate-400/80 sm:h-2.5 sm:w-2.5" />
             </div>
           </div>
         </div>
@@ -155,7 +142,6 @@ function SliderRow({ value, index, iconUrl, rowLabel, showBorderBottom = true })
 export function DebateSliderGrid({
   prompt,
   panelists,
-  panelistIcons,
   rowLabels = DEFAULT_ROW_LABELS,
   error,
   /** Ref on the prompt shell (blur + card) for FLIP handoff on BigScreen */
@@ -259,8 +245,6 @@ export function DebateSliderGrid({
                 <SliderRow
                   key={PANEL_VISUALS[i].key}
                   value={value}
-                  index={i}
-                  iconUrl={panelistIcons[i]}
                   rowLabel={labels[i]}
                   showBorderBottom={i < panelists.length - 1}
                 />

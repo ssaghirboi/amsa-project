@@ -13,9 +13,22 @@ import {
 } from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
 import {
+  DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
   subscribeToEventState,
 } from '../supabase/eventState'
+
+function normalizePrompt(s) {
+  return String(s ?? '').trim().toLowerCase()
+}
+
+/** Index of `prompt` in `sequence`, or -1 if not found. */
+function getPromptIndexInSequence(prompt, sequence) {
+  const seq =
+    Array.isArray(sequence) && sequence.length > 0 ? sequence : DEFAULT_PROMPT_SEQUENCE
+  const cur = normalizePrompt(prompt)
+  return seq.findIndex((p) => normalizePrompt(p) === cur)
+}
 
 /** Per-character delay during overlay typewriter (higher = slower). */
 const TYPE_MS = 58
@@ -50,8 +63,8 @@ const FULLSCREEN_PROMPT_INNER =
 
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
+  const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
-  const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
@@ -102,8 +115,8 @@ export default function BigScreen() {
       skipDebateIntroRef.current = true
     }
     setPrompt(next.prompt)
+    setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
     setPanelists(next.panelists)
-    setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
     setSlideshowActive(Boolean(next.slideshowActive))
     setSlideshowIndex(next.slideshowIndex ?? 0)
     setQaSlideshowActive(Boolean(next.qaSlideshowActive))
@@ -292,7 +305,10 @@ export default function BigScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideshowActive, slideshowIndex, qaSlideshowActive])
 
-  /** When prompt changes (after first non-empty sync), run intro sequence */
+  /**
+   * When the debate prompt changes: run typewriter + FLIP for prompt 2+ in the configured
+   * sequence (index ≥ 1). Prompt 1 (index 0) updates in place without the intro animation.
+   */
   useEffect(() => {
     if (slideshowActive || qaSlideshowActive) return
 
@@ -323,14 +339,28 @@ export default function BigScreen() {
       return
     }
 
+    const idx = getPromptIndexInSequence(prompt, promptSequence)
+    const shouldAnimateIntro = idx >= 1 || (idx < 0 && next !== prev)
+
     prevPromptRef.current = prompt
+
+    if (!shouldAnimateIntro) {
+      queueMicrotask(() => {
+        setIntroPhase('idle')
+        setFlyTo(null)
+        setRevealedCount(0)
+        setDebateTableOpacity(1)
+      })
+      return
+    }
+
     queueMicrotask(() => {
       setFlyTo(null)
       setRevealedCount(0)
       setDebateTableOpacity(0)
       setIntroPhase('typing')
     })
-  }, [prompt, slideshowActive, qaSlideshowActive])
+  }, [prompt, promptSequence, slideshowActive, qaSlideshowActive])
 
   /** Cancel debate intro when presentation mode is on */
   useEffect(() => {
@@ -597,7 +627,6 @@ export default function BigScreen() {
           <DebateSliderGrid
             prompt={prompt}
             panelists={panelists}
-            panelistIcons={panelistIcons}
             error={error}
             promptBoxCardRef={promptAnchorCardRef}
             promptBoxHidden={showOverlay}
