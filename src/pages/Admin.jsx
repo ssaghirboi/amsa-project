@@ -714,6 +714,9 @@ export default function Admin() {
 
           {slideshowActive ? (
             <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <span className="text-sm text-slate-700">
+                Slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT}
+              </span>
               <button
                 type="button"
                 onClick={() => handlePresentationSlide(-1)}
@@ -1090,6 +1093,9 @@ export default function Admin() {
 
             {qaSlideshowActive ? (
               <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <span className="text-sm text-slate-700">
+                  Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
+                </span>
                 <button
                   type="button"
                   onClick={() => handleQaSlide(-1)}
