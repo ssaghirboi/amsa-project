@@ -54,7 +54,14 @@ export const PRESENTATION_SLIDES = [
     subtitle:
       "President of the Ahmadiyya Muslim Students' Association",
   },
-  /** Slide 10 — same hero layout + tagline as slide 2 */
+  /** Slide 10 — name + role on one line */
+  {
+    kind: 'segment',
+    id: 'saghir-president-line',
+    title: 'Saghir Saeed, President of The Ahmadiyya Muslim Students Association',
+    subtitle: '',
+  },
+  /** Slide 11 — same hero layout + tagline as slide 2 */
   { kind: 'hero', tagline: 'Text inspired by Jubilee' },
 ]
 

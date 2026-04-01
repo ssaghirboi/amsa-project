@@ -597,12 +597,14 @@ export default function BigScreen() {
             key={`segment-${logoSlide.id ?? slideshowIndex}`}
             className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(6rem,16vh,10rem)] text-center sm:pt-[clamp(6rem,14vh,9rem)]"
           >
-            <h1 className="max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-900">
+            <h1 className="max-w-[min(100%,96vw)] text-balance text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-900">
               {logoSlide.title}
             </h1>
-            <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-600 sm:mt-6 md:mt-7">
-              {logoSlide.subtitle}
-            </p>
+            {String(logoSlide.subtitle ?? '').trim() !== '' ? (
+              <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-600 sm:mt-6 md:mt-7">
+                {logoSlide.subtitle}
+              </p>
+            ) : null}
           </div>
         )}
       </div>
