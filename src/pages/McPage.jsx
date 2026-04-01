@@ -10,7 +10,6 @@ import {
 import {
   PRESENTATION_SLIDE_COUNT,
   PRESENTATION_SLIDE_STALE_ECHO_MS,
-  capPresentationSlideIndexNoForwardSkip,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -242,31 +241,6 @@ export default function McPage() {
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
       setSlideshowActive(Boolean(next.slideshowActive))
-      if (!presentationSlideNavRef.current) {
-        const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
-        const rawSi = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
-        const si = capPresentationSlideIndexNoForwardSkip(
-          rawSi,
-          slideshowIndexRef.current,
-          presentationSlideEchoIgnoreUntilRef.current,
-        )
-        if (rawSi !== si) {
-          presentationSlideEchoIgnoreUntilRef.current = Math.max(
-            presentationSlideEchoIgnoreUntilRef.current,
-            Date.now() + 800,
-          )
-        }
-        const echoWindow = Date.now() < presentationSlideEchoIgnoreUntilRef.current
-        const staleBehind =
-          Boolean(next.slideshowActive) &&
-          echoWindow &&
-          si < slideshowIndexRef.current &&
-          slideshowIndexRef.current - si <= 4
-        if (!staleBehind) {
-          setSlideshowIndex(si)
-          slideshowIndexRef.current = si
-        }
-      }
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       if (!qaSlideNavRef.current) {
         const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
@@ -344,8 +318,16 @@ export default function McPage() {
         setError(e?.message || String(e))
         return null
       })
-      if (current) apply(current)
-      else setStatus('Waiting for event state…')
+      if (current) {
+        const mergedDeck = mergePresentationSlidesFromRemote(current.presentationSlides ?? null)
+        const si = clampPresentationSlideIndex(
+          current.slideshowIndex ?? 0,
+          mergedDeck.length || PRESENTATION_SLIDE_COUNT,
+        )
+        setSlideshowIndex(si)
+        slideshowIndexRef.current = si
+        apply(current)
+      } else setStatus('Waiting for event state…')
     })()
 
     unsubscribe = subscribeToEventState(supabase, apply)

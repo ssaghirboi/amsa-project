@@ -3,7 +3,6 @@ import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDE_COUNT,
   PRESENTATION_SLIDE_STALE_ECHO_MS,
-  capPresentationSlideIndexNoForwardSkip,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -208,12 +207,18 @@ export default function Admin() {
           setPanelists(current.panelists)
           setPanelistIcons(current.panelistIcons ?? [null, null, null, null])
           setSlideshowActive(Boolean(current.slideshowActive))
-          setSlideshowIndex(current.slideshowIndex ?? 0)
+          const mergedPresentation = mergePresentationSlidesFromRemote(
+            current.presentationSlides ?? null,
+          )
+          setSlideshowIndex(
+            clampPresentationSlideIndex(
+              current.slideshowIndex ?? 0,
+              mergedPresentation.length || PRESENTATION_SLIDE_COUNT,
+            ),
+          )
           setQaSlideshowActive(Boolean(current.qaSlideshowActive))
           setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
-          setPresentationSlides(
-            mergePresentationSlidesFromRemote(current.presentationSlides ?? null),
-          )
+          setPresentationSlides(mergedPresentation)
           setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
           setDebateRevealAck(Boolean(current.debateRevealAck))
           if (current.promptSequence?.length) {
@@ -266,30 +271,6 @@ export default function Admin() {
       }
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
-      {
-        const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
-        const rawSi = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
-        const si = capPresentationSlideIndexNoForwardSkip(
-          rawSi,
-          slideshowIndexRef.current,
-          presentationSlideEchoIgnoreUntilRef.current,
-        )
-        if (rawSi !== si) {
-          presentationSlideEchoIgnoreUntilRef.current = Math.max(
-            presentationSlideEchoIgnoreUntilRef.current,
-            Date.now() + 800,
-          )
-        }
-        const echoWindow = Date.now() < presentationSlideEchoIgnoreUntilRef.current
-        const staleBehind =
-          Boolean(next.slideshowActive) &&
-          echoWindow &&
-          si < slideshowIndexRef.current &&
-          slideshowIndexRef.current - si <= 4
-        if (!staleBehind) {
-          setSlideshowIndex(si)
-        }
-      }
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       {
         const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
