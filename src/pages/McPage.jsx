@@ -55,7 +55,28 @@ const PANELIST_ONLY = [1, 2, 3, 4].map((n, i) => ({
   title: PANELIST_DISPLAY_NAMES[i],
 }))
 
-const MC_NOTES_STORAGE_KEY = 'amsa-mc-page-notes'
+const MC_NOTES_BY_SLIDE_KEY = 'amsa-mc-notes-by-slide'
+const MC_NOTES_LEGACY_KEY = 'amsa-mc-page-notes'
+
+function loadNotesBySlideFromStorage() {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(MC_NOTES_BY_SLIDE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed : {}
+    }
+    const legacy = localStorage.getItem(MC_NOTES_LEGACY_KEY)
+    if (legacy) {
+      const map = { 'presentation:0': legacy }
+      localStorage.setItem(MC_NOTES_BY_SLIDE_KEY, JSON.stringify(map))
+      return map
+    }
+  } catch {
+    /* ignore */
+  }
+  return {}
+}
 
 export default function McPage() {
   const [prompt, setPrompt] = useState('')
@@ -75,25 +96,18 @@ export default function McPage() {
     mergeQaSlidesFromRemote(null),
   )
   const [debateRevealAck, setDebateRevealAck] = useState(false)
-  const [mcNotes, setMcNotes] = useState(() => {
-    if (typeof window === 'undefined') return ''
-    try {
-      return localStorage.getItem(MC_NOTES_STORAGE_KEY) ?? ''
-    } catch {
-      return ''
-    }
-  })
+  const [notesBySlide, setNotesBySlide] = useState(loadNotesBySlideFromStorage)
 
   useEffect(() => {
     const id = window.setTimeout(() => {
       try {
-        localStorage.setItem(MC_NOTES_STORAGE_KEY, mcNotes)
+        localStorage.setItem(MC_NOTES_BY_SLIDE_KEY, JSON.stringify(notesBySlide))
       } catch {
         /* ignore */
       }
     }, 400)
     return () => window.clearTimeout(id)
-  }, [mcNotes])
+  }, [notesBySlide])
 
   useEffect(() => {
     let unsubscribe = null
@@ -182,6 +196,13 @@ export default function McPage() {
     const idx = clampPresentationSlideIndex(slideshowIndex)
     return presentationSlides[idx] ?? presentationSlides[0] ?? null
   }, [presentationSlides, slideshowIndex])
+
+  const mcSlideNotesKey = useMemo(() => {
+    if (qaSlideshowActive) return `qa:${qaSlideshowIndex}`
+    return `presentation:${slideshowIndex}`
+  }, [qaSlideshowActive, qaSlideshowIndex, slideshowIndex])
+
+  const mcNotesForSlide = notesBySlide[mcSlideNotesKey] ?? ''
 
   const goNextPrompt = async () => {
     if (slideshowActive || qaSlideshowActive) return
@@ -461,16 +482,29 @@ export default function McPage() {
           <section className="relative flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
               <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
+                <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(15rem,48vw)] sm:px-6 sm:pt-4">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
+                    Notes for Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
+                  </p>
+                  <p className="mt-0.5 text-[0.6rem] text-slate-600 sm:text-[0.65rem]">
+                    Saved to this slide on this device (browser storage)
+                  </p>
+                </div>
                 <label htmlFor="mc-notes-qa" className="sr-only">
-                  MC script or notes
+                  MC script or notes for this Q and A slide
                 </label>
                 <textarea
                   id="mc-notes-qa"
-                  value={mcNotes}
-                  onChange={(e) => setMcNotes(e.target.value)}
+                  value={mcNotesForSlide}
+                  onChange={(e) =>
+                    setNotesBySlide((prev) => ({
+                      ...prev,
+                      [mcSlideNotesKey]: e.target.value,
+                    }))
+                  }
                   spellCheck
-                  placeholder="Script or notes…"
-                  className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-4 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-5 sm:text-[1.05rem]"
+                  placeholder="Script or notes for this slide…"
+                  className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-3 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-4 sm:text-[1.05rem]"
                 />
                 <div
                   className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(13.5rem,42vw)] max-w-[90%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-2.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:p-3"
@@ -499,16 +533,32 @@ export default function McPage() {
               </div>
             ) : slideshowActive ? (
               <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
+                <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(15rem,48vw)] sm:px-6 sm:pt-4">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
+                    Notes for presentation slide {slideshowIndex + 1}
+                    {Array.isArray(presentationSlides) && presentationSlides.length > 0
+                      ? ` of ${presentationSlides.length}`
+                      : ''}
+                  </p>
+                  <p className="mt-0.5 text-[0.6rem] text-slate-600 sm:text-[0.65rem]">
+                    Saved to this slide on this device (browser storage)
+                  </p>
+                </div>
                 <label htmlFor="mc-notes-slides" className="sr-only">
-                  MC script or notes
+                  MC script or notes for this presentation slide
                 </label>
                 <textarea
                   id="mc-notes-slides"
-                  value={mcNotes}
-                  onChange={(e) => setMcNotes(e.target.value)}
+                  value={mcNotesForSlide}
+                  onChange={(e) =>
+                    setNotesBySlide((prev) => ({
+                      ...prev,
+                      [mcSlideNotesKey]: e.target.value,
+                    }))
+                  }
                   spellCheck
-                  placeholder="Script or notes…"
-                  className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-4 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-5 sm:text-[1.05rem]"
+                  placeholder="Script or notes for this slide…"
+                  className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-3 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-4 sm:text-[1.05rem]"
                 />
                 <div
                   className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(13.5rem,42vw)] max-w-[90%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-2.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:p-3"
