@@ -665,7 +665,7 @@ export default function McPage() {
 
   return (
     <div className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#010101] text-slate-100">
-      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-3 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pb-5 lg:px-8 lg:pb-6">
+      <div className="origin-top flex min-h-0 w-full flex-1 scale-[0.88] transform flex-col overflow-hidden px-3 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:scale-[0.9] sm:px-5 sm:pb-5 lg:scale-[0.92] lg:px-8 lg:pb-6">
         <div className="flex shrink-0 flex-col gap-4 sm:gap-5">
           <div className="pl-[max(0px,calc(env(safe-area-inset-left)-0.25rem))] pt-1">
             <EventBranding variant="mc" className="shrink-0" />
@@ -833,8 +833,8 @@ export default function McPage() {
                       <div
                         className={`mt-1 min-h-0 flex-1 overflow-hidden leading-snug ${
                           q?.question_text
-                            ? 'line-clamp-4 text-[clamp(0.68rem,1.35vw,0.9rem)] font-semibold text-slate-50 sm:line-clamp-5'
-                            : 'text-[clamp(0.62rem,1.1vw,0.8rem)] font-normal text-slate-500'
+                            ? 'line-clamp-4 text-[clamp(0.55rem,1.05vw,0.72rem)] font-medium text-slate-50 sm:line-clamp-5'
+                            : 'text-[clamp(0.5rem,0.95vw,0.65rem)] font-normal text-slate-500'
                         }`}
                       >
                         {q?.question_text ? q.question_text : 'No question yet.'}
