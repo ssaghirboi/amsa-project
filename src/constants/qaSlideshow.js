@@ -5,8 +5,20 @@ export const QA_SLIDESHOW_TITLE = 'Audience Q&A'
 export const QA_EJAZ_TITLE = 'Ejaz Arshad'
 export const QA_EJAZ_SUBTITLE = 'Moderator'
 
-/** Number of slides in the Q&A end deck (Audience Q&A + QR, then title card). */
-export const QA_SLIDE_COUNT = 2
+/** Slide layout hints for /screen and /ask (merged with DB copy). */
+export const QA_SLIDE_KIND = {
+  /** Audience title + Does God Exist QR */
+  AUDIENCE_QR: 'audience-qr',
+  /** Title + subtitle card */
+  TITLE_CARD: 'title-card',
+  /** Club line + Humanity First QR asset */
+  HUMANITY_QR: 'humanity-qr',
+  /** Large logo + “Thank you” headline */
+  HERO_THANKS: 'hero-thanks',
+}
+
+/** Number of slides in the Q&A end deck. */
+export const QA_SLIDE_COUNT = 4
 
 export function clampQaSlideIndex(raw) {
   const n = Math.floor(Number(raw))
@@ -15,8 +27,17 @@ export function clampQaSlideIndex(raw) {
 }
 
 const DEFAULT_SLIDES = [
-  { title: QA_SLIDESHOW_TITLE },
-  { title: QA_EJAZ_TITLE, subtitle: QA_EJAZ_SUBTITLE },
+  { kind: QA_SLIDE_KIND.AUDIENCE_QR, title: QA_SLIDESHOW_TITLE },
+  {
+    kind: QA_SLIDE_KIND.TITLE_CARD,
+    title: QA_EJAZ_TITLE,
+    subtitle: QA_EJAZ_SUBTITLE,
+  },
+  {
+    kind: QA_SLIDE_KIND.HUMANITY_QR,
+    title: 'Humanity First club at UCalgary',
+  },
+  { kind: QA_SLIDE_KIND.HERO_THANKS, title: 'Thank You' },
 ]
 
 /**
@@ -40,14 +61,10 @@ export function mergeQaSlidesFromRemote(raw) {
   return defaults.map((def, i) => {
     const partial = arr[i]
     if (!partial || typeof partial !== 'object') return { ...def }
-    return {
-      title: partial.title != null ? String(partial.title) : def.title,
-      subtitle:
-        i === 0
-          ? undefined
-          : partial.subtitle != null
-            ? String(partial.subtitle)
-            : def.subtitle,
-    }
+    const next = { ...def }
+    if (partial.kind != null) next.kind = String(partial.kind)
+    if (partial.title != null) next.title = String(partial.title)
+    if (partial.subtitle != null) next.subtitle = String(partial.subtitle)
+    return next
   })
 }

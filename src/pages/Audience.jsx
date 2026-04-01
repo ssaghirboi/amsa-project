@@ -88,8 +88,8 @@ export default function Audience() {
     }
   }, [])
 
-  /** Q&A end deck slide 2 (e.g. title card) — pause submissions on /ask. */
-  const questionFormLocked = qaSlideshowActive && qaSlideshowIndex === 1
+  /** During Q&A deck, only the first slide (Audience Q&A + first QR) accepts submissions. */
+  const questionFormLocked = qaSlideshowActive && qaSlideshowIndex !== 0
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -137,7 +137,7 @@ export default function Audience() {
                   <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-medium leading-snug tracking-tight text-slate-900">
                     {qaSlideshowSlides[0]?.title ?? ''}
                   </p>
-                ) : (
+                ) : qaSlideshowIndex === 1 ? (
                   <div className="mt-2 space-y-2">
                     <p className="text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-semibold leading-snug tracking-tight text-slate-900">
                       {qaSlideshowSlides[1]?.title ?? ''}
@@ -146,6 +146,14 @@ export default function Audience() {
                       {qaSlideshowSlides[1]?.subtitle ?? ''}
                     </p>
                   </div>
+                ) : qaSlideshowIndex === 2 ? (
+                  <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-semibold leading-snug tracking-tight text-slate-900">
+                    {qaSlideshowSlides[2]?.title ?? ''}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-semibold leading-snug tracking-tight text-slate-900">
+                    {qaSlideshowSlides[3]?.title ?? ''}
+                  </p>
                 )
               ) : (
                 <p className="mt-2 text-balance text-[clamp(1rem,2.2vw,1.45rem)] font-medium leading-snug tracking-tight text-slate-900">

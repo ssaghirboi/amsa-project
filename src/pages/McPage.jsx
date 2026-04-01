@@ -124,7 +124,7 @@ export default function McPage() {
   }
 
   useEffect(() => {
-    if (notesRemoteEnabled) return
+    if (notesRemoteEnabled || qaSlideshowActive) return
     const id = window.setTimeout(() => {
       try {
         localStorage.setItem(MC_NOTES_BY_SLIDE_KEY, JSON.stringify(notesBySlide))
@@ -133,10 +133,10 @@ export default function McPage() {
       }
     }, 400)
     return () => window.clearTimeout(id)
-  }, [notesBySlide, notesRemoteEnabled])
+  }, [notesBySlide, notesRemoteEnabled, qaSlideshowActive])
 
   useEffect(() => {
-    if (!notesRemoteEnabled) return
+    if (!notesRemoteEnabled || qaSlideshowActive) return
     const id = window.setTimeout(() => {
       const c = writeCtxRef.current
       writeEventState(supabase, {
@@ -156,7 +156,7 @@ export default function McPage() {
       }).catch(() => {})
     }, 550)
     return () => window.clearTimeout(id)
-  }, [notesBySlide, notesRemoteEnabled])
+  }, [notesBySlide, notesRemoteEnabled, qaSlideshowActive])
 
   useEffect(() => {
     let unsubscribe = null
@@ -742,20 +742,20 @@ export default function McPage() {
           <section className="relative flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
               <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
-                <div className="flex max-h-[min(38vh,22rem)] min-h-[11rem] flex-shrink-0 flex-col border-b border-white/10">
-                  <div className="shrink-0 px-4 pb-2 pt-3 sm:px-6 sm:pt-4">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-emerald-300/90 sm:text-xs">
+                <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3 sm:px-6 sm:pb-5 sm:pt-4">
+                  <div className="shrink-0 pb-3">
+                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-emerald-300/90 sm:text-xs">
                       Audience Q&amp;A — pushed questions
                     </p>
-                    <p className="mt-0.5 text-[0.6rem] text-slate-500 sm:text-[0.65rem]">
+                    <p className="mt-1 text-sm text-slate-500 sm:text-[0.9375rem]">
                       Newest first · {qaAudienceSorted.length} total
                     </p>
                   </div>
-                  <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3 sm:px-6">
+                  <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                     {qaAudienceSorted.length === 0 ? (
-                      <p className="py-2 text-sm text-slate-500">None pushed yet.</p>
+                      <p className="py-3 text-base text-slate-500 sm:text-lg">None pushed yet.</p>
                     ) : (
-                      <ul className="space-y-2.5">
+                      <ul className="space-y-4 sm:space-y-5">
                         {qaAudienceSorted.map((item, idx) => (
                           <li
                             key={
@@ -763,26 +763,26 @@ export default function McPage() {
                                 ? `qa-${item.id}`
                                 : `qa-${idx}-${item.created_at}-${item.question_text?.slice(0, 48)}`
                             }
-                            className="rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 sm:px-4 sm:py-3"
+                            className="rounded-2xl border border-white/10 bg-black/35 px-4 py-4 sm:px-5 sm:py-5"
                           >
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <span className="shrink-0 rounded-md bg-emerald-500/15 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-emerald-200/95">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <span className="shrink-0 rounded-lg bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-200/95 sm:text-sm sm:px-3 sm:py-1.5">
                                 {displayNameForMcTarget(item.target_key)}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => removeQaAudienceItem(item)}
                                 disabled={status === 'Updating…'}
-                                className="shrink-0 touch-manipulation rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="shrink-0 touch-manipulation rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
                               >
                                 Remove
                               </button>
                             </div>
-                            <p className="mt-2 text-sm font-medium leading-snug text-slate-100 sm:text-[0.9375rem]">
+                            <p className="mt-3 text-pretty text-lg font-medium leading-snug text-slate-100 sm:mt-4 sm:text-xl md:text-2xl md:leading-snug lg:text-[1.75rem]">
                               {item.question_text}
                             </p>
                             {item.created_at ? (
-                              <p className="mt-1 text-[0.55rem] font-medium uppercase tracking-[0.18em] text-slate-600">
+                              <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-500 sm:text-sm">
                                 {new Date(item.created_at).toLocaleString()}
                               </p>
                             ) : null}
@@ -791,64 +791,6 @@ export default function McPage() {
                       </ul>
                     )}
                   </div>
-                </div>
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(20rem,58vw)] sm:px-6 sm:pt-4 lg:pr-[min(22rem,50vw)]">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
-                    Notes for Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
-                  </p>
-                  <p className="mt-0.5 text-[0.6rem] text-slate-600 sm:text-[0.65rem]">
-                    {notesRemoteEnabled
-                      ? 'Saved to this slide in the event state (all devices)'
-                      : 'Cloud notes unavailable — saved on this browser only. Run the Admin migration SQL for mc_slide_notes.'}
-                  </p>
-                </div>
-                <label htmlFor="mc-notes-qa" className="sr-only">
-                  MC script or notes for this Q and A slide
-                </label>
-                <textarea
-                  id="mc-notes-qa"
-                  value={mcNotesForSlide}
-                  onChange={(e) =>
-                    setNotesBySlide((prev) => ({
-                      ...prev,
-                      [mcSlideNotesKey]: e.target.value,
-                    }))
-                  }
-                  onFocus={() => {
-                    mcNotesAreaFocusedRef.current = true
-                  }}
-                  onBlur={() => {
-                    mcNotesAreaFocusedRef.current = false
-                  }}
-                  spellCheck
-                  placeholder="Script or notes for this slide…"
-                  className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-3 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-4 sm:text-[1.05rem]"
-                />
-                <div
-                  className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(19.5rem,88vw)] max-w-[94%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-3.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:w-[min(22rem,54vw)] sm:max-w-[92%] sm:p-4"
-                  aria-hidden
-                >
-                  <div className="text-center text-[0.55rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[0.62rem]">
-                    Q&amp;A · {qaSlideshowIndex + 1}/{QA_SLIDE_COUNT}
-                  </div>
-                  <div className="mt-2 text-center">
-                    {qaSlideshowIndex === 0 ? (
-                      <p className="line-clamp-5 text-pretty text-[0.72rem] font-semibold leading-snug text-slate-50 sm:text-[0.82rem]">
-                        {qaSlideshowSlides[0]?.title ?? ''}
-                      </p>
-                    ) : (
-                      <>
-                        <p className="line-clamp-4 text-pretty text-[0.72rem] font-semibold leading-snug text-slate-50 sm:text-[0.82rem]">
-                          {qaSlideshowSlides[1]?.title ?? ''}
-                        </p>
-                        <p className="mt-1.5 line-clamp-3 text-pretty text-[0.62rem] text-slate-400 sm:text-[0.7rem]">
-                          {qaSlideshowSlides[1]?.subtitle ?? ''}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
                 </div>
               </div>
             ) : slideshowActive ? (

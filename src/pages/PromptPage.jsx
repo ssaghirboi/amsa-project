@@ -78,6 +78,17 @@ export default function PromptPage() {
               {qaSlideshowSlides[1]?.subtitle ?? ''}
             </p>
           </div>
+        ) : qaSlideshowActive && qaSlideshowIndex === 2 ? (
+          <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.25rem,9vw,6.5rem)] font-semibold leading-[1.08] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
+            {qaSlideshowSlides[2]?.title ?? ''}
+          </p>
+        ) : qaSlideshowActive && qaSlideshowIndex === 3 ? (
+          <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-center gap-10 text-center lg:max-w-[min(100%,85rem)]">
+            <EventBranding variant="presentationHero" centered className="w-full max-w-[min(85vw,20rem)]" />
+            <p className="text-balance text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
+              {qaSlideshowSlides[3]?.title ?? ''}
+            </p>
+          </div>
         ) : (
           <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
             {qaSlideshowActive ? qaSlideshowSlides[0]?.title ?? '' : debateText}

@@ -3,6 +3,7 @@ import { DebateSliderGrid } from '../components/DebateSliderGrid'
 import { PromptBox } from '../components/PromptBox'
 import { EventBranding } from '../components/EventBranding'
 import qrDoesGodExist from '../assets/qr-doesgodexist.png'
+import qrHumanityFirstUcalgary from '../assets/qr-humanity-first-ucalgary.png'
 import {
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
@@ -544,7 +545,7 @@ export default function BigScreen() {
             />
           </div>
         </div>
-      ) : (
+      ) : qaSlideshowIndex === 1 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-8 pt-[clamp(6.5rem,18vh,11rem)] text-center">
           <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
             {qaSlideshowSlides[1]?.title ?? ''}
@@ -552,6 +553,29 @@ export default function BigScreen() {
           <p className="mt-5 max-w-2xl text-xl text-slate-600 sm:mt-7 sm:text-2xl md:text-3xl lg:text-4xl">
             {qaSlideshowSlides[1]?.subtitle ?? ''}
           </p>
+        </div>
+      ) : qaSlideshowIndex === 2 ? (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-8 pt-[clamp(6.5rem,18vh,11rem)]">
+          <div className="flex flex-col items-center gap-8 sm:gap-10">
+            <h1 className="max-w-4xl text-balance text-center text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl md:text-5xl lg:text-6xl">
+              {qaSlideshowSlides[2]?.title ?? ''}
+            </h1>
+            <img
+              src={qrHumanityFirstUcalgary}
+              alt=""
+              className="h-[min(52vmin,24rem)] w-[min(52vmin,24rem)] max-w-[92vw] rounded-2xl bg-white shadow-[0_18px_50px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/10"
+              draggable={false}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-12 pt-[clamp(6.5rem,18vh,11rem)]">
+          <div className="flex flex-col items-center gap-12 sm:gap-16">
+            <EventBranding variant="presentationHero" centered className="w-full max-w-[min(72vw,28rem)] shrink-0" />
+            <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-900 sm:text-6xl md:text-7xl lg:text-8xl">
+              {qaSlideshowSlides[3]?.title ?? ''}
+            </h1>
+          </div>
         </div>
       )}
       {qaDots}
