@@ -93,7 +93,10 @@ export default function Admin() {
 
   useEffect(() => {
     return () => {
-      if (panelistCommitTimerRef.current) clearTimeout(panelistCommitTimerRef.current)
+      if (panelistCommitTimerRef.current) {
+        clearTimeout(panelistCommitTimerRef.current)
+        panelistCommitTimerRef.current = null
+      }
     }
   }, [])
 
@@ -121,7 +124,7 @@ export default function Admin() {
 
     setStatus('Uploading icon...')
     setError('')
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     try {
       const { error: uploadError } = await supabase.storage
         .from(PANELIST_ICON_BUCKET)
@@ -260,6 +263,43 @@ export default function Admin() {
     }
   }, [])
 
+  const persistPanelistsFromRefsQuiet = async () => {
+    const ctx = writeContextRef.current
+    setError('')
+    try {
+      await writeEventState(supabase, {
+        prompt: promptRef.current,
+        panelists: panelistsRef.current,
+        panelistIcons: ctx.panelistIcons,
+        promptSequence: ctx.promptSequence,
+        presentationSlides: ctx.presentationSlides,
+        qaSlideshowSlides: ctx.qaSlideshowSlides,
+        slideshowActive: ctx.slideshowActive,
+        slideshowIndex: ctx.slideshowIndex,
+        qaSlideshowActive: ctx.qaSlideshowActive,
+        qaSlideshowIndex: ctx.qaSlideshowIndex,
+        debateRevealAck: undefined,
+      })
+    } catch (e) {
+      setError(e?.message || String(e))
+    }
+  }
+
+  const flushPendingPanelistDebouncedWrite = async () => {
+    if (!panelistCommitTimerRef.current) return
+    clearTimeout(panelistCommitTimerRef.current)
+    panelistCommitTimerRef.current = null
+    await persistPanelistsFromRefsQuiet()
+  }
+
+  const flushPanelistSliderNow = () => {
+    if (panelistCommitTimerRef.current) {
+      clearTimeout(panelistCommitTimerRef.current)
+      panelistCommitTimerRef.current = null
+    }
+    void persistPanelistsFromRefsQuiet()
+  }
+
   const commit = async (
     nextPrompt,
     nextPanelists,
@@ -268,7 +308,7 @@ export default function Admin() {
     nextPresentationSlides = presentationSlides,
     nextQaSlideshowSlides = qaSlideshowSlides,
   ) => {
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     const promptChanged = nextPrompt !== prompt
     try {
@@ -293,7 +333,8 @@ export default function Admin() {
     }
   }
 
-  const cancelPendingPresentationSlideSave = () => {
+  const cancelPendingPresentationSlideSave = async () => {
+    await flushPendingPanelistDebouncedWrite()
     if (presentationSlidesSaveTimerRef.current) {
       clearTimeout(presentationSlidesSaveTimerRef.current)
       presentationSlidesSaveTimerRef.current = null
@@ -304,10 +345,6 @@ export default function Admin() {
       qaSlidesSaveTimerRef.current = null
     }
     qaSlidesLatestRef.current = null
-    if (panelistCommitTimerRef.current) {
-      clearTimeout(panelistCommitTimerRef.current)
-      panelistCommitTimerRef.current = null
-    }
   }
 
   const flushPresentationSlidesSave = async () => {
@@ -460,7 +497,7 @@ export default function Admin() {
     const next = promptSequenceDraft.map((s) => String(s))
     setPromptSequence(next)
     setPromptSequenceDraft([...next])
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -485,7 +522,7 @@ export default function Admin() {
   const handleToggleSlideshow = async () => {
     const next = !slideshowActive
     const idx = next ? 0 : slideshowIndex
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -518,7 +555,7 @@ export default function Admin() {
 
   const handleToggleQaSlideshow = async () => {
     const next = !qaSlideshowActive
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -551,7 +588,7 @@ export default function Admin() {
     if (!slideshowActive) return
     const next = clampPresentationSlideIndex(slideshowIndex + delta)
     if (next === slideshowIndex) return
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -578,7 +615,7 @@ export default function Admin() {
     if (!qaSlideshowActive) return
     const next = clampQaSlideIndex(qaSlideshowIndex + delta)
     if (next === qaSlideshowIndex) return
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -611,7 +648,7 @@ export default function Admin() {
     ) {
       return
     }
-    cancelPendingPresentationSlideSave()
+    await cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     setError('')
     try {
@@ -923,9 +960,11 @@ export default function Admin() {
                         }
                         panelistCommitTimerRef.current = setTimeout(() => {
                           panelistCommitTimerRef.current = null
-                          commit(promptRef.current, panelistsRef.current)
+                          void persistPanelistsFromRefsQuiet()
                         }, 90)
                       }}
+                      onPointerUp={flushPanelistSliderNow}
+                      onPointerCancel={flushPanelistSliderNow}
                       className="h-2 w-full cursor-pointer accent-indigo-500"
                     />
                   </div>
@@ -1007,7 +1046,7 @@ export default function Admin() {
                       const next = [...panelistIcons]
                       next[i] = e.target.value || null
                       setPanelistIcons(next)
-                      commit(prompt, panelists, promptSequence, next)
+                      commit(prompt, panelistsRef.current, promptSequence, next)
                     }}
                   />
                 </div>
