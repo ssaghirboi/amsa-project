@@ -145,9 +145,9 @@ export default function Audience() {
           href={ASK_HUMANITY_FIRST_FORM_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-[3.25rem] min-w-[min(88vw,20rem)] items-center justify-center rounded-2xl bg-indigo-600 px-8 py-4 text-center text-base font-semibold text-white shadow-[0_14px_40px_rgba(79,70,229,0.35)] transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+          className="inline-flex min-h-[3.25rem] max-w-[min(92vw,24rem)] items-center justify-center rounded-2xl bg-indigo-600 px-6 py-4 text-center text-base font-semibold leading-snug text-white shadow-[0_14px_40px_rgba(79,70,229,0.35)] transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 sm:px-8"
         >
-          Open form
+          Humanity First Registration form
         </a>
       </div>
     )
@@ -166,7 +166,7 @@ export default function Audience() {
           href={ASK_THANK_YOU_TALLY_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-[3.25rem] min-w-[min(88vw,20rem)] items-center justify-center rounded-2xl border border-slate-300 bg-white px-8 py-4 text-center text-base font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+          className="inline-flex min-h-[3.25rem] min-w-[min(88vw,20rem)] items-center justify-center rounded-2xl bg-neutral-950 px-8 py-4 text-center text-base font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] ring-1 ring-black/10 transition hover:bg-neutral-900 active:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-950"
         >
           Feedback form
         </a>
