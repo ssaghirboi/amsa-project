@@ -4,19 +4,19 @@ export const PRESENTATION_SLIDES = [
   { kind: 'hero', tagline: 'We will begin shortly' },
   /** Slide 2: same hero logo; no subtext */
   { kind: 'hero', tagline: 'Inspired by Jubilee' },
-  /** Slide 3 — title card (logo → top-left, title + subtitle on one line each). */
-  {
-    kind: 'segment',
-    id: 'quran-recitation',
-    title: 'Recitation of the Holy Quran',
-    subtitle: 'John Doe',
-  },
-  /** Slide 4 — title card between recitation and speaker 1. */
+  /** Slide 3 — title card: Does God Exist? */
   {
     kind: 'segment',
     id: 'post-recitation-title',
     title: 'Does God Exist?',
     subtitle: 'A conversation across perspectives',
+  },
+  /** Slide 4 — Recitation of the Holy Quran */
+  {
+    kind: 'segment',
+    id: 'quran-recitation',
+    title: 'Recitation of the Holy Quran',
+    subtitle: 'John Doe',
   },
   /** Slide 5 — blank title card (between slide 4 and Speaker 2). */
   {
