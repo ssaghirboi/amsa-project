@@ -23,6 +23,7 @@ import {
   shouldSlideshowMigrate,
   shouldSyncQaSlidesFromRemote,
   shouldDebateRevealAckMigrate,
+  shouldMcSlideNotesMigrate,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
@@ -55,6 +56,7 @@ export default function Admin() {
   const [showQaSlideshowMigrateBanner, setShowQaSlideshowMigrateBanner] = useState(false)
   const [showQaSlidesCopyMigrateBanner, setShowQaSlidesCopyMigrateBanner] = useState(false)
   const [showDebateRevealMigrateBanner, setShowDebateRevealMigrateBanner] = useState(false)
+  const [showMcSlideNotesMigrateBanner, setShowMcSlideNotesMigrateBanner] = useState(false)
   const [debateRevealAck, setDebateRevealAck] = useState(false)
 
   const presentationSlidesSaveTimerRef = useRef(null)
@@ -182,6 +184,7 @@ export default function Admin() {
         )
         setShowQaSlidesCopyMigrateBanner(shouldQaSlideshowSlidesMigrate())
         setShowDebateRevealMigrateBanner(shouldDebateRevealAckMigrate())
+        setShowMcSlideNotesMigrateBanner(shouldMcSlideNotesMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
@@ -192,6 +195,7 @@ export default function Admin() {
         setShowQaSlideshowMigrateBanner(false)
         setShowQaSlidesCopyMigrateBanner(false)
         setShowDebateRevealMigrateBanner(false)
+        setShowMcSlideNotesMigrateBanner(false)
       }
     })()
 
@@ -655,6 +659,18 @@ export default function Admin() {
                   alter table public.event_state add column if not exists debate_reveal_ack boolean default false;
                 </code>{' '}
                 Then refresh this page.
+              </p>
+            </div>
+          ) : null}
+          {showMcSlideNotesMigrateBanner ? (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
+              <p className="font-medium text-amber-950">MC slide notes are not saved to the database yet</p>
+              <p className="mt-1 text-amber-900/90">
+                In Supabase → SQL Editor, run:{' '}
+                <code className="rounded bg-black/15 px-1.5 py-0.5 text-xs">
+                  {`alter table public.event_state add column if not exists mc_slide_notes jsonb default '{}'::jsonb;`}
+                </code>{' '}
+                Then refresh. Notes on the MC page will sync across devices.
               </p>
             </div>
           ) : null}

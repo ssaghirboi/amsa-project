@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
 import {
@@ -96,9 +96,28 @@ export default function McPage() {
     mergeQaSlidesFromRemote(null),
   )
   const [debateRevealAck, setDebateRevealAck] = useState(false)
+  const [notesRemoteEnabled, setNotesRemoteEnabled] = useState(false)
   const [notesBySlide, setNotesBySlide] = useState(loadNotesBySlideFromStorage)
+  const mcNotesAreaFocusedRef = useRef(false)
+  const writeCtxRef = useRef({})
+
+  writeCtxRef.current = {
+    prompt,
+    panelists,
+    panelistIcons,
+    promptSequence,
+    presentationSlides,
+    qaSlideshowSlides,
+    slideshowActive,
+    slideshowIndex,
+    qaSlideshowActive,
+    qaSlideshowIndex,
+    mcQuestions,
+    debateRevealAck,
+  }
 
   useEffect(() => {
+    if (notesRemoteEnabled) return
     const id = window.setTimeout(() => {
       try {
         localStorage.setItem(MC_NOTES_BY_SLIDE_KEY, JSON.stringify(notesBySlide))
@@ -107,7 +126,30 @@ export default function McPage() {
       }
     }, 400)
     return () => window.clearTimeout(id)
-  }, [notesBySlide])
+  }, [notesBySlide, notesRemoteEnabled])
+
+  useEffect(() => {
+    if (!notesRemoteEnabled) return
+    const id = window.setTimeout(() => {
+      const c = writeCtxRef.current
+      writeEventState(supabase, {
+        prompt: c.prompt,
+        panelists: c.panelists,
+        panelistIcons: c.panelistIcons,
+        promptSequence: c.promptSequence,
+        presentationSlides: c.presentationSlides,
+        qaSlideshowSlides: c.qaSlideshowSlides,
+        slideshowActive: c.slideshowActive,
+        slideshowIndex: c.slideshowIndex,
+        qaSlideshowActive: c.qaSlideshowActive,
+        qaSlideshowIndex: c.qaSlideshowIndex,
+        mcQuestions: c.mcQuestions,
+        debateRevealAck: c.debateRevealAck,
+        mcSlideNotes: notesBySlide,
+      }).catch(() => {})
+    }, 550)
+    return () => window.clearTimeout(id)
+  }, [notesBySlide, notesRemoteEnabled])
 
   useEffect(() => {
     let unsubscribe = null
@@ -132,6 +174,39 @@ export default function McPage() {
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       setPresentationSlides(next.presentationSlides ?? [])
       setDebateRevealAck(Boolean(next.debateRevealAck))
+      setNotesRemoteEnabled(next.meta?.mcSlideNotesColumnAvailable === true)
+
+      if (!mcNotesAreaFocusedRef.current) {
+        if (next.meta?.mcSlideNotesColumnAvailable) {
+          const remoteMap = { ...(next.mcSlideNotes ?? {}) }
+          if (Object.keys(remoteMap).length === 0) {
+            const local = loadNotesBySlideFromStorage()
+            if (Object.keys(local).length > 0) {
+              setNotesBySlide(local)
+              writeEventState(supabase, {
+                prompt: next.prompt ?? '',
+                panelists: next.panelists ?? [3, 3, 3, 3],
+                panelistIcons: next.panelistIcons ?? [null, null, null, null],
+                promptSequence: next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
+                presentationSlides: next.presentationSlides ?? [],
+                qaSlideshowSlides: mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null),
+                slideshowActive: Boolean(next.slideshowActive),
+                slideshowIndex: next.slideshowIndex ?? 0,
+                qaSlideshowActive: Boolean(next.qaSlideshowActive),
+                qaSlideshowIndex: next.qaSlideshowIndex ?? 0,
+                mcQuestions: incomingMc,
+                debateRevealAck: Boolean(next.debateRevealAck),
+                mcSlideNotes: local,
+              }).catch(() => {})
+            } else {
+              setNotesBySlide(remoteMap)
+            }
+          } else {
+            setNotesBySlide(remoteMap)
+          }
+        }
+      }
+
       setMcQuestions(incomingMc)
       setMcQuestionsStatus(
         incomingMc
@@ -487,7 +562,9 @@ export default function McPage() {
                     Notes for Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
                   </p>
                   <p className="mt-0.5 text-[0.6rem] text-slate-600 sm:text-[0.65rem]">
-                    Saved to this slide on this device (browser storage)
+                    {notesRemoteEnabled
+                      ? 'Saved to this slide in the event state (all devices)'
+                      : 'Cloud notes unavailable — saved on this browser only. Run the Admin migration SQL for mc_slide_notes.'}
                   </p>
                 </div>
                 <label htmlFor="mc-notes-qa" className="sr-only">
@@ -502,6 +579,12 @@ export default function McPage() {
                       [mcSlideNotesKey]: e.target.value,
                     }))
                   }
+                  onFocus={() => {
+                    mcNotesAreaFocusedRef.current = true
+                  }}
+                  onBlur={() => {
+                    mcNotesAreaFocusedRef.current = false
+                  }}
                   spellCheck
                   placeholder="Script or notes for this slide…"
                   className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-3 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-4 sm:text-[1.05rem]"
@@ -541,7 +624,9 @@ export default function McPage() {
                       : ''}
                   </p>
                   <p className="mt-0.5 text-[0.6rem] text-slate-600 sm:text-[0.65rem]">
-                    Saved to this slide on this device (browser storage)
+                    {notesRemoteEnabled
+                      ? 'Saved to this slide in the event state (all devices)'
+                      : 'Cloud notes unavailable — saved on this browser only. Run the Admin migration SQL for mc_slide_notes.'}
                   </p>
                 </div>
                 <label htmlFor="mc-notes-slides" className="sr-only">
@@ -556,6 +641,12 @@ export default function McPage() {
                       [mcSlideNotesKey]: e.target.value,
                     }))
                   }
+                  onFocus={() => {
+                    mcNotesAreaFocusedRef.current = true
+                  }}
+                  onBlur={() => {
+                    mcNotesAreaFocusedRef.current = false
+                  }}
                   spellCheck
                   placeholder="Script or notes for this slide…"
                   className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-3 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-4 sm:text-[1.05rem]"

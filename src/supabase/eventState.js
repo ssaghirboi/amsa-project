@@ -27,6 +27,8 @@ let qaSlideshowIndexColumnAvailable = null
 let qaSlideshowSlidesColumnAvailable = null
 /** Set after fetch: DB has `debate_reveal_ack` (admin pressed Reveal on big screen flow). */
 let debateRevealAckColumnAvailable = null
+/** Set after fetch: DB has `mc_slide_notes` (MC notes per slide, synced). */
+let mcSlideNotesColumnAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
@@ -41,6 +43,8 @@ const PANELIST_ICON_COLUMNS = [
 const PANELIST_ICON_COLUMNS_SELECT = PANELIST_ICON_COLUMNS.join(',')
 
 const SELECT_VARIANTS = [
+  // With MC notes + debate reveal + full Q&A (add columns in Supabase if missing)
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack,mc_slide_notes`,
   // With MC + Q&A slideshow + per-slide copy + debate reveal (add columns in Supabase if missing)
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack`,
   // With MC + Q&A slideshow columns (add columns in Supabase if missing)
@@ -131,6 +135,12 @@ function isMissingDebateRevealAckColumnError(error) {
   return /debate_reveal_ack/i.test(msg) && /does not exist/i.test(msg)
 }
 
+function isMissingMcSlideNotesColumnError(error) {
+  if (!error) return false
+  const msg = String(error.message || '')
+  return /mc_slide_notes/i.test(msg) && /does not exist/i.test(msg)
+}
+
 /** `false` after fetch detected no `prompt_sequence` column. */
 export function shouldPromptSequenceMigrate() {
   return promptSequenceColumnAvailable === false
@@ -174,6 +184,11 @@ export function shouldQaSlideshowSlidesMigrate() {
 /** `false` after fetch detected no `debate_reveal_ack` column. */
 export function shouldDebateRevealAckMigrate() {
   return debateRevealAckColumnAvailable === false
+}
+
+/** `false` after fetch detected no `mc_slide_notes` column. */
+export function shouldMcSlideNotesMigrate() {
+  return mcSlideNotesColumnAvailable === false
 }
 
 /** Only merge `presentationSlides` from Supabase when the column exists (avoids wiping local edits). */
@@ -227,6 +242,26 @@ function clampPos(value) {
   return Math.max(1, Math.min(5, Math.round(n)))
 }
 
+function normalizeMcSlideNotes(raw) {
+  if (raw == null) return {}
+  let obj = raw
+  if (typeof raw === 'string') {
+    try {
+      obj = JSON.parse(raw)
+    } catch {
+      return {}
+    }
+  }
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return {}
+  const out = {}
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof k === 'string' && k.length > 0) {
+      out[k] = v == null ? '' : String(v)
+    }
+  }
+  return out
+}
+
 export function deriveEventStateFromRow(row) {
   if (!row) return null
 
@@ -244,6 +279,9 @@ export function deriveEventStateFromRow(row) {
   const qaSlideshowSlides = mergeQaSlidesFromRemote(row.qa_slideshow_slides)
   const mcQuestions = row.mc_questions ?? null
   const debateRevealAck = row.debate_reveal_ack === true
+  const mcSlideNotes = normalizeMcSlideNotes(row.mc_slide_notes)
+  const mcSlideNotesRemote =
+    row != null && Object.prototype.hasOwnProperty.call(row, 'mc_slide_notes')
 
   return {
     prompt: String(prompt),
@@ -258,8 +296,10 @@ export function deriveEventStateFromRow(row) {
     qaSlideshowSlides,
     mcQuestions,
     debateRevealAck,
+    mcSlideNotes,
     meta: {
       id: row.id,
+      mcSlideNotesColumnAvailable: mcSlideNotesRemote,
     },
   }
 }
@@ -284,6 +324,7 @@ export async function fetchCurrentEventState(supabase) {
       qaSlideshowIndexColumnAvailable = cols.includes('qa_slideshow_index')
       qaSlideshowSlidesColumnAvailable = cols.includes('qa_slideshow_slides')
       debateRevealAckColumnAvailable = cols.includes('debate_reveal_ack')
+      mcSlideNotesColumnAvailable = cols.includes('mc_slide_notes')
 
       const row = Array.isArray(data) ? data[0] : data
       return (
@@ -300,7 +341,8 @@ export async function fetchCurrentEventState(supabase) {
           qaSlideshowSlides: mergeQaSlidesFromRemote(null),
           mcQuestions: null,
           debateRevealAck: false,
-          meta: { id: EVENT_STATE_ID },
+          mcSlideNotes: {},
+          meta: { id: EVENT_STATE_ID, mcSlideNotesColumnAvailable: false },
         }
       )
     }
@@ -350,6 +392,8 @@ export async function writeEventState(
     mcQuestions = null,
     /** Omit to leave DB value unchanged; `false` after prompt change; `true` when admin reveals debate table. */
     debateRevealAck,
+    /** Omit to leave DB unchanged; object keyed e.g. `presentation:0`, `qa:1`. */
+    mcSlideNotes,
   },
 ) {
   const sequence =
@@ -404,6 +448,10 @@ export async function writeEventState(
 
   if (debateRevealAckColumnAvailable !== false && debateRevealAck !== undefined) {
     payload.debate_reveal_ack = Boolean(debateRevealAck)
+  }
+
+  if (mcSlideNotesColumnAvailable !== false && mcSlideNotes !== undefined) {
+    payload.mc_slide_notes = normalizeMcSlideNotes(mcSlideNotes)
   }
 
   let { error } = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
@@ -489,6 +537,17 @@ export async function writeEventState(
   ) {
     debateRevealAckColumnAvailable = false
     delete payload.debate_reveal_ack
+    const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = second.error
+  }
+
+  if (
+    error &&
+    isMissingMcSlideNotesColumnError(error) &&
+    mcSlideNotesColumnAvailable !== false
+  ) {
+    mcSlideNotesColumnAvailable = false
+    delete payload.mc_slide_notes
     const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
     error = second.error
   }
