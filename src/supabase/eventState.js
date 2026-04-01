@@ -378,7 +378,7 @@ export function subscribeToEventState(supabase, onUpdate) {
       const my = ++fetchSeq
       const full = await fetchCurrentEventState(supabase).catch(() => null)
       if (full && my === fetchSeq) onUpdate(full)
-    }, 20)
+    }, 5)
   }
 
   const channel = supabase

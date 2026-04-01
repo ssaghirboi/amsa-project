@@ -92,15 +92,7 @@ export default function BigScreen() {
   /** Measured target `top` (px) when animating hero logo → top-centre header strip */
   const [eventHeaderLogoPos, setEventHeaderLogoPos] = useState(null)
   const eventHeaderLogoMeasureRef = useRef(null)
-  const [textSlideIndex, setTextSlideIndex] = useState(0)
-  const [textOpacity, setTextOpacity] = useState(1)
-  const textFadeTimeoutRef = useRef(null)
-  const textSlideIndexRef = useRef(0)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    textSlideIndexRef.current = textSlideIndex
-  }, [textSlideIndex])
 
   /** Intro: typewriter → await admin Reveal → shrink to anchor; idle = normal layout */
   const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'awaitingReveal' | 'shrinking'
@@ -153,7 +145,7 @@ export default function BigScreen() {
       si !== slideshowIndexAppliedRef.current
     if (!skipPres) {
       if (Boolean(next.slideshowActive) && si !== slideshowIndexAppliedRef.current) {
-        presentationSlideStaleIgnoreUntilRef.current = Date.now() + 400
+        presentationSlideStaleIgnoreUntilRef.current = Date.now() + 280
       }
       slideshowIndexAppliedRef.current = si
       setSlideshowIndex(si)
@@ -168,7 +160,7 @@ export default function BigScreen() {
       qaIdx !== qaSlideshowIndexAppliedRef.current
     if (!skipQa) {
       if (Boolean(next.qaSlideshowActive) && qaIdx !== qaSlideshowIndexAppliedRef.current) {
-        qaSlideStaleIgnoreUntilRef.current = Date.now() + 400
+        qaSlideStaleIgnoreUntilRef.current = Date.now() + 280
       }
       qaSlideshowIndexAppliedRef.current = qaIdx
       setQaSlideshowIndex(qaIdx)
@@ -226,44 +218,6 @@ export default function BigScreen() {
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [])
-
-  /** Fade only the presentation subtext; keep logo moving immediately with `slideshowIndex`. */
-  useEffect(() => {
-    if (!slideshowActive) {
-      if (textFadeTimeoutRef.current) {
-        clearTimeout(textFadeTimeoutRef.current)
-        textFadeTimeoutRef.current = null
-      }
-      queueMicrotask(() => {
-        setTextSlideIndex(slideshowIndex)
-        setTextOpacity(1)
-      })
-      return
-    }
-
-    if (slideshowIndex === textSlideIndexRef.current) return
-
-    queueMicrotask(() => {
-      setTextOpacity(0)
-    })
-    if (textFadeTimeoutRef.current) {
-      clearTimeout(textFadeTimeoutRef.current)
-      textFadeTimeoutRef.current = null
-    }
-
-    textFadeTimeoutRef.current = setTimeout(() => {
-      setTextSlideIndex(slideshowIndex)
-      setTextOpacity(1)
-      textFadeTimeoutRef.current = null
-    }, 280)
-
-    return () => {
-      if (textFadeTimeoutRef.current) {
-        clearTimeout(textFadeTimeoutRef.current)
-        textFadeTimeoutRef.current = null
-      }
-    }
-  }, [slideshowActive, slideshowIndex])
 
   // When switching from slideshow -> debate UI:
   // 1) keep the logo frozen where it was
@@ -512,9 +466,6 @@ export default function BigScreen() {
   const logoSlide =
     presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
     presentationSlides[0]
-  const textSlide =
-    presentationSlides[clampPresentationSlideIndex(textSlideIndex)] ??
-    presentationSlides[0]
   const cornerLayout =
     logoSlide.kind === 'segment' ||
     (logoSlide.title != null && logoSlide.subtitle != null)
@@ -619,26 +570,24 @@ export default function BigScreen() {
         {!cornerLayout ? (
           <div
             className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-3xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
-            aria-hidden={!textSlide.tagline}
-            style={{ opacity: textOpacity }}
+            aria-hidden={!logoSlide.tagline}
           >
-            {textSlide.tagline ? (
+            {logoSlide.tagline ? (
               <p className="text-2xl font-medium tracking-wide text-slate-600 sm:text-3xl md:text-4xl lg:text-5xl">
-                {textSlide.tagline}
+                {logoSlide.tagline}
               </p>
             ) : null}
           </div>
         ) : (
           <div
-            key={`segment-${textSlide.id ?? textSlideIndex}`}
+            key={`segment-${logoSlide.id ?? slideshowIndex}`}
             className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(6rem,16vh,10rem)] text-center sm:pt-[clamp(6rem,14vh,9rem)]"
-            style={{ opacity: textOpacity }}
           >
             <h1 className="max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-900">
-              {textSlide.title}
+              {logoSlide.title}
             </h1>
             <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-600 sm:mt-6 md:mt-7">
-              {textSlide.subtitle}
+              {logoSlide.subtitle}
             </p>
           </div>
         )}
