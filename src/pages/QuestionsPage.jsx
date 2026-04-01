@@ -10,7 +10,6 @@ import {
   QA_SLIDE_KIND,
   QA_SLIDESHOW_TITLE,
   clampQaSlideIndex,
-  extractEmbeddedQaSlideIndex,
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
 
@@ -206,18 +205,19 @@ export default function QuestionsPage() {
     [eventState?.qaSlideshowSlides],
   )
 
-  const qaSlideIndex = useMemo(() => {
-    if (!eventState) return 0
-    const embedded = extractEmbeddedQaSlideIndex(eventState.qaSlideshowSlides)
-    if (embedded != null) return embedded
-    return clampQaSlideIndex(eventState.qaSlideshowIndex ?? 0)
-  }, [eventState])
+  const qaSlideIndex = useMemo(
+    () => clampQaSlideIndex(eventState?.qaSlideshowIndex ?? 0),
+    [eventState?.qaSlideshowIndex],
+  )
 
   const qaSlideKind = qaSlides[qaSlideIndex]?.kind
+  /** Prefer merged `kind`; fall back to slide index if DB copy omitted `kind` fields. */
   const showAskHumanityFormOnly =
-    qaMode && qaSlideKind === QA_SLIDE_KIND.HUMANITY_QR
+    qaMode &&
+    (qaSlideKind === QA_SLIDE_KIND.HUMANITY_QR || qaSlideIndex === 2)
   const showAskThankYouAndTally =
-    qaMode && qaSlideKind === QA_SLIDE_KIND.HERO_THANKS
+    qaMode &&
+    (qaSlideKind === QA_SLIDE_KIND.HERO_THANKS || qaSlideIndex === 3)
 
   const activePromptKey = normalizePrompt(eventPrompt)
 

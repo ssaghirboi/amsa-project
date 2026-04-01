@@ -21,6 +21,7 @@ export const QA_SLIDE_KIND = {
 export const QA_SLIDE_COUNT = 4
 
 export function clampQaSlideIndex(raw) {
+  if (typeof raw === 'boolean') return raw ? 1 : 0
   const n = Math.floor(Number(raw))
   if (!Number.isFinite(n)) return 0
   return Math.max(0, Math.min(QA_SLIDE_COUNT - 1, n))

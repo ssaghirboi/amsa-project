@@ -278,12 +278,14 @@ export function deriveEventStateFromRow(row) {
   const embeddedQaIdx = extractEmbeddedQaSlideIndex(row.qa_slideshow_slides)
   const hasQaIdxCol = Object.prototype.hasOwnProperty.call(row, 'qa_slideshow_index')
   const rawQaIdx = row.qa_slideshow_index
-  /** Prefer the dedicated column so stale `{ slides, index }` jsonb cannot override MC navigation. */
+  /** Prefer embedded `index` inside `qa_slideshow_slides` when present: writes always sync it
+   * with navigation, and it carries the full 0–3 range. Some DBs type `qa_slideshow_index` as
+   * boolean (only 0–1), which hides slides 2–3 if we read the column first. */
   let resolvedQaIdx = 0
-  if (hasQaIdxCol && rawQaIdx != null) {
-    resolvedQaIdx = rawQaIdx
-  } else if (embeddedQaIdx != null) {
+  if (embeddedQaIdx != null) {
     resolvedQaIdx = embeddedQaIdx
+  } else if (hasQaIdxCol && rawQaIdx != null) {
+    resolvedQaIdx = rawQaIdx
   } else if (hasQaIdxCol) {
     resolvedQaIdx = rawQaIdx ?? 0
   }
