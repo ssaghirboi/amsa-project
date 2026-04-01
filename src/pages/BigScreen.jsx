@@ -7,6 +7,7 @@ import qrHumanityFirstUcalgary from '../assets/qr-humanity-first-ucalgary.png'
 import {
   PRESENTATION_SLIDE_STALE_ECHO_MS,
   PRESENTATION_SLIDE_COUNT,
+  capPresentationSlideIndexNoForwardSkip,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -141,7 +142,18 @@ export default function BigScreen() {
     setSlideshowActive(Boolean(next.slideshowActive))
 
     const presentationSlidesMerged = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
-    const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0, presentationSlidesMerged.length)
+    const rawSi = clampPresentationSlideIndex(next.slideshowIndex ?? 0, presentationSlidesMerged.length)
+    const si = capPresentationSlideIndexNoForwardSkip(
+      rawSi,
+      slideshowIndexAppliedRef.current,
+      presentationSlideStaleIgnoreUntilRef.current,
+    )
+    if (rawSi !== si) {
+      presentationSlideStaleIgnoreUntilRef.current = Math.max(
+        presentationSlideStaleIgnoreUntilRef.current,
+        Date.now() + 800,
+      )
+    }
     const skipPres =
       Boolean(next.slideshowActive) &&
       Date.now() < presentationSlideStaleIgnoreUntilRef.current &&

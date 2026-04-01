@@ -84,6 +84,20 @@ export function clampPresentationSlideIndex(raw, slideCount = PRESENTATION_SLIDE
 }
 
 /**
+ * While `echoUntilMs` is in the future (recent local "Next slide" / navigation), do not
+ * accept a remote index more than one step ahead of `applied`. Prevents skipping a slide
+ * when the DB briefly reports +2 (double write, batched realtime, or duplicate events).
+ */
+export function capPresentationSlideIndexNoForwardSkip(si, applied, echoUntilMs) {
+  const s = Math.floor(Number(si))
+  const a = Math.floor(Number(applied))
+  if (!Number.isFinite(s) || !Number.isFinite(a)) return si
+  if (Date.now() >= echoUntilMs) return s
+  if (s <= a + 1) return s
+  return a + 1
+}
+
+/**
  * Merge DB-stored slide text with built-in defaults (structure: kind, id, slide order).
  * `raw` may be null, a JSON string, or an array of partial slide objects.
  */

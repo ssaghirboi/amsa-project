@@ -3,6 +3,7 @@ import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDE_COUNT,
   PRESENTATION_SLIDE_STALE_ECHO_MS,
+  capPresentationSlideIndexNoForwardSkip,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -51,6 +52,7 @@ export default function Admin() {
   const slideshowIndexRef = useRef(0)
   const qaSlideshowIndexRef = useRef(0)
   const presentationSlideEchoIgnoreUntilRef = useRef(0)
+  const presentationSlideLastStepAtRef = useRef(0)
   const qaSlideEchoIgnoreUntilRef = useRef(0)
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
@@ -266,7 +268,18 @@ export default function Admin() {
       setSlideshowActive(Boolean(next.slideshowActive))
       {
         const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
-        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
+        const rawSi = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
+        const si = capPresentationSlideIndexNoForwardSkip(
+          rawSi,
+          slideshowIndexRef.current,
+          presentationSlideEchoIgnoreUntilRef.current,
+        )
+        if (rawSi !== si) {
+          presentationSlideEchoIgnoreUntilRef.current = Math.max(
+            presentationSlideEchoIgnoreUntilRef.current,
+            Date.now() + 800,
+          )
+        }
         const echoWindow = Date.now() < presentationSlideEchoIgnoreUntilRef.current
         const staleBehind =
           Boolean(next.slideshowActive) &&
@@ -652,6 +665,9 @@ export default function Admin() {
 
   const handlePresentationSlide = async (delta) => {
     if (!slideshowActive) return
+    const now = Date.now()
+    if (now - presentationSlideLastStepAtRef.current < 320) return
+    presentationSlideLastStepAtRef.current = now
     const next = clampPresentationSlideIndex(
       slideshowIndex + delta,
       presentationSlides.length || PRESENTATION_SLIDE_COUNT,

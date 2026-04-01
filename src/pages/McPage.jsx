@@ -10,6 +10,7 @@ import {
 import {
   PRESENTATION_SLIDE_COUNT,
   PRESENTATION_SLIDE_STALE_ECHO_MS,
+  capPresentationSlideIndexNoForwardSkip,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -125,6 +126,7 @@ export default function McPage() {
   const qaSlideNavRef = useRef(false)
   /** Ignore stale `slideshow_index` / `qa_slideshow_index` reads briefly after a local step. */
   const presentationSlideEchoIgnoreUntilRef = useRef(0)
+  const presentationSlideLastStepAtRef = useRef(0)
   const qaSlideEchoIgnoreUntilRef = useRef(0)
   /** Expected `current_prompt` after MC uses Next/Previous/Reset; ignore stale realtime rows until this matches. */
   const mcPromptPendingRef = useRef(null)
@@ -242,7 +244,18 @@ export default function McPage() {
       setSlideshowActive(Boolean(next.slideshowActive))
       if (!presentationSlideNavRef.current) {
         const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
-        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
+        const rawSi = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
+        const si = capPresentationSlideIndexNoForwardSkip(
+          rawSi,
+          slideshowIndexRef.current,
+          presentationSlideEchoIgnoreUntilRef.current,
+        )
+        if (rawSi !== si) {
+          presentationSlideEchoIgnoreUntilRef.current = Math.max(
+            presentationSlideEchoIgnoreUntilRef.current,
+            Date.now() + 800,
+          )
+        }
         const echoWindow = Date.now() < presentationSlideEchoIgnoreUntilRef.current
         const staleBehind =
           Boolean(next.slideshowActive) &&
@@ -498,6 +511,9 @@ export default function McPage() {
 
   const stepPresentationSlide = async (delta) => {
     if (!slideshowActive || qaSlideshowActive || presentationSlideNavRef.current) return
+    const now = Date.now()
+    if (now - presentationSlideLastStepAtRef.current < 320) return
+    presentationSlideLastStepAtRef.current = now
     const current = slideshowIndexRef.current
     const nextIdx = clampPresentationSlideIndex(
       current + delta,
