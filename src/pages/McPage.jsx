@@ -437,10 +437,10 @@ export default function McPage() {
                     </p>
                   ) : (
                     <div className="mt-6 min-h-0 w-full max-w-[min(100%,72rem)]">
-                      <h1 className="text-balance text-[clamp(2.25rem,7vw,5.5rem)] font-semibold leading-tight tracking-tight text-slate-50">
+                      <h1 className="whitespace-nowrap text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-50">
                         {currentSlide?.title || ' '}
                       </h1>
-                      <p className="mt-5 text-balance text-[clamp(1.15rem,2.8vw,2.25rem)] text-slate-300/95">
+                      <p className="mt-5 whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-300/95">
                         {currentSlide?.subtitle || ' '}
                       </p>
                     </div>

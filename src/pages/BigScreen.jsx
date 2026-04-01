@@ -563,10 +563,10 @@ export default function BigScreen() {
             className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(6rem,16vh,10rem)] text-center sm:pt-[clamp(6rem,14vh,9rem)]"
             style={{ opacity: textOpacity }}
           >
-            <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
+            <h1 className="max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-900">
               {textSlide.title}
             </h1>
-            <p className="mt-5 max-w-2xl text-xl text-slate-600 sm:mt-7 sm:text-2xl md:text-3xl lg:text-4xl">
+            <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-600 sm:mt-6 md:mt-7">
               {textSlide.subtitle}
             </p>
           </div>

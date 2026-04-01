@@ -4,51 +4,49 @@ export const PRESENTATION_SLIDES = [
   { kind: 'hero', tagline: 'We will begin shortly' },
   /** Slide 2: same hero logo; no subtext */
   { kind: 'hero', tagline: 'Text inspired by Jubilee' },
-  /** Slide 3: pure logo beat, no text (title slide) */
-  { kind: 'hero', tagline: null },
-  /** Slide 4 — dedicated segment slide (logo → top-left, title + subtitle). */
+  /** Slide 3 — title card (logo → top-left, title + subtitle on one line each). */
   {
     kind: 'segment',
     id: 'quran-recitation',
     title: 'Recitation of the Holy Quran',
     subtitle: 'John Doe',
   },
-  /** Slide 5 — title card between recitation and speaker 1. */
+  /** Slide 4 — title card between recitation and speaker 1. */
   {
     kind: 'segment',
     id: 'post-recitation-title',
     title: 'Does God Exist?',
     subtitle: 'A conversation across perspectives',
   },
-  /** Slide 6 — Speaker 1 introduction (filler text for now). */
+  /** Slide 5 — Speaker 1 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-1',
     title: 'Speaker 1',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 7 — Speaker 2 introduction (filler text for now). */
+  /** Slide 6 — Speaker 2 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-2',
     title: 'Speaker 2',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 8 — Speaker 3 introduction (filler text for now). */
+  /** Slide 7 — Speaker 3 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-3',
     title: 'Speaker 3',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 9 — Speaker 4 introduction (filler text for now). */
+  /** Slide 8 — Speaker 4 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-4',
     title: 'Speaker 4',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 10 — Saghir Saeed intro */
+  /** Slide 9 — Saghir Saeed intro */
   {
     kind: 'segment',
     id: 'saghir-saeed',
