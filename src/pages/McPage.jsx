@@ -18,7 +18,7 @@ import {
 } from '../constants/qaSlideshow'
 import {
   GENERAL_TARGET_KEY,
-  PANELIST_DISPLAY_NAMES,
+  PANELIST_DISPLAY_NAMES_MC,
   audienceQueueItemsMatch,
   displayNameForMcTarget,
   getEmptyMcQuestionSlots,
@@ -66,7 +66,7 @@ const GENERAL_SLOT = { key: GENERAL_TARGET_KEY, title: 'General' }
 
 const PANELIST_ONLY = [1, 2, 3, 4].map((n, i) => ({
   key: `Panelist ${n}`,
-  title: PANELIST_DISPLAY_NAMES[i],
+  title: PANELIST_DISPLAY_NAMES_MC[i],
 }))
 
 const MC_NOTES_BY_SLIDE_KEY = 'amsa-mc-notes-by-slide'

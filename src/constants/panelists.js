@@ -2,11 +2,20 @@
  * Human-readable names for the four panelist slots.
  * DB / API still use keys "Panelist 1" … "Panelist 4" (see Audience insert, mc_questions).
  */
-export const PANELIST_DISPLAY_NAMES = [
+/** MC console only — shorter legacy labels. */
+export const PANELIST_DISPLAY_NAMES_MC = [
   'Logan Johnson (Christian)',
   'Attaul Wahab (Muslim)',
   'Anil Gupta (Hindu)',
   'Roy Alexander (Atheist)',
+]
+
+/** Admin, Big Screen, Ask, Audience, etc. */
+export const PANELIST_DISPLAY_NAMES = [
+  'Logan Johnson (Pentecostal Christian)',
+  'Attaul Wahab (Ahmadi Muslim)',
+  'Anil Gupta (Advaita Hindu)',
+  'Roy Alexander (Atheist/Agnostic)',
 ]
 
 /** Stored in `questions.target_panelist` and `mc_questions.panelists` for non-directed submissions. */
@@ -62,7 +71,7 @@ export function displayNameForMcTarget(targetKey) {
   const m = k.match(/^Panelist\s*(\d)$/i)
   if (m) {
     const i = Number(m[1]) - 1
-    if (i >= 0 && i < PANELIST_DISPLAY_NAMES.length) return PANELIST_DISPLAY_NAMES[i]
+    if (i >= 0 && i < PANELIST_DISPLAY_NAMES_MC.length) return PANELIST_DISPLAY_NAMES_MC[i]
   }
   return k || 'General'
 }
