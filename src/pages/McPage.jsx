@@ -116,6 +116,9 @@ export default function McPage() {
   const qaSlideshowIndexRef = useRef(0)
   const presentationSlideNavRef = useRef(false)
   const qaSlideNavRef = useRef(false)
+  /** Expected `current_prompt` after MC uses Next/Previous/Reset; ignore stale realtime rows until this matches. */
+  const mcPromptPendingRef = useRef(null)
+  const applyLatestRef = useRef(null)
 
   useEffect(() => {
     slideshowIndexRef.current = slideshowIndex
@@ -154,22 +157,26 @@ export default function McPage() {
   useEffect(() => {
     if (!notesRemoteEnabled || qaSlideshowActive) return
     const id = window.setTimeout(() => {
-      const c = writeCtxRef.current
-      writeEventState(supabase, {
-        prompt: c.prompt,
-        panelists: c.panelists,
-        panelistIcons: c.panelistIcons,
-        promptSequence: c.promptSequence,
-        presentationSlides: c.presentationSlides,
-        qaSlideshowSlides: c.qaSlideshowSlides,
-        slideshowActive: c.slideshowActive,
-        slideshowIndex: c.slideshowIndex,
-        qaSlideshowActive: c.qaSlideshowActive,
-        qaSlideshowIndex: c.qaSlideshowIndex,
-        mcQuestions: c.mcQuestions,
-        debateRevealAck: c.debateRevealAck,
-        mcSlideNotes: notesBySlide,
-      }).catch(() => {})
+      const localNotes = notesBySlide
+      ;(async () => {
+        const fresh = await fetchCurrentEventState(supabase).catch(() => null)
+        const base = fresh ?? writeCtxRef.current
+        await writeEventState(supabase, {
+          prompt: base.prompt,
+          panelists: base.panelists,
+          panelistIcons: base.panelistIcons,
+          promptSequence: base.promptSequence,
+          presentationSlides: base.presentationSlides,
+          qaSlideshowSlides: base.qaSlideshowSlides,
+          slideshowActive: base.slideshowActive,
+          slideshowIndex: base.slideshowIndex,
+          qaSlideshowActive: base.qaSlideshowActive,
+          qaSlideshowIndex: base.qaSlideshowIndex,
+          mcQuestions: base.mcQuestions,
+          debateRevealAck: base.debateRevealAck,
+          mcSlideNotes: localNotes,
+        })
+      })().catch(() => {})
     }, 550)
     return () => window.clearTimeout(id)
   }, [notesBySlide, notesRemoteEnabled, qaSlideshowActive])
@@ -179,15 +186,45 @@ export default function McPage() {
     let pollId = null
 
     const apply = (next) => {
-      // If prompt changed, auto-clear pushed MC questions.
-      const nextPrompt = next.prompt ?? ''
-      const incomingMc = next.mcQuestions ?? null
-      const incomingPrompt = String(incomingMc?.prompt ?? '')
-      const promptMismatch =
-        incomingMc && normalizePrompt(incomingPrompt) !== normalizePrompt(nextPrompt)
+      const nextPromptStr = next.prompt ?? ''
+      const pending = mcPromptPendingRef.current
+      const staleCore =
+        pending != null &&
+        normalizePrompt(nextPromptStr) !== normalizePrompt(pending)
 
-      setPrompt(next.prompt ?? '')
-      setPanelists(next.panelists ?? [3, 3, 3, 3])
+      const mergeNotesFromRemote = (skipNoteBootstrapWrite) => {
+        if (mcNotesAreaFocusedRef.current) return
+        if (!next.meta?.mcSlideNotesColumnAvailable) return
+        const remoteMap = { ...(next.mcSlideNotes ?? {}) }
+        if (Object.keys(remoteMap).length === 0) {
+          const local = loadNotesBySlideFromStorage()
+          if (Object.keys(local).length > 0) {
+            if (!skipNoteBootstrapWrite) {
+              setNotesBySlide(local)
+              writeEventState(supabase, {
+                prompt: next.prompt ?? '',
+                panelists: next.panelists ?? [3, 3, 3, 3],
+                panelistIcons: next.panelistIcons ?? [null, null, null, null],
+                promptSequence: next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
+                presentationSlides: next.presentationSlides ?? [],
+                qaSlideshowSlides: mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null),
+                slideshowActive: Boolean(next.slideshowActive),
+                slideshowIndex: next.slideshowIndex ?? 0,
+                qaSlideshowActive: Boolean(next.qaSlideshowActive),
+                qaSlideshowIndex: next.qaSlideshowIndex ?? 0,
+                mcQuestions: next.mcQuestions ?? null,
+                debateRevealAck: Boolean(next.debateRevealAck),
+                mcSlideNotes: local,
+              }).catch(() => {})
+            }
+          } else {
+            setNotesBySlide(remoteMap)
+          }
+        } else {
+          setNotesBySlide(remoteMap)
+        }
+      }
+
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
       setSlideshowActive(Boolean(next.slideshowActive))
@@ -206,37 +243,28 @@ export default function McPage() {
       setPresentationSlides(next.presentationSlides ?? [])
       setDebateRevealAck(Boolean(next.debateRevealAck))
       setNotesRemoteEnabled(next.meta?.mcSlideNotesColumnAvailable === true)
+      mergeNotesFromRemote(staleCore)
 
-      if (!mcNotesAreaFocusedRef.current) {
-        if (next.meta?.mcSlideNotesColumnAvailable) {
-          const remoteMap = { ...(next.mcSlideNotes ?? {}) }
-          if (Object.keys(remoteMap).length === 0) {
-            const local = loadNotesBySlideFromStorage()
-            if (Object.keys(local).length > 0) {
-              setNotesBySlide(local)
-              writeEventState(supabase, {
-                prompt: next.prompt ?? '',
-                panelists: next.panelists ?? [3, 3, 3, 3],
-                panelistIcons: next.panelistIcons ?? [null, null, null, null],
-                promptSequence: next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
-                presentationSlides: next.presentationSlides ?? [],
-                qaSlideshowSlides: mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null),
-                slideshowActive: Boolean(next.slideshowActive),
-                slideshowIndex: next.slideshowIndex ?? 0,
-                qaSlideshowActive: Boolean(next.qaSlideshowActive),
-                qaSlideshowIndex: next.qaSlideshowIndex ?? 0,
-                mcQuestions: incomingMc,
-                debateRevealAck: Boolean(next.debateRevealAck),
-                mcSlideNotes: local,
-              }).catch(() => {})
-            } else {
-              setNotesBySlide(remoteMap)
-            }
-          } else {
-            setNotesBySlide(remoteMap)
-          }
-        }
+      if (!presentationSlideNavRef.current && !qaSlideNavRef.current) {
+        setStatus('Live')
+        setError('')
       }
+
+      if (staleCore) {
+        return
+      }
+
+      if (pending != null && normalizePrompt(nextPromptStr) === normalizePrompt(pending)) {
+        mcPromptPendingRef.current = null
+      }
+
+      const incomingMc = next.mcQuestions ?? null
+      const incomingPrompt = String(incomingMc?.prompt ?? '')
+      const promptMismatch =
+        incomingMc && normalizePrompt(incomingPrompt) !== normalizePrompt(nextPromptStr)
+
+      setPrompt(nextPromptStr)
+      setPanelists(next.panelists ?? [3, 3, 3, 3])
 
       setMcQuestions(incomingMc)
       setMcQuestionsStatus(
@@ -246,15 +274,10 @@ export default function McPage() {
             : 'Pushed'
           : '—',
       )
-      if (!presentationSlideNavRef.current && !qaSlideNavRef.current) {
-        setStatus('Live')
-        setError('')
-      }
 
       if (promptMismatch) {
-        // Fire-and-forget reset; avoid blocking the MC view.
         writeEventState(supabase, {
-          prompt: nextPrompt,
+          prompt: nextPromptStr,
           panelists: next.panelists ?? [3, 3, 3, 3],
           panelistIcons: next.panelistIcons ?? [null, null, null, null],
           promptSequence: next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
@@ -264,11 +287,13 @@ export default function McPage() {
           qaSlideshowActive: Boolean(next.qaSlideshowActive),
           qaSlideshowIndex: next.qaSlideshowIndex ?? 0,
           qaSlideshowSlides: mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null),
-          mcQuestions: emptyMcQuestions(nextPrompt),
+          mcQuestions: emptyMcQuestions(nextPromptStr),
           debateRevealAck: false,
         }).catch(() => {})
       }
     }
+
+    applyLatestRef.current = apply
 
     ;(async () => {
       setStatus('Connecting…')
@@ -325,9 +350,15 @@ export default function McPage() {
     const nextPrompt = nextInfo.next
     if (!nextPrompt) return
 
+    const resetPanelists = [3, 3, 3, 3]
+    mcPromptPendingRef.current = nextPrompt
+    setPrompt(nextPrompt)
+    setPanelists(resetPanelists)
+    setMcQuestions(emptyMcQuestions(nextPrompt))
+    setDebateRevealAck(false)
+
     setStatus('Updating…')
     setError('')
-    const resetPanelists = [3, 3, 3, 3]
     try {
       await writeEventState(supabase, {
         prompt: nextPrompt,
@@ -343,11 +374,13 @@ export default function McPage() {
         mcQuestions: emptyMcQuestions(nextPrompt),
         debateRevealAck: false,
       })
-      setDebateRevealAck(false)
       setStatus('Live')
     } catch (e) {
+      mcPromptPendingRef.current = null
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+      const fix = await fetchCurrentEventState(supabase).catch(() => null)
+      if (fix) applyLatestRef.current?.(fix)
     }
   }
 
@@ -356,9 +389,15 @@ export default function McPage() {
     const firstPrompt = promptSequence?.[0]
     if (!firstPrompt) return
 
+    const resetPanelists = [3, 3, 3, 3]
+    mcPromptPendingRef.current = firstPrompt
+    setPrompt(firstPrompt)
+    setPanelists(resetPanelists)
+    setMcQuestions(emptyMcQuestions(firstPrompt, { skipDebateIntro: true }))
+    setDebateRevealAck(false)
+
     setStatus('Updating…')
     setError('')
-    const resetPanelists = [3, 3, 3, 3]
     try {
       await writeEventState(supabase, {
         prompt: firstPrompt,
@@ -374,11 +413,13 @@ export default function McPage() {
         mcQuestions: emptyMcQuestions(firstPrompt, { skipDebateIntro: true }),
         debateRevealAck: false,
       })
-      setDebateRevealAck(false)
       setStatus('Live')
     } catch (e) {
+      mcPromptPendingRef.current = null
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+      const fix = await fetchCurrentEventState(supabase).catch(() => null)
+      if (fix) applyLatestRef.current?.(fix)
     }
   }
 
@@ -387,9 +428,15 @@ export default function McPage() {
     const prevPromptText = prevInfo.prev
     if (!prevPromptText) return
 
+    const resetPanelists = [3, 3, 3, 3]
+    mcPromptPendingRef.current = prevPromptText
+    setPrompt(prevPromptText)
+    setPanelists(resetPanelists)
+    setMcQuestions(emptyMcQuestions(prevPromptText, { skipDebateIntro: true }))
+    setDebateRevealAck(false)
+
     setStatus('Updating…')
     setError('')
-    const resetPanelists = [3, 3, 3, 3]
     try {
       await writeEventState(supabase, {
         prompt: prevPromptText,
@@ -405,11 +452,13 @@ export default function McPage() {
         mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
         debateRevealAck: false,
       })
-      setDebateRevealAck(false)
       setStatus('Live')
     } catch (e) {
+      mcPromptPendingRef.current = null
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+      const fix = await fetchCurrentEventState(supabase).catch(() => null)
+      if (fix) applyLatestRef.current?.(fix)
     }
   }
 

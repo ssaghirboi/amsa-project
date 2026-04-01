@@ -30,12 +30,23 @@ import {
   writeEventState,
 } from '../supabase/eventState'
 
+function normPromptKey(s) {
+  return String(s ?? '').trim().toLowerCase()
+}
+
+function panelistsTupleEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false
+  return a.every((v, i) => Number(v) === Number(b[i]))
+}
+
 export default function Admin() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
   const panelistsRef = useRef(panelists)
   const promptRef = useRef(prompt)
   const panelistCommitTimerRef = useRef(null)
+  /** Brief window after a local slider write: ignore conflicting realtime rows for the same debate prompt (stale read). */
+  const panelistsProtectUntilRef = useRef(0)
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [promptSequenceDraft, setPromptSequenceDraft] = useState(
@@ -223,7 +234,21 @@ export default function Admin() {
 
     unsubscribe = subscribeToEventState(supabase, (next) => {
       setPrompt(next.prompt)
-      setPanelists(next.panelists)
+      const incoming = next.panelists ?? [3, 3, 3, 3]
+      const protecting =
+        panelistCommitTimerRef.current != null ||
+        Date.now() < panelistsProtectUntilRef.current
+      const sameDebate =
+        normPromptKey(next.prompt ?? '') === normPromptKey(promptRef.current)
+      if (
+        protecting &&
+        sameDebate &&
+        !panelistsTupleEqual(incoming, panelistsRef.current)
+      ) {
+        /* keep local slider positions */
+      } else {
+        setPanelists(incoming)
+      }
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
       setSlideshowIndex(next.slideshowIndex ?? 0)
@@ -280,6 +305,7 @@ export default function Admin() {
         qaSlideshowIndex: ctx.qaSlideshowIndex,
         debateRevealAck: undefined,
       })
+      panelistsProtectUntilRef.current = Date.now() + 800
     } catch (e) {
       setError(e?.message || String(e))
     }
@@ -325,6 +351,7 @@ export default function Admin() {
         qaSlideshowIndex,
         debateRevealAck: promptChanged ? false : undefined,
       })
+      panelistsProtectUntilRef.current = Date.now() + 800
       setStatus('Live')
       if (promptChanged) setDebateRevealAck(false)
     } catch (e) {
