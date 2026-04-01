@@ -528,9 +528,11 @@ export default function BigScreen() {
 
   const qaSlideshowContent = (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-800">
-      <div className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-20 -translate-x-1/2 drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]">
-        <EventBranding variant="presentationCorner" className="shrink-0" />
-      </div>
+      {qaSlideshowIndex !== QA_SLIDE_COUNT - 1 ? (
+        <div className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-20 -translate-x-1/2 drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]">
+          <EventBranding variant="presentationCorner" className="shrink-0" />
+        </div>
+      ) : null}
       {qaSlideshowIndex === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-6 pt-[clamp(6.5rem,18vh,11rem)]">
           <div className="flex flex-col items-center gap-10 sm:gap-12">
@@ -569,12 +571,12 @@ export default function BigScreen() {
           </div>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-12 pt-[clamp(6.5rem,18vh,11rem)]">
-          <div className="flex flex-col items-center gap-12 sm:gap-16">
-            <EventBranding variant="presentationHero" centered className="w-full max-w-[min(72vw,28rem)] shrink-0" />
-            <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-900 sm:text-6xl md:text-7xl lg:text-8xl">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))] sm:pb-12">
+          <div className="flex max-w-[min(96vw,48rem)] flex-col items-center">
+            <EventBranding variant="presentationHero" centered className="w-full shrink-0" />
+            <p className="mt-6 max-w-2xl text-balance text-center text-xl font-medium tracking-wide text-slate-600 sm:mt-8 sm:text-2xl md:text-3xl lg:text-4xl">
               {qaSlideshowSlides[3]?.title ?? ''}
-            </h1>
+            </p>
           </div>
         </div>
       )}
