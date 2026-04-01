@@ -5,6 +5,8 @@ import { EventBranding } from '../components/EventBranding'
 import qrDoesGodExist from '../assets/qr-doesgodexist.png'
 import qrHumanityFirstUcalgary from '../assets/qr-humanity-first-ucalgary.png'
 import {
+  PRESENTATION_SLIDE_STALE_ECHO_MS,
+  PRESENTATION_SLIDE_COUNT,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -138,14 +140,16 @@ export default function BigScreen() {
     setPanelists(next.panelists)
     setSlideshowActive(Boolean(next.slideshowActive))
 
-    const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0)
+    const presentationSlidesMerged = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
+    const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0, presentationSlidesMerged.length)
     const skipPres =
       Boolean(next.slideshowActive) &&
       Date.now() < presentationSlideStaleIgnoreUntilRef.current &&
-      si !== slideshowIndexAppliedRef.current
+      si < slideshowIndexAppliedRef.current &&
+      slideshowIndexAppliedRef.current - si <= 4
     if (!skipPres) {
-      if (Boolean(next.slideshowActive) && si !== slideshowIndexAppliedRef.current) {
-        presentationSlideStaleIgnoreUntilRef.current = Date.now() + 420
+      if (Boolean(next.slideshowActive) && si > slideshowIndexAppliedRef.current) {
+        presentationSlideStaleIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
       }
       slideshowIndexAppliedRef.current = si
       setSlideshowIndex(si)
@@ -165,9 +169,7 @@ export default function BigScreen() {
       qaSlideshowIndexAppliedRef.current = qaIdx
       setQaSlideshowIndex(qaIdx)
     }
-    setPresentationSlides(
-      mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
-    )
+    setPresentationSlides(presentationSlidesMerged)
     setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
   }
 
@@ -237,8 +239,12 @@ export default function BigScreen() {
     }
 
     const slide =
-      presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
-      presentationSlides[0]
+      presentationSlides[
+        clampPresentationSlideIndex(
+          slideshowIndex,
+          presentationSlides.length || PRESENTATION_SLIDE_COUNT,
+        )
+      ] ?? presentationSlides[0]
     const isCornerLayout =
       slide.kind === 'segment' || (slide.title != null && slide.subtitle != null)
 
@@ -470,8 +476,12 @@ export default function BigScreen() {
       introPhase === 'shrinking')
 
   const logoSlide =
-    presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
-    presentationSlides[0]
+    presentationSlides[
+      clampPresentationSlideIndex(
+        slideshowIndex,
+        presentationSlides.length || PRESENTATION_SLIDE_COUNT,
+      )
+    ] ?? presentationSlides[0]
   const cornerLayout =
     logoSlide.kind === 'segment' ||
     (logoSlide.title != null && logoSlide.subtitle != null)

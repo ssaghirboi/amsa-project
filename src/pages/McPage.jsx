@@ -9,6 +9,7 @@ import {
 } from '../supabase/eventState'
 import {
   PRESENTATION_SLIDE_COUNT,
+  PRESENTATION_SLIDE_STALE_ECHO_MS,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -240,12 +241,15 @@ export default function McPage() {
       setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
       setSlideshowActive(Boolean(next.slideshowActive))
       if (!presentationSlideNavRef.current) {
-        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0)
-        const ignoreStaleSlide =
+        const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
+        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
+        const echoWindow = Date.now() < presentationSlideEchoIgnoreUntilRef.current
+        const staleBehind =
           Boolean(next.slideshowActive) &&
-          Date.now() < presentationSlideEchoIgnoreUntilRef.current &&
-          si !== slideshowIndexRef.current
-        if (!ignoreStaleSlide) {
+          echoWindow &&
+          si < slideshowIndexRef.current &&
+          slideshowIndexRef.current - si <= 4
+        if (!staleBehind) {
           setSlideshowIndex(si)
           slideshowIndexRef.current = si
         }
@@ -351,7 +355,10 @@ export default function McPage() {
   const prevInfo = useMemo(() => getPrevPrompt(prompt, promptSequence), [prompt, promptSequence])
   const currentSlide = useMemo(() => {
     if (!Array.isArray(presentationSlides) || presentationSlides.length === 0) return null
-    const idx = clampPresentationSlideIndex(slideshowIndex)
+    const idx = clampPresentationSlideIndex(
+      slideshowIndex,
+      presentationSlides.length || PRESENTATION_SLIDE_COUNT,
+    )
     return presentationSlides[idx] ?? presentationSlides[0] ?? null
   }, [presentationSlides, slideshowIndex])
 
@@ -492,12 +499,15 @@ export default function McPage() {
   const stepPresentationSlide = async (delta) => {
     if (!slideshowActive || qaSlideshowActive || presentationSlideNavRef.current) return
     const current = slideshowIndexRef.current
-    const nextIdx = clampPresentationSlideIndex(current + delta)
+    const nextIdx = clampPresentationSlideIndex(
+      current + delta,
+      presentationSlides.length || PRESENTATION_SLIDE_COUNT,
+    )
     if (nextIdx === current) return
     presentationSlideNavRef.current = true
     setSlideshowIndex(nextIdx)
     slideshowIndexRef.current = nextIdx
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 720
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
     setError('')
     try {
       await writeEventState(supabase, {
@@ -520,7 +530,10 @@ export default function McPage() {
       try {
         const fix = await fetchCurrentEventState(supabase).catch(() => null)
         if (fix) {
-          const v = clampPresentationSlideIndex(fix.slideshowIndex ?? 0)
+          const v = clampPresentationSlideIndex(
+            fix.slideshowIndex ?? 0,
+            fix.presentationSlides?.length ?? PRESENTATION_SLIDE_COUNT,
+          )
           setSlideshowIndex(v)
           slideshowIndexRef.current = v
         }

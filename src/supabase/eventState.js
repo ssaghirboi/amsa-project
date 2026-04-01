@@ -273,7 +273,6 @@ export function deriveEventStateFromRow(row) {
   const promptSequence = fromDb ?? DEFAULT_PROMPT_SEQUENCE
 
   const slideshowActive = row.slideshow_active === true
-  const slideshowIndex = clampPresentationSlideIndex(row.slideshow_index ?? 0)
   const qaSlideshowActive = row.qa_slideshow_active === true
   const embeddedQaIdx = extractEmbeddedQaSlideIndex(row.qa_slideshow_slides)
   const hasQaIdxCol = Object.prototype.hasOwnProperty.call(row, 'qa_slideshow_index')
@@ -291,6 +290,10 @@ export function deriveEventStateFromRow(row) {
   }
   const qaSlideshowIndex = clampQaSlideIndex(resolvedQaIdx)
   const presentationSlides = mergePresentationSlidesFromRemote(row.presentation_slides)
+  const slideshowIndex = clampPresentationSlideIndex(
+    row.slideshow_index ?? 0,
+    presentationSlides.length,
+  )
   const qaSlideshowSlides = mergeQaSlidesFromRemote(row.qa_slideshow_slides)
   const mcQuestions = row.mc_questions ?? null
   const debateRevealAck = row.debate_reveal_ack === true
@@ -450,7 +453,14 @@ export async function writeEventState(
 
   if (slideshowColumnsAvailable !== false) {
     payload.slideshow_active = Boolean(slideshowActive)
-    payload.slideshow_index = clampPresentationSlideIndex(slideshowIndex)
+    const deckForClamp = mergePresentationSlidesFromRemote(
+      presentationSlides != null &&
+        Array.isArray(presentationSlides) &&
+        presentationSlides.length > 0
+        ? presentationSlides
+        : null,
+    )
+    payload.slideshow_index = clampPresentationSlideIndex(slideshowIndex, deckForClamp.length)
   }
 
   if (qaSlideshowColumnAvailable !== false) {

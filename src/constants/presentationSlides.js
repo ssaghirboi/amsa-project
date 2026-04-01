@@ -67,11 +67,20 @@ export const PRESENTATION_SLIDES = [
 
 export const PRESENTATION_SLIDE_COUNT = PRESENTATION_SLIDES.length
 
-/** Same bounds as eventState `slideshow_index` (0 … slideCount − 1). */
-export function clampPresentationSlideIndex(raw) {
+/** Ignore stale `slideshow_index` from realtime/poll for this long after a local slide step (ms). */
+export const PRESENTATION_SLIDE_STALE_ECHO_MS = 4500
+
+/**
+ * Same bounds as eventState `slideshow_index` (0 … slideCount − 1).
+ * Pass `slideCount` from the merged deck (e.g. after `mergePresentationSlidesFromRemote`) so
+ * the max index matches the deck you are actually showing, not only the built-in array length.
+ */
+export function clampPresentationSlideIndex(raw, slideCount = PRESENTATION_SLIDE_COUNT) {
   const n = Math.floor(Number(raw))
   if (!Number.isFinite(n)) return 0
-  return Math.max(0, Math.min(PRESENTATION_SLIDE_COUNT - 1, n))
+  const count = Math.max(1, Math.floor(Number(slideCount)) || PRESENTATION_SLIDE_COUNT)
+  const maxIdx = count - 1
+  return Math.max(0, Math.min(maxIdx, n))
 }
 
 /**

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDE_COUNT,
+  PRESENTATION_SLIDE_STALE_ECHO_MS,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -264,12 +265,15 @@ export default function Admin() {
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
       {
-        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0)
-        const ignoreStaleSlide =
+        const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
+        const si = clampPresentationSlideIndex(next.slideshowIndex ?? 0, mergedDeck.length)
+        const echoWindow = Date.now() < presentationSlideEchoIgnoreUntilRef.current
+        const staleBehind =
           Boolean(next.slideshowActive) &&
-          Date.now() < presentationSlideEchoIgnoreUntilRef.current &&
-          si !== slideshowIndexRef.current
-        if (!ignoreStaleSlide) {
+          echoWindow &&
+          si < slideshowIndexRef.current &&
+          slideshowIndexRef.current - si <= 4
+        if (!staleBehind) {
           setSlideshowIndex(si)
         }
       }
@@ -581,7 +585,7 @@ export default function Admin() {
     const idx = next ? 0 : slideshowIndex
     await cancelPendingPresentationSlideSave()
     slideshowIndexRef.current = idx
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 720
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
     setSlideshowActive(next)
     setSlideshowIndex(idx)
     if (next) setQaSlideshowActive(false)
@@ -648,11 +652,14 @@ export default function Admin() {
 
   const handlePresentationSlide = async (delta) => {
     if (!slideshowActive) return
-    const next = clampPresentationSlideIndex(slideshowIndex + delta)
+    const next = clampPresentationSlideIndex(
+      slideshowIndex + delta,
+      presentationSlides.length || PRESENTATION_SLIDE_COUNT,
+    )
     if (next === slideshowIndex) return
     await cancelPendingPresentationSlideSave()
     slideshowIndexRef.current = next
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 720
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
     setSlideshowIndex(next)
     setStatus('Updating...')
     try {
