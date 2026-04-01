@@ -287,48 +287,59 @@ export default function Admin() {
     qaSlidesLatestRef.current = null
   }
 
-  const flushPresentationSlidesSave = () => {
+  const flushPresentationSlidesSave = async () => {
     const slides = presentationSlidesLatestRef.current
     presentationSlidesLatestRef.current = null
     if (!slides) return
     const ctx = writeContextRef.current
     setError('')
-    writeEventState(supabase, {
-      prompt: ctx.prompt,
-      panelists: ctx.panelists,
-      panelistIcons: ctx.panelistIcons,
-      promptSequence: ctx.promptSequence,
-      presentationSlides: slides,
-      qaSlideshowSlides: ctx.qaSlideshowSlides,
-      slideshowActive: ctx.slideshowActive,
-      slideshowIndex: ctx.slideshowIndex,
-      qaSlideshowActive: ctx.qaSlideshowActive,
-      qaSlideshowIndex: ctx.qaSlideshowIndex,
-    }).catch((e) => {
+    try {
+      // Debounced text saves must not revert slide indices another tab (e.g. MC) advanced.
+      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
+      const slideshowIndexLive = refreshed?.slideshowIndex ?? ctx.slideshowIndex
+      const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? ctx.qaSlideshowIndex
+      await writeEventState(supabase, {
+        prompt: ctx.prompt,
+        panelists: ctx.panelists,
+        panelistIcons: ctx.panelistIcons,
+        promptSequence: ctx.promptSequence,
+        presentationSlides: slides,
+        qaSlideshowSlides: ctx.qaSlideshowSlides,
+        slideshowActive: ctx.slideshowActive,
+        slideshowIndex: slideshowIndexLive,
+        qaSlideshowActive: ctx.qaSlideshowActive,
+        qaSlideshowIndex: qaSlideshowIndexLive,
+      })
+    } catch (e) {
       setError(e?.message || String(e))
-    })
+    }
   }
 
-  const flushQaSlidesSave = () => {
+  const flushQaSlidesSave = async () => {
     const slides = qaSlidesLatestRef.current
     qaSlidesLatestRef.current = null
     if (!slides) return
     const ctx = writeContextRef.current
     setError('')
-    writeEventState(supabase, {
-      prompt: ctx.prompt,
-      panelists: ctx.panelists,
-      panelistIcons: ctx.panelistIcons,
-      promptSequence: ctx.promptSequence,
-      presentationSlides: ctx.presentationSlides,
-      qaSlideshowSlides: slides,
-      slideshowActive: ctx.slideshowActive,
-      slideshowIndex: ctx.slideshowIndex,
-      qaSlideshowActive: ctx.qaSlideshowActive,
-      qaSlideshowIndex: ctx.qaSlideshowIndex,
-    }).catch((e) => {
+    try {
+      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
+      const slideshowIndexLive = refreshed?.slideshowIndex ?? ctx.slideshowIndex
+      const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? ctx.qaSlideshowIndex
+      await writeEventState(supabase, {
+        prompt: ctx.prompt,
+        panelists: ctx.panelists,
+        panelistIcons: ctx.panelistIcons,
+        promptSequence: ctx.promptSequence,
+        presentationSlides: ctx.presentationSlides,
+        qaSlideshowSlides: slides,
+        slideshowActive: ctx.slideshowActive,
+        slideshowIndex: slideshowIndexLive,
+        qaSlideshowActive: ctx.qaSlideshowActive,
+        qaSlideshowIndex: qaSlideshowIndexLive,
+      })
+    } catch (e) {
       setError(e?.message || String(e))
-    })
+    }
   }
 
   const patchPresentationSlide = (index, partial) => {
