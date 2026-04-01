@@ -119,6 +119,7 @@ export default function McPage() {
           qaSlideshowIndex: next.qaSlideshowIndex ?? 0,
           qaSlideshowSlides: mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null),
           mcQuestions: emptyMcQuestions(nextPrompt),
+          debateRevealAck: false,
         }).catch(() => {})
       }
     }
@@ -178,6 +179,7 @@ export default function McPage() {
         slideshowIndex,
         qaSlideshowActive: false,
         mcQuestions: emptyMcQuestions(nextPrompt),
+        debateRevealAck: false,
       })
       setStatus('Live')
     } catch (e) {
@@ -207,6 +209,7 @@ export default function McPage() {
         qaSlideshowActive: false,
         qaSlideshowIndex: 0,
         mcQuestions: emptyMcQuestions(firstPrompt, { skipDebateIntro: true }),
+        debateRevealAck: false,
       })
       setStatus('Live')
     } catch (e) {
@@ -235,6 +238,7 @@ export default function McPage() {
         slideshowIndex,
         qaSlideshowActive: false,
         mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
+        debateRevealAck: false,
       })
       setStatus('Live')
     } catch (e) {

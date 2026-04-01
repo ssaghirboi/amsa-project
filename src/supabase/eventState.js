@@ -25,6 +25,8 @@ let qaSlideshowColumnAvailable = null
 let qaSlideshowIndexColumnAvailable = null
 /** Set after fetch: DB has `qa_slideshow_slides` column. */
 let qaSlideshowSlidesColumnAvailable = null
+/** Set after fetch: DB has `debate_reveal_ack` (admin pressed Reveal on big screen flow). */
+let debateRevealAckColumnAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
@@ -39,8 +41,8 @@ const PANELIST_ICON_COLUMNS = [
 const PANELIST_ICON_COLUMNS_SELECT = PANELIST_ICON_COLUMNS.join(',')
 
 const SELECT_VARIANTS = [
-  // With MC + Q&A slideshow + per-slide copy (add columns in Supabase if missing)
-  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides`,
+  // With MC + Q&A slideshow + per-slide copy + debate reveal (add columns in Supabase if missing)
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack`,
   // With MC + Q&A slideshow columns (add columns in Supabase if missing)
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index`,
   // With MC question picks + Q&A slideshow flag (add column in Supabase if missing)
@@ -123,6 +125,12 @@ function isMissingQaSlideshowSlidesColumnError(error) {
   return /qa_slideshow_slides/i.test(msg) && /does not exist/i.test(msg)
 }
 
+function isMissingDebateRevealAckColumnError(error) {
+  if (!error) return false
+  const msg = String(error.message || '')
+  return /debate_reveal_ack/i.test(msg) && /does not exist/i.test(msg)
+}
+
 /** `false` after fetch detected no `prompt_sequence` column. */
 export function shouldPromptSequenceMigrate() {
   return promptSequenceColumnAvailable === false
@@ -161,6 +169,11 @@ export function shouldQaSlideshowIndexMigrate() {
 /** `false` after fetch detected no `qa_slideshow_slides` column. */
 export function shouldQaSlideshowSlidesMigrate() {
   return qaSlideshowSlidesColumnAvailable === false
+}
+
+/** `false` after fetch detected no `debate_reveal_ack` column. */
+export function shouldDebateRevealAckMigrate() {
+  return debateRevealAckColumnAvailable === false
 }
 
 /** Only merge `presentationSlides` from Supabase when the column exists (avoids wiping local edits). */
@@ -230,6 +243,7 @@ export function deriveEventStateFromRow(row) {
   const presentationSlides = mergePresentationSlidesFromRemote(row.presentation_slides)
   const qaSlideshowSlides = mergeQaSlidesFromRemote(row.qa_slideshow_slides)
   const mcQuestions = row.mc_questions ?? null
+  const debateRevealAck = row.debate_reveal_ack === true
 
   return {
     prompt: String(prompt),
@@ -243,6 +257,7 @@ export function deriveEventStateFromRow(row) {
     presentationSlides,
     qaSlideshowSlides,
     mcQuestions,
+    debateRevealAck,
     meta: {
       id: row.id,
     },
@@ -268,6 +283,7 @@ export async function fetchCurrentEventState(supabase) {
       qaSlideshowColumnAvailable = cols.includes('qa_slideshow_active')
       qaSlideshowIndexColumnAvailable = cols.includes('qa_slideshow_index')
       qaSlideshowSlidesColumnAvailable = cols.includes('qa_slideshow_slides')
+      debateRevealAckColumnAvailable = cols.includes('debate_reveal_ack')
 
       const row = Array.isArray(data) ? data[0] : data
       return (
@@ -283,6 +299,7 @@ export async function fetchCurrentEventState(supabase) {
           presentationSlides: mergePresentationSlidesFromRemote(null),
           qaSlideshowSlides: mergeQaSlidesFromRemote(null),
           mcQuestions: null,
+          debateRevealAck: false,
           meta: { id: EVENT_STATE_ID },
         }
       )
@@ -331,6 +348,8 @@ export async function writeEventState(
     qaSlideshowActive = false,
     qaSlideshowIndex = 0,
     mcQuestions = null,
+    /** Omit to leave DB value unchanged; `false` after prompt change; `true` when admin reveals debate table. */
+    debateRevealAck,
   },
 ) {
   const sequence =
@@ -381,6 +400,10 @@ export async function writeEventState(
 
   if (mcQuestionsColumnsAvailable !== false) {
     payload.mc_questions = mcQuestions
+  }
+
+  if (debateRevealAckColumnAvailable !== false && debateRevealAck !== undefined) {
+    payload.debate_reveal_ack = Boolean(debateRevealAck)
   }
 
   let { error } = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
@@ -455,6 +478,17 @@ export async function writeEventState(
   ) {
     qaSlideshowSlidesColumnAvailable = false
     delete payload.qa_slideshow_slides
+    const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = second.error
+  }
+
+  if (
+    error &&
+    isMissingDebateRevealAckColumnError(error) &&
+    debateRevealAckColumnAvailable !== false
+  ) {
+    debateRevealAckColumnAvailable = false
+    delete payload.debate_reveal_ack
     const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
     error = second.error
   }

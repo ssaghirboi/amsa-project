@@ -22,6 +22,7 @@ import {
   shouldQaSlideshowSlidesMigrate,
   shouldSlideshowMigrate,
   shouldSyncQaSlidesFromRemote,
+  shouldDebateRevealAckMigrate,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
@@ -53,6 +54,8 @@ export default function Admin() {
     useState(false)
   const [showQaSlideshowMigrateBanner, setShowQaSlideshowMigrateBanner] = useState(false)
   const [showQaSlidesCopyMigrateBanner, setShowQaSlidesCopyMigrateBanner] = useState(false)
+  const [showDebateRevealMigrateBanner, setShowDebateRevealMigrateBanner] = useState(false)
+  const [debateRevealAck, setDebateRevealAck] = useState(false)
 
   const presentationSlidesSaveTimerRef = useRef(null)
   const presentationSlidesLatestRef = useRef(null)
@@ -162,6 +165,7 @@ export default function Admin() {
             mergePresentationSlidesFromRemote(current.presentationSlides ?? null),
           )
           setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
+          setDebateRevealAck(Boolean(current.debateRevealAck))
           if (current.promptSequence?.length) {
             setPromptSequence(current.promptSequence)
             setPromptSequenceDraft([...current.promptSequence])
@@ -177,6 +181,7 @@ export default function Admin() {
           shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
         )
         setShowQaSlidesCopyMigrateBanner(shouldQaSlideshowSlidesMigrate())
+        setShowDebateRevealMigrateBanner(shouldDebateRevealAckMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
@@ -186,6 +191,7 @@ export default function Admin() {
         setShowPresentationSlidesMigrateBanner(false)
         setShowQaSlideshowMigrateBanner(false)
         setShowQaSlidesCopyMigrateBanner(false)
+        setShowDebateRevealMigrateBanner(false)
       }
     })()
 
@@ -205,6 +211,7 @@ export default function Admin() {
       if (shouldSyncQaSlidesFromRemote()) {
         setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       }
+      setDebateRevealAck(Boolean(next.debateRevealAck))
       if (!next.promptSequence?.length) return
       const remote = next.promptSequence.map((s) => String(s))
       setPromptSequence((prev) => {
@@ -240,6 +247,7 @@ export default function Admin() {
   ) => {
     cancelPendingPresentationSlideSave()
     setStatus('Updating...')
+    const promptChanged = nextPrompt !== prompt
     try {
       await writeEventState(supabase, {
         prompt: nextPrompt,
@@ -252,6 +260,7 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive,
         qaSlideshowIndex,
+        debateRevealAck: promptChanged ? false : undefined,
       })
       setStatus('Live')
     } catch (e) {
@@ -553,6 +562,41 @@ export default function Admin() {
     }
   }
 
+  const handleRevealDebate = async () => {
+    if (
+      debateRevealAck ||
+      status === 'Updating...' ||
+      slideshowActive ||
+      qaSlideshowActive ||
+      !prompt?.trim()
+    ) {
+      return
+    }
+    cancelPendingPresentationSlideSave()
+    setStatus('Updating...')
+    setError('')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive,
+        qaSlideshowIndex,
+        debateRevealAck: true,
+      })
+      setStatus('Live')
+      setShowDebateRevealMigrateBanner(shouldDebateRevealAckMigrate())
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
   const activePromptIndex = promptSequence.findIndex(
     (p) => p.trim().toLowerCase() === prompt.trim().toLowerCase(),
   )
@@ -602,6 +646,46 @@ export default function Admin() {
               </p>
             </div>
           ) : null}
+          {showDebateRevealMigrateBanner ? (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
+              <p className="font-medium text-amber-950">Debate reveal is not saved to the database yet</p>
+              <p className="mt-1 text-amber-900/90">
+                In Supabase → SQL Editor, run:{' '}
+                <code className="rounded bg-black/15 px-1.5 py-0.5 text-xs">
+                  alter table public.event_state add column if not exists debate_reveal_ack boolean default false;
+                </code>{' '}
+                Then refresh this page.
+              </p>
+            </div>
+          ) : null}
+          <div className="mt-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-medium text-slate-900">Event screen — debate reveal</h2>
+              <p className="mt-1 text-xs text-slate-600">
+                When a new prompt appears on <code className="text-slate-700">/screen</code>, adjust the panelist
+                sliders, then press <span className="font-semibold text-slate-800">Reveal</span> to run the zoom-out
+                handoff and show the debate table.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRevealDebate}
+              disabled={
+                status === 'Updating...' ||
+                !prompt?.trim() ||
+                debateRevealAck ||
+                slideshowActive ||
+                qaSlideshowActive
+              }
+              className={
+                debateRevealAck
+                  ? 'shrink-0 cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-500'
+                  : 'shrink-0 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50'
+              }
+            >
+              {debateRevealAck ? 'Revealed' : 'Reveal'}
+            </button>
+          </div>
         </div>
 
         <div className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6">

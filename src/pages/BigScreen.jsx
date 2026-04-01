@@ -12,22 +12,27 @@ import {
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
-import {
-  DEFAULT_PROMPT_SEQUENCE,
-  fetchCurrentEventState,
-  subscribeToEventState,
-} from '../supabase/eventState'
+import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
 
-function normalizePrompt(s) {
-  return String(s ?? '').trim().toLowerCase()
-}
-
-/** Index of `prompt` in `sequence`, or -1 if not found. */
-function getPromptIndexInSequence(prompt, sequence) {
-  const seq =
-    Array.isArray(sequence) && sequence.length > 0 ? sequence : DEFAULT_PROMPT_SEQUENCE
-  const cur = normalizePrompt(prompt)
-  return seq.findIndex((p) => normalizePrompt(p) === cur)
+/** FLIP handoff: fullscreen intro card → in-flow prompt anchor (shared with admin Reveal step). */
+function computeFlyTo(introEl, targetEl) {
+  if (!introEl || !targetEl) {
+    return { dx: 0, dy: -120, s: 0.45 }
+  }
+  const a = introEl.getBoundingClientRect()
+  const b = targetEl.getBoundingClientRect()
+  const sx = b.width / Math.max(a.width, 1)
+  const sy = b.height / Math.max(a.height, 1)
+  const s = Math.min(sx, sy)
+  const scaledW = a.width * s
+  const scaledH = a.height * s
+  const destLeft = b.left + (b.width - scaledW) / 2
+  const destTop = b.top + (b.height - scaledH) / 2
+  return {
+    dx: Math.round(destLeft - a.left),
+    dy: Math.round(destTop - a.top),
+    s: Math.round(s * 10000) / 10000,
+  }
 }
 
 /** Per-character delay during overlay typewriter (higher = slower). */
@@ -63,7 +68,7 @@ const FULLSCREEN_PROMPT_INNER =
 
 export default function BigScreen() {
   const [prompt, setPrompt] = useState('')
-  const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
+  const [debateRevealAck, setDebateRevealAck] = useState(false)
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
   const [slideshowActive, setSlideshowActive] = useState(false)
   const [slideshowIndex, setSlideshowIndex] = useState(0)
@@ -95,8 +100,8 @@ export default function BigScreen() {
     textSlideIndexRef.current = textSlideIndex
   }, [textSlideIndex])
 
-  /** Intro: typewriter in final prompt slot → optional fly to anchor; idle = normal layout */
-  const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'shrinking'
+  /** Intro: typewriter → await admin Reveal → shrink to anchor; idle = normal layout */
+  const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'awaitingReveal' | 'shrinking'
   const [revealedCount, setRevealedCount] = useState(0)
   /** Sliders + labels fade in after intro prompt lands (prompt stays visible). */
   const [debateTableOpacity, setDebateTableOpacity] = useState(1)
@@ -115,7 +120,7 @@ export default function BigScreen() {
       skipDebateIntroRef.current = true
     }
     setPrompt(next.prompt)
-    setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
+    setDebateRevealAck(Boolean(next.debateRevealAck))
     setPanelists(next.panelists)
     setSlideshowActive(Boolean(next.slideshowActive))
     setSlideshowIndex(next.slideshowIndex ?? 0)
@@ -306,8 +311,8 @@ export default function BigScreen() {
   }, [slideshowActive, slideshowIndex, qaSlideshowActive])
 
   /**
-   * When the debate prompt changes: run typewriter + FLIP for prompt 2+ in the configured
-   * sequence (index ≥ 1). Prompt 1 (index 0) updates in place without the intro animation.
+   * When the debate prompt changes: run large typewriter on the overlay. Shrink-to-table runs
+   * only after Admin presses Reveal (`debate_reveal_ack` in DB).
    */
   useEffect(() => {
     if (slideshowActive || qaSlideshowActive) return
@@ -339,20 +344,7 @@ export default function BigScreen() {
       return
     }
 
-    const idx = getPromptIndexInSequence(prompt, promptSequence)
-    const shouldAnimateIntro = idx >= 1 || (idx < 0 && next !== prev)
-
     prevPromptRef.current = prompt
-
-    if (!shouldAnimateIntro) {
-      queueMicrotask(() => {
-        setIntroPhase('idle')
-        setFlyTo(null)
-        setRevealedCount(0)
-        setDebateTableOpacity(1)
-      })
-      return
-    }
 
     queueMicrotask(() => {
       setFlyTo(null)
@@ -360,7 +352,7 @@ export default function BigScreen() {
       setDebateTableOpacity(0)
       setIntroPhase('typing')
     })
-  }, [prompt, promptSequence, slideshowActive, qaSlideshowActive])
+  }, [prompt, slideshowActive, qaSlideshowActive])
 
   /** Cancel debate intro when presentation mode is on */
   useEffect(() => {
@@ -394,52 +386,44 @@ export default function BigScreen() {
       if (i >= full.length) {
         clearInterval(id)
         queueMicrotask(() => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-            const intro = introCardRef.current
-            const target = promptAnchorCardRef.current
-            let nextFly = null
-            if (intro && target) {
-              const a = intro.getBoundingClientRect()
-              const b = target.getBoundingClientRect()
-              const sx = b.width / Math.max(a.width, 1)
-              const sy = b.height / Math.max(a.height, 1)
-              // Single scale factor keeps typography proportional (no non-uniform squash/stretch).
-              const s = Math.min(sx, sy)
-              const scaledW = a.width * s
-              const scaledH = a.height * s
-              const destLeft = b.left + (b.width - scaledW) / 2
-              const destTop = b.top + (b.height - scaledH) / 2
-              nextFly = {
-                dx: Math.round(destLeft - a.left),
-                dy: Math.round(destTop - a.top),
-                s: Math.round(s * 10000) / 10000,
-              }
-            } else {
-              nextFly = { dx: 0, dy: -120, s: 0.45 }
-            }
-            const noMotion =
-              nextFly &&
-              Math.abs(nextFly.dx) < 2 &&
-              Math.abs(nextFly.dy) < 2 &&
-              Math.abs(nextFly.s - 1) < 0.03
-            if (noMotion) {
-              setFlyTo(null)
-              setIntroPhase('idle')
-              setRevealedCount(0)
-              setDebateTableOpacity(1)
-            } else {
-              setFlyTo(nextFly)
-              setIntroPhase('shrinking')
-            }
-            })
-          })
+          setIntroPhase('awaitingReveal')
         })
       }
     }, TYPE_MS)
 
     return () => clearInterval(id)
   }, [introPhase, prompt, slideshowActive, qaSlideshowActive])
+
+  /** After admin Reveal: FLIP shrink from fullscreen prompt to the in-flow prompt anchor. */
+  useEffect(() => {
+    if (slideshowActive || qaSlideshowActive) return
+    if (!debateRevealAck) return
+    if (introPhase !== 'awaitingReveal') return
+
+    queueMicrotask(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const intro = introCardRef.current
+          const target = promptAnchorCardRef.current
+          const nextFly = computeFlyTo(intro, target)
+          const noMotion =
+            nextFly &&
+            Math.abs(nextFly.dx) < 2 &&
+            Math.abs(nextFly.dy) < 2 &&
+            Math.abs(nextFly.s - 1) < 0.03
+          if (noMotion) {
+            setFlyTo(null)
+            setIntroPhase('idle')
+            setRevealedCount(0)
+            setDebateTableOpacity(1)
+          } else {
+            setFlyTo(nextFly)
+            setIntroPhase('shrinking')
+          }
+        })
+      })
+    })
+  }, [debateRevealAck, introPhase, slideshowActive, qaSlideshowActive])
 
   /** After shrink animation: drop overlay, keep prompt visible, fade in sliders */
   useEffect(() => {
@@ -458,7 +442,9 @@ export default function BigScreen() {
   const showOverlay =
     !slideshowActive &&
     !qaSlideshowActive &&
-    (introPhase === 'typing' || introPhase === 'shrinking')
+    (introPhase === 'typing' ||
+      introPhase === 'awaitingReveal' ||
+      introPhase === 'shrinking')
 
   const logoSlide =
     presentationSlides[clampPresentationSlideIndex(slideshowIndex)] ??
@@ -645,7 +631,7 @@ export default function BigScreen() {
           <div
             className="pointer-events-none fixed inset-0 z-[51] flex min-h-0 flex-col items-stretch justify-stretch p-2 pt-[max(4.5rem,env(safe-area-inset-top))] pb-5 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] sm:p-6 sm:pt-24 sm:pb-10"
             aria-live="polite"
-            aria-busy={introPhase === 'typing'}
+            aria-busy={introPhase === 'typing' || introPhase === 'awaitingReveal'}
           >
             <div className="flex min-h-0 w-full flex-1 flex-col justify-center min-h-[min(88dvh,920px)]">
             <PromptBox
@@ -654,7 +640,9 @@ export default function BigScreen() {
               maxWidthClass="max-w-none"
               innerClassName={FULLSCREEN_PROMPT_INNER}
               bodyClassName={
-                introPhase === 'typing' || introPhase === 'shrinking'
+                introPhase === 'typing' ||
+                introPhase === 'awaitingReveal' ||
+                introPhase === 'shrinking'
                   ? FULLSCREEN_PROMPT_BODY
                   : ''
               }
