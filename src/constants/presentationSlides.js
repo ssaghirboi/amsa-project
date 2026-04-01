@@ -3,7 +3,7 @@ export const PRESENTATION_SLIDES = [
   /** Slide 1: big centered logo + “We will begin shortly” */
   { kind: 'hero', tagline: 'We will begin shortly' },
   /** Slide 2: same hero logo; no subtext */
-  { kind: 'hero', tagline: 'Text inspired by Jubilee' },
+  { kind: 'hero', tagline: 'Inspired by Jubilee' },
   /** Slide 3 — title card (logo → top-left, title + subtitle on one line each). */
   {
     kind: 'segment',
@@ -62,7 +62,7 @@ export const PRESENTATION_SLIDES = [
     subtitle: 'President of AMSA',
   },
   /** Slide 11 — same hero layout + tagline as slide 2 */
-  { kind: 'hero', tagline: 'Text inspired by Jubilee' },
+  { kind: 'hero', tagline: 'Inspired by Jubilee' },
 ]
 
 export const PRESENTATION_SLIDE_COUNT = PRESENTATION_SLIDES.length
