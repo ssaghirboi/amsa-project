@@ -10,6 +10,7 @@ import {
 import {
   PRESENTATION_SLIDE_COUNT,
   clampPresentationSlideIndex,
+  mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
 import {
   QA_SLIDE_COUNT,
@@ -101,7 +102,9 @@ export default function McPage() {
   const [slideshowIndex, setSlideshowIndex] = useState(0)
   const [qaSlideshowActive, setQaSlideshowActive] = useState(false)
   const [qaSlideshowIndex, setQaSlideshowIndex] = useState(0)
-  const [presentationSlides, setPresentationSlides] = useState([])
+  const [presentationSlides, setPresentationSlides] = useState(() =>
+    mergePresentationSlidesFromRemote(null),
+  )
   const [status, setStatus] = useState('Connecting…')
   const [error, setError] = useState('')
   const [mcQuestions, setMcQuestions] = useState(null)
@@ -212,7 +215,9 @@ export default function McPage() {
                 panelists: next.panelists ?? [3, 3, 3, 3],
                 panelistIcons: next.panelistIcons ?? [null, null, null, null],
                 promptSequence: next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
-                presentationSlides: next.presentationSlides ?? [],
+                presentationSlides: mergePresentationSlidesFromRemote(
+                  next.presentationSlides ?? null,
+                ),
                 qaSlideshowSlides: mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null),
                 slideshowActive: Boolean(next.slideshowActive),
                 slideshowIndex: next.slideshowIndex ?? 0,
@@ -258,7 +263,7 @@ export default function McPage() {
         }
       }
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
-      setPresentationSlides(next.presentationSlides ?? [])
+      setPresentationSlides(mergePresentationSlidesFromRemote(next.presentationSlides ?? null))
       setDebateRevealAck(Boolean(next.debateRevealAck))
       setNotesRemoteEnabled(next.meta?.mcSlideNotesColumnAvailable === true)
       mergeNotesFromRemote(staleCore)
@@ -299,7 +304,9 @@ export default function McPage() {
           panelists: next.panelists ?? [3, 3, 3, 3],
           panelistIcons: next.panelistIcons ?? [null, null, null, null],
           promptSequence: next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
-          presentationSlides: next.presentationSlides ?? [],
+          presentationSlides: mergePresentationSlidesFromRemote(
+            next.presentationSlides ?? null,
+          ),
           slideshowActive: Boolean(next.slideshowActive),
           slideshowIndex: next.slideshowIndex ?? 0,
           qaSlideshowActive: Boolean(next.qaSlideshowActive),

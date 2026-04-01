@@ -9,6 +9,7 @@ import {
 import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
 import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
+import { mergePresentationSlidesFromRemote } from '../constants/presentationSlides'
 import {
   DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
@@ -326,7 +327,9 @@ export default function QuestionsPage() {
         panelists: eventState.panelists ?? [3, 3, 3, 3],
         panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
         promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
-        presentationSlides: eventState.presentationSlides ?? [],
+        presentationSlides: mergePresentationSlidesFromRemote(
+          eventState.presentationSlides ?? null,
+        ),
         qaSlideshowSlides: eventState.qaSlideshowSlides ?? null,
         slideshowActive: Boolean(eventState.slideshowActive),
         slideshowIndex: eventState.slideshowIndex ?? 0,
@@ -387,7 +390,9 @@ export default function QuestionsPage() {
         panelists: eventState.panelists ?? [3, 3, 3, 3],
         panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
         promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
-        presentationSlides: eventState.presentationSlides ?? [],
+        presentationSlides: mergePresentationSlidesFromRemote(
+          eventState.presentationSlides ?? null,
+        ),
         qaSlideshowSlides: eventState.qaSlideshowSlides ?? null,
         slideshowActive: Boolean(eventState.slideshowActive),
         slideshowIndex: eventState.slideshowIndex ?? 0,
@@ -429,7 +434,9 @@ export default function QuestionsPage() {
         panelists: eventState.panelists ?? [3, 3, 3, 3],
         panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
         promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
-        presentationSlides: eventState.presentationSlides ?? [],
+        presentationSlides: mergePresentationSlidesFromRemote(
+          eventState.presentationSlides ?? null,
+        ),
         qaSlideshowSlides: eventState.qaSlideshowSlides ?? null,
         slideshowActive: Boolean(eventState.slideshowActive),
         slideshowIndex: eventState.slideshowIndex ?? 0,

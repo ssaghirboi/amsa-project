@@ -462,7 +462,17 @@ export async function writeEventState(
   }
 
   if (presentationSlidesColumnsAvailable !== false) {
-    payload.presentation_slides = mergePresentationSlidesFromRemote(presentationSlides)
+    // `merge([])` and `merge(undefined)` both collapse to full code defaults and would wipe
+    // Admin-edited copy and any extra slide rows in Supabase. Omit the column unless the
+    // caller passes a non-empty array, or `null` to intentionally persist built-in defaults.
+    if (presentationSlides === null) {
+      payload.presentation_slides = mergePresentationSlidesFromRemote(null)
+    } else if (
+      presentationSlides !== undefined &&
+      !(Array.isArray(presentationSlides) && presentationSlides.length === 0)
+    ) {
+      payload.presentation_slides = mergePresentationSlidesFromRemote(presentationSlides)
+    }
   }
 
   if (qaSlideshowSlidesColumnAvailable !== false) {
