@@ -1,45 +1,43 @@
 /** Pre-event slides on /screen (slideshow mode). Index clamped in eventState to this length. */
 export const PRESENTATION_SLIDES = [
-  /** Slide 1: big centered logo + “We will begin shortly” */
-  { kind: 'hero', tagline: 'We will begin shortly' },
-  /** Slide 2: same hero logo; no subtext */
+  /** Slide 1 — hero logo */
   { kind: 'hero', tagline: 'Inspired by Jubilee' },
-  /** Slide 3 — title card: Does God Exist? */
+  /** Slide 2 — title card: Does God Exist? */
   {
     kind: 'segment',
     id: 'post-recitation-title',
     title: 'Does God Exist?',
     subtitle: 'A conversation across perspectives',
   },
-  /** Slide 4 — Recitation of the Holy Quran */
+  /** Slide 3 — Recitation of the Holy Quran */
   {
     kind: 'segment',
     id: 'quran-recitation',
     title: 'Recitation of the Holy Quran',
     subtitle: 'John Doe',
   },
-  /** Slide 5 — Speaker 2 introduction (filler text for now). */
+  /** Slide 4 — Speaker 2 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-2',
     title: 'Speaker 2',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 6 — Speaker 3 introduction (filler text for now). */
+  /** Slide 5 — Speaker 3 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-3',
     title: 'Speaker 3',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 7 — Speaker 4 introduction (filler text for now). */
+  /** Slide 6 — Speaker 4 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-4',
     title: 'Speaker 4',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 8 — Saghir Saeed intro */
+  /** Slide 7 — Saghir Saeed intro */
   {
     kind: 'segment',
     id: 'saghir-saeed',
@@ -47,14 +45,14 @@ export const PRESENTATION_SLIDES = [
     subtitle:
       "President of the Ahmadiyya Muslim Students' Association",
   },
-  /** Slide 9 — name + role */
+  /** Slide 8 — name + role */
   {
     kind: 'segment',
     id: 'saghir-president-line',
     title: 'Saghir Saeed',
     subtitle: 'President of AMSA',
   },
-  /** Slide 10 — same hero layout + tagline as slide 2 */
+  /** Slide 9 — same hero layout + tagline as slide 1 */
   { kind: 'hero', tagline: 'Inspired by Jubilee' },
 ]
 
