@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
-import { mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
+import {
+  QA_SLIDE_KIND,
+  clampQaSlideIndex,
+  mergeQaSlidesFromRemote,
+} from '../constants/qaSlideshow'
+
+/** /ask — Humanity First Q&A slide */
+const ASK_HUMANITY_FIRST_FORM_URL = 'https://forms.gle/JnC5ZgCqb8eRMQMV6'
+/** /ask — Thank You Q&A slide */
+const ASK_THANK_YOU_TALLY_URL = 'https://tally.so/r/XxYG2z'
 import { GENERAL_TARGET_KEY, PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
@@ -63,6 +72,18 @@ export default function Audience() {
     [],
   )
 
+  const qaSlideIndex = useMemo(
+    () => clampQaSlideIndex(qaSlideshowIndex),
+    [qaSlideshowIndex],
+  )
+  const qaSlideKind = qaSlideshowSlides[qaSlideIndex]?.kind
+  const showHumanityFormOnly =
+    qaSlideshowActive &&
+    (qaSlideKind === QA_SLIDE_KIND.HUMANITY_QR || qaSlideIndex === 2)
+  const showThankYouAndTally =
+    qaSlideshowActive &&
+    (qaSlideKind === QA_SLIDE_KIND.HERO_THANKS || qaSlideIndex === 3)
+
   useEffect(() => {
     let unsubscribe = null
 
@@ -115,6 +136,42 @@ export default function Audience() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (showHumanityFormOnly) {
+    return (
+      <div className="flex min-h-[100dvh] min-h-screen flex-col items-center justify-center bg-slate-100 px-4 py-12 text-slate-900">
+        <a
+          href={ASK_HUMANITY_FIRST_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-[3.25rem] min-w-[min(88vw,20rem)] items-center justify-center rounded-2xl bg-indigo-600 px-8 py-4 text-center text-base font-semibold text-white shadow-[0_14px_40px_rgba(79,70,229,0.35)] transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        >
+          Open form
+        </a>
+      </div>
+    )
+  }
+
+  if (showThankYouAndTally) {
+    const thanksTitle =
+      String(qaSlideshowSlides[qaSlideIndex]?.title ?? 'Thank You').trim() ||
+      'Thank You'
+    return (
+      <div className="flex min-h-[100dvh] min-h-screen flex-col items-center justify-center gap-8 bg-slate-100 px-4 py-12 text-slate-900">
+        <h1 className="max-w-2xl text-balance text-center text-3xl font-semibold tracking-tight sm:text-4xl">
+          {thanksTitle}
+        </h1>
+        <a
+          href={ASK_THANK_YOU_TALLY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-[3.25rem] min-w-[min(88vw,20rem)] items-center justify-center rounded-2xl border border-slate-300 bg-white px-8 py-4 text-center text-base font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        >
+          Feedback form
+        </a>
+      </div>
+    )
   }
 
   return (
