@@ -22,3 +22,47 @@ export function getEmptyMcQuestionSlots() {
     'Panelist 4': null,
   }
 }
+
+/** Audience Q&A mode (admin Q&A slideshow on): unlimited queue keyed to General / Panelist N. */
+export function normalizeQaAudienceQueue(raw) {
+  if (!Array.isArray(raw)) return []
+  const out = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const target =
+      item.target_key != null && String(item.target_key).trim()
+        ? String(item.target_key).trim()
+        : GENERAL_TARGET_KEY
+    out.push({
+      id: item.id ?? null,
+      question_text: String(item.question_text ?? ''),
+      created_at: item.created_at ?? null,
+      prompt: item.prompt ?? null,
+      target_key: target,
+    })
+  }
+  return out
+}
+
+/** Same question appearing twice in queue only when id matches or full fallback match. */
+export function audienceQueueItemsMatch(a, b) {
+  if (!a || !b) return false
+  if (a.id != null && b.id != null) return String(a.id) === String(b.id)
+  if (a.id != null || b.id != null) return false
+  return (
+    String(a.question_text ?? '') === String(b.question_text ?? '') &&
+    String(a.created_at ?? '') === String(b.created_at ?? '') &&
+    String(a.target_key ?? '') === String(b.target_key ?? '')
+  )
+}
+
+export function displayNameForMcTarget(targetKey) {
+  const k = String(targetKey ?? '').trim()
+  if (k === GENERAL_TARGET_KEY) return 'General'
+  const m = k.match(/^Panelist\s*(\d)$/i)
+  if (m) {
+    const i = Number(m[1]) - 1
+    if (i >= 0 && i < PANELIST_DISPLAY_NAMES.length) return PANELIST_DISPLAY_NAMES[i]
+  }
+  return k || 'General'
+}

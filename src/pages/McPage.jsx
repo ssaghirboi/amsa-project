@@ -15,7 +15,10 @@ import { QA_SLIDE_COUNT, mergeQaSlidesFromRemote } from '../constants/qaSlidesho
 import {
   GENERAL_TARGET_KEY,
   PANELIST_DISPLAY_NAMES,
+  audienceQueueItemsMatch,
+  displayNameForMcTarget,
   getEmptyMcQuestionSlots,
+  normalizeQaAudienceQueue,
 } from '../constants/panelists'
 import { getSliderPositionStep } from '../constants/debateSliderScale'
 
@@ -27,6 +30,7 @@ function emptyMcQuestions(nextPrompt, options = {}) {
   const base = {
     prompt: String(nextPrompt ?? ''),
     panelists: getEmptyMcQuestionSlots(),
+    qaAudienceQueue: [],
   }
   if (options.skipDebateIntro) {
     base.skipDebateIntro = true
@@ -282,6 +286,14 @@ export default function McPage() {
 
   const mcNotesForSlide = notesBySlide[mcSlideNotesKey] ?? ''
 
+  const qaAudienceSorted = useMemo(() => {
+    const raw = normalizeQaAudienceQueue(mcQuestions?.qaAudienceQueue)
+    return [...raw].sort(
+      (a, b) =>
+        (Date.parse(b.created_at ?? '') || 0) - (Date.parse(a.created_at ?? '') || 0),
+    )
+  }, [mcQuestions?.qaAudienceQueue])
+
   const goNextPrompt = async () => {
     if (slideshowActive || qaSlideshowActive) return
     const nextPrompt = nextInfo.next
@@ -452,8 +464,10 @@ export default function McPage() {
           'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
           'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
         },
+        qaAudienceQueue: normalizeQaAudienceQueue(pushed.qaAudienceQueue),
       }
       nextMc.panelists[panelKey] = null
+      if (pushed.skipDebateIntro === true) nextMc.skipDebateIntro = true
 
       await writeEventState(supabase, {
         prompt: prompt ?? '',
@@ -467,9 +481,56 @@ export default function McPage() {
         qaSlideshowActive,
         qaSlideshowIndex,
         mcQuestions: nextMc,
+        mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
       setStatus('Live')
       setMcQuestionsStatus('Cleared')
+      setTimeout(() => setMcQuestionsStatus('—'), 1500)
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const removeQaAudienceItem = async (item) => {
+    if (!qaSlideshowActive || !mcQuestions || !item) return
+
+    setStatus('Updating…')
+    setError('')
+    try {
+      const queue = normalizeQaAudienceQueue(mcQuestions.qaAudienceQueue).filter(
+        (x) => !audienceQueueItemsMatch(x, item),
+      )
+      const nextMc = {
+        prompt: String(mcQuestions.prompt ?? prompt ?? ''),
+        panelists: {
+          [GENERAL_TARGET_KEY]: mcQuestions.panelists?.[GENERAL_TARGET_KEY] ?? null,
+          'Panelist 1': mcQuestions.panelists?.['Panelist 1'] ?? null,
+          'Panelist 2': mcQuestions.panelists?.['Panelist 2'] ?? null,
+          'Panelist 3': mcQuestions.panelists?.['Panelist 3'] ?? null,
+          'Panelist 4': mcQuestions.panelists?.['Panelist 4'] ?? null,
+        },
+        qaAudienceQueue: queue,
+      }
+      if (mcQuestions.skipDebateIntro === true) nextMc.skipDebateIntro = true
+
+      await writeEventState(supabase, {
+        prompt: prompt ?? '',
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive,
+        qaSlideshowIndex,
+        mcQuestions: nextMc,
+        debateRevealAck,
+        mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
+      })
+      setStatus('Live')
+      setMcQuestionsStatus('Removed')
       setTimeout(() => setMcQuestionsStatus('—'), 1500)
     } catch (e) {
       setError(e?.message || String(e))
@@ -593,7 +654,12 @@ export default function McPage() {
           </div>
         ) : null}
 
-        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:mt-5 lg:grid lg:min-h-0 lg:grid-cols-[minmax(14rem,26vw)_1fr] lg:items-stretch lg:gap-6">
+        <div
+          className={`mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:mt-5 lg:grid lg:min-h-0 lg:items-stretch lg:gap-6 ${
+            qaSlideshowActive ? 'lg:grid-cols-1' : 'lg:grid-cols-[minmax(14rem,26vw)_1fr]'
+          }`}
+        >
+          {!qaSlideshowActive ? (
           <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-4 backdrop-blur sm:p-5 lg:min-h-0">
             <div className="flex shrink-0 items-baseline justify-between gap-3">
               <h2 className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-300/90 sm:text-xs">
@@ -671,10 +737,62 @@ export default function McPage() {
               })}
             </div>
           </aside>
+          ) : null}
 
           <section className="relative flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
               <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
+                <div className="flex max-h-[min(38vh,22rem)] min-h-[11rem] flex-shrink-0 flex-col border-b border-white/10">
+                  <div className="shrink-0 px-4 pb-2 pt-3 sm:px-6 sm:pt-4">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-emerald-300/90 sm:text-xs">
+                      Audience Q&amp;A — pushed questions
+                    </p>
+                    <p className="mt-0.5 text-[0.6rem] text-slate-500 sm:text-[0.65rem]">
+                      Newest first · {qaAudienceSorted.length} total
+                    </p>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3 sm:px-6">
+                    {qaAudienceSorted.length === 0 ? (
+                      <p className="py-2 text-sm text-slate-500">None pushed yet.</p>
+                    ) : (
+                      <ul className="space-y-2.5">
+                        {qaAudienceSorted.map((item, idx) => (
+                          <li
+                            key={
+                              item.id != null
+                                ? `qa-${item.id}`
+                                : `qa-${idx}-${item.created_at}-${item.question_text?.slice(0, 48)}`
+                            }
+                            className="rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 sm:px-4 sm:py-3"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <span className="shrink-0 rounded-md bg-emerald-500/15 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-emerald-200/95">
+                                {displayNameForMcTarget(item.target_key)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeQaAudienceItem(item)}
+                                disabled={status === 'Updating…'}
+                                className="shrink-0 touch-manipulation rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <p className="mt-2 text-sm font-medium leading-snug text-slate-100 sm:text-[0.9375rem]">
+                              {item.question_text}
+                            </p>
+                            {item.created_at ? (
+                              <p className="mt-1 text-[0.55rem] font-medium uppercase tracking-[0.18em] text-slate-600">
+                                {new Date(item.created_at).toLocaleString()}
+                              </p>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div className="shrink-0 border-b border-white/10 px-4 pb-2 pt-3 pr-[min(20rem,58vw)] sm:px-6 sm:pt-4 lg:pr-[min(22rem,50vw)]">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
                     Notes for Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
@@ -730,6 +848,7 @@ export default function McPage() {
                       </>
                     )}
                   </div>
+                </div>
                 </div>
               </div>
             ) : slideshowActive ? (

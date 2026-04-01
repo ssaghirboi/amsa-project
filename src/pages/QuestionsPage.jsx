@@ -1,4 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  GENERAL_TARGET_KEY,
+  PANELIST_DISPLAY_NAMES,
+  audienceQueueItemsMatch,
+  displayNameForMcTarget,
+  getEmptyMcQuestionSlots,
+  normalizeQaAudienceQueue,
+} from '../constants/panelists'
 import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
 import {
@@ -7,12 +15,6 @@ import {
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
-import {
-  GENERAL_TARGET_KEY,
-  PANELIST_DISPLAY_NAMES,
-  getEmptyMcQuestionSlots,
-} from '../constants/panelists'
-
 const PANELISTS = [
   { key: GENERAL_TARGET_KEY, title: 'General' },
   ...[1, 2, 3, 4].map((n, i) => ({
@@ -73,6 +75,7 @@ function emptyMcQuestions(nextPrompt) {
   return {
     prompt: String(nextPrompt ?? ''),
     panelists: getEmptyMcQuestionSlots(),
+    qaAudienceQueue: [],
   }
 }
 
@@ -181,6 +184,11 @@ export default function QuestionsPage() {
 
   const pushed = eventState?.mcQuestions ?? null
   const pushedFor = (panelKey) => pushed?.panelists?.[panelKey] ?? null
+  const qaMode = Boolean(eventState?.qaSlideshowActive)
+  const qaQueue = useMemo(
+    () => normalizeQaAudienceQueue(pushed?.qaAudienceQueue),
+    [pushed?.qaAudienceQueue],
+  )
 
   const activePromptKey = normalizePrompt(eventPrompt)
 
@@ -264,24 +272,53 @@ export default function QuestionsPage() {
     setPushError('')
     setPushStatus('Pushing…')
     try {
-      const nextMc = pushed && typeof pushed === 'object'
-        ? {
-            prompt: String(eventState.prompt ?? ''),
-            panelists: {
+      const basePanelists =
+        pushed && typeof pushed === 'object'
+          ? {
               [GENERAL_TARGET_KEY]: pushed?.panelists?.[GENERAL_TARGET_KEY] ?? null,
               'Panelist 1': pushed?.panelists?.['Panelist 1'] ?? null,
               'Panelist 2': pushed?.panelists?.['Panelist 2'] ?? null,
               'Panelist 3': pushed?.panelists?.['Panelist 3'] ?? null,
               'Panelist 4': pushed?.panelists?.['Panelist 4'] ?? null,
-            },
+            }
+          : getEmptyMcQuestionSlots()
+
+      const nextMc = pushed && typeof pushed === 'object'
+        ? {
+            prompt: String(eventState.prompt ?? ''),
+            panelists: basePanelists,
+            qaAudienceQueue: normalizeQaAudienceQueue(pushed.qaAudienceQueue),
           }
         : emptyMcQuestions(eventState.prompt ?? '')
 
-      nextMc.panelists[panelKey] = {
+      const entry = {
         id: q.id ?? null,
         question_text: q.question_text ?? '',
         created_at: q.created_at ?? null,
         prompt: q.prompt ?? null,
+        target_key: panelKey,
+      }
+
+      if (qaMode) {
+        if (
+          nextMc.qaAudienceQueue.some(
+            (x) =>
+              x.target_key === panelKey &&
+              (isSameId(x.id, q.id) || audienceQueueItemsMatch(x, entry)),
+          )
+        ) {
+          setPushStatus('Already on MC')
+          setTimeout(() => setPushStatus(''), 900)
+          return
+        }
+        nextMc.qaAudienceQueue = [...nextMc.qaAudienceQueue, entry]
+      } else {
+        nextMc.panelists[panelKey] = {
+          id: q.id ?? null,
+          question_text: q.question_text ?? '',
+          created_at: q.created_at ?? null,
+          prompt: q.prompt ?? null,
+        }
       }
 
       await writeEventState(supabase, {
@@ -298,15 +335,25 @@ export default function QuestionsPage() {
         mcQuestions: nextMc,
       })
 
-      // Verify the write actually persisted (mc_questions column must exist).
       const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
-      const persistedId =
-        refreshed?.mcQuestions?.panelists?.[panelKey]?.id ?? null
-      if (!isSameId(persistedId, q.id ?? null)) {
-        throw new Error(
-          "Couldn't persist the MC push. In Supabase, add `mc_questions` to `event_state`:\n\n" +
-            "alter table public.event_state add column if not exists mc_questions jsonb default null;\n",
+      if (qaMode) {
+        const ok = normalizeQaAudienceQueue(refreshed?.mcQuestions?.qaAudienceQueue).some((x) =>
+          audienceQueueItemsMatch(x, entry),
         )
+        if (!ok) {
+          throw new Error(
+            "Couldn't persist the MC push. In Supabase, add `mc_questions` to `event_state`:\n\n" +
+              "alter table public.event_state add column if not exists mc_questions jsonb default null;\n",
+          )
+        }
+      } else {
+        const persistedId = refreshed?.mcQuestions?.panelists?.[panelKey]?.id ?? null
+        if (!isSameId(persistedId, q.id ?? null)) {
+          throw new Error(
+            "Couldn't persist the MC push. In Supabase, add `mc_questions` to `event_state`:\n\n" +
+              "alter table public.event_state add column if not exists mc_questions jsonb default null;\n",
+          )
+        }
       }
 
       setPushStatus('Pushed')
@@ -318,7 +365,7 @@ export default function QuestionsPage() {
   }
 
   const clearPushedFromMc = async (panelKey) => {
-    if (!eventState || !pushed) return
+    if (!eventState || !pushed || qaMode) return
     setPushError('')
     setPushStatus('Updating…')
     try {
@@ -331,8 +378,51 @@ export default function QuestionsPage() {
           'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
           'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
         },
+        qaAudienceQueue: normalizeQaAudienceQueue(pushed.qaAudienceQueue),
       }
       nextMc.panelists[panelKey] = null
+
+      await writeEventState(supabase, {
+        prompt: eventState.prompt ?? '',
+        panelists: eventState.panelists ?? [3, 3, 3, 3],
+        panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
+        promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
+        presentationSlides: eventState.presentationSlides ?? [],
+        qaSlideshowSlides: eventState.qaSlideshowSlides ?? null,
+        slideshowActive: Boolean(eventState.slideshowActive),
+        slideshowIndex: eventState.slideshowIndex ?? 0,
+        qaSlideshowActive: Boolean(eventState.qaSlideshowActive),
+        qaSlideshowIndex: eventState.qaSlideshowIndex ?? 0,
+        mcQuestions: nextMc,
+      })
+
+      setPushStatus('Updated')
+      setTimeout(() => setPushStatus(''), 900)
+    } catch (e) {
+      setPushError(e?.message || String(e))
+      setPushStatus('')
+    }
+  }
+
+  const removeQaAudienceFromMc = async (item) => {
+    if (!eventState || !pushed || !qaMode) return
+    setPushError('')
+    setPushStatus('Updating…')
+    try {
+      const queue = normalizeQaAudienceQueue(pushed.qaAudienceQueue).filter(
+        (x) => !audienceQueueItemsMatch(x, item),
+      )
+      const nextMc = {
+        prompt: String(eventState.prompt ?? ''),
+        panelists: {
+          [GENERAL_TARGET_KEY]: pushed.panelists?.[GENERAL_TARGET_KEY] ?? null,
+          'Panelist 1': pushed.panelists?.['Panelist 1'] ?? null,
+          'Panelist 2': pushed.panelists?.['Panelist 2'] ?? null,
+          'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
+          'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
+        },
+        qaAudienceQueue: queue,
+      }
 
       await writeEventState(supabase, {
         prompt: eventState.prompt ?? '',
@@ -391,6 +481,20 @@ export default function QuestionsPage() {
     return panelMap
   }, [questions, hasPromptColumn, activePromptKey])
 
+  const isQuestionInQaQueue = (panelKey, q) =>
+    qaQueue.some(
+      (x) =>
+        x.target_key === panelKey &&
+        (isSameId(x.id, q.id) ||
+          audienceQueueItemsMatch(x, {
+            id: q.id,
+            question_text: q.question_text,
+            created_at: q.created_at,
+            prompt: q.prompt,
+            target_key: panelKey,
+          })),
+    )
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-5 sm:py-8 lg:px-10">
@@ -435,13 +539,63 @@ export default function QuestionsPage() {
         <div className="mt-4 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm sm:p-7">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-600">
-              Panelist questions
+              {qaMode ? 'Audience Q&A — pushed to MC' : 'Panelist questions'}
             </h2>
-            <span className="text-xs text-slate-500">pushed to MC</span>
+            <span className="text-xs text-slate-500">
+              {qaMode ? 'sorted by speaker · no limit' : 'pushed to MC'}
+            </span>
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {PANELISTS.map((p) => {
+              if (qaMode) {
+                const forPanel = qaQueue
+                  .filter((x) => x.target_key === p.key)
+                  .sort(sortByNewest)
+                return (
+                  <div
+                    key={p.key}
+                    className="flex max-h-[min(24rem,55vh)] flex-col rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+                  >
+                    <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                      {p.title}
+                    </div>
+                    <div className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto">
+                      {forPanel.length === 0 ? (
+                        <span className="text-sm text-slate-500">None pushed yet.</span>
+                      ) : (
+                        forPanel.map((item, idx) => (
+                          <div
+                            key={
+                              item.id != null
+                                ? `dash-${item.id}`
+                                : `dash-${p.key}-${idx}-${item.created_at}`
+                            }
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2.5"
+                          >
+                            <p className="text-xs font-medium text-emerald-800">
+                              {displayNameForMcTarget(item.target_key)}
+                            </p>
+                            <p className="mt-1 text-sm leading-relaxed text-slate-900">{item.question_text}</p>
+                            {item.created_at ? (
+                              <div className="mt-1 text-[0.65rem] font-medium uppercase tracking-[0.18em] text-slate-500">
+                                {new Date(item.created_at).toLocaleString()}
+                              </div>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => removeQaAudienceFromMc(item)}
+                              className="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-slate-50 px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-slate-600 transition hover:bg-white"
+                            >
+                              Remove from MC
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )
+              }
               const q = pushedFor(p.key)
               return (
                 <div
@@ -484,6 +638,9 @@ export default function QuestionsPage() {
               return tb - ta
             })
             const pushedQ = pushedFor(p.key)
+            const forPanelQa = qaMode
+              ? qaQueue.filter((x) => x.target_key === p.key).sort(sortByNewest)
+              : []
             return (
               <section
                 key={p.key}
@@ -502,11 +659,37 @@ export default function QuestionsPage() {
                   <div className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-500">
                     Currently pushed to MC
                   </div>
-                  <div className="mt-2 text-sm text-slate-900">
-                    {pushedQ?.question_text ? pushedQ.question_text : (
-                      <span className="text-slate-500">None</span>
-                    )}
-                  </div>
+                  {qaMode ? (
+                    <div className="mt-2 max-h-48 space-y-2 overflow-y-auto">
+                      {forPanelQa.length === 0 ? (
+                        <span className="text-sm text-slate-500">None</span>
+                      ) : (
+                        forPanelQa.map((item, idx) => (
+                          <div
+                            key={
+                              item.id != null ? `cp-${item.id}` : `cp-${p.key}-${idx}-${item.created_at}`
+                            }
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                          >
+                            <p className="text-xs text-slate-900">{item.question_text}</p>
+                            <button
+                              type="button"
+                              onClick={() => removeQaAudienceFromMc(item)}
+                              className="mt-2 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-indigo-600 hover:text-indigo-500"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-sm text-slate-900">
+                      {pushedQ?.question_text ? pushedQ.question_text : (
+                        <span className="text-slate-500">None</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="max-h-[55vh] overflow-auto px-5 py-4">
@@ -521,11 +704,15 @@ export default function QuestionsPage() {
                           <div
                             key={q.id ?? `${q.created_at}-${q.question_text}`}
                             className={`rounded-xl border bg-slate-50 px-4 py-3 ${
-                              pushedQ?.id != null &&
-                              q.id != null &&
-                              String(pushedQ.id) === String(q.id)
-                                ? 'border-indigo-400/60'
-                                : 'border-slate-200'
+                              qaMode
+                                ? isQuestionInQaQueue(p.key, q)
+                                  ? 'border-emerald-500/55'
+                                  : 'border-slate-200'
+                                : pushedQ?.id != null &&
+                                    q.id != null &&
+                                    String(pushedQ.id) === String(q.id)
+                                  ? 'border-indigo-400/60'
+                                  : 'border-slate-200'
                             }`}
                           >
                             <div className="text-sm leading-relaxed text-slate-900">
@@ -537,6 +724,7 @@ export default function QuestionsPage() {
                                 onClick={() => pushToMc(p.key, q)}
                                 disabled={
                                   !eventState ||
+                                  (qaMode && isQuestionInQaQueue(p.key, q)) ||
                                   (hasPromptColumn &&
                                     activePromptKey &&
                                     hasPromptSnapshot(q) &&
@@ -545,12 +733,14 @@ export default function QuestionsPage() {
                                 title={
                                   !eventState
                                     ? 'Connecting to event state…'
-                                    : hasPromptColumn &&
-                                        activePromptKey &&
-                                        hasPromptSnapshot(q) &&
-                                        normalizePrompt(q.prompt) !== activePromptKey
-                                      ? 'This question was submitted under a different prompt.'
-                                      : 'Push this question to the MC screen'
+                                    : qaMode && isQuestionInQaQueue(p.key, q)
+                                      ? 'Already on the MC list.'
+                                      : hasPromptColumn &&
+                                          activePromptKey &&
+                                          hasPromptSnapshot(q) &&
+                                          normalizePrompt(q.prompt) !== activePromptKey
+                                        ? 'This question was submitted under a different prompt.'
+                                        : 'Push this question to the MC screen'
                                 }
                                 className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
                               >
