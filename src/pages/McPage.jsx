@@ -602,10 +602,7 @@ export default function McPage() {
 
             {qaSlideshowActive ? (
               <div className="flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-                <span className="text-xs text-slate-400 sm:mr-auto">
-                  Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
-                </span>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap justify-end gap-2 sm:ml-auto">
                   <button
                     type="button"
                     onClick={() => stepQaSlide(-1)}
@@ -626,10 +623,7 @@ export default function McPage() {
               </div>
             ) : slideshowActive ? (
               <div className="flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
-                <span className="text-xs text-slate-400 sm:mr-auto">
-                  Presentation slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT}
-                </span>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap justify-end gap-2 sm:ml-auto">
                   <button
                     type="button"
                     onClick={() => stepPresentationSlide(-1)}

@@ -113,16 +113,14 @@ function SliderRow({ value, rowLabel, showBorderBottom = true }) {
             {[0, 1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="pointer-events-none absolute top-1/2 z-[5] h-6 w-px -translate-x-1/2 -translate-y-1/2"
+                className="pointer-events-none absolute top-1/2 z-[5] h-[1.125rem] w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700/90 shadow-[0_0_0_1px_rgba(255,255,255,0.35)]"
                 style={{ left: `${((i + 0.5) / 5) * 100}%` }}
                 aria-hidden
-              >
-                <div className="h-full w-px bg-gradient-to-b from-transparent via-slate-600/55 to-transparent" />
-              </div>
+              />
             ))}
 
             {/* Horizontal rail */}
-            <div className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-slate-400/70 via-slate-500/85 to-slate-400/70 shadow-[0_0_8px_rgba(15,23,42,0.08)]" />
+            <div className="absolute left-0 right-0 top-1/2 z-[6] h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r from-slate-400/70 via-slate-500/85 to-slate-400/70 shadow-[0_0_8px_rgba(15,23,42,0.08)]" />
 
             {/* Thumb — same % as ticks for each discrete value */}
             <div

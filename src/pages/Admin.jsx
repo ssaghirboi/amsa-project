@@ -714,9 +714,6 @@ export default function Admin() {
 
           {slideshowActive ? (
             <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <span className="text-sm text-slate-700">
-                Slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT}
-              </span>
               <button
                 type="button"
                 onClick={() => handlePresentationSlide(-1)}
@@ -865,35 +862,42 @@ export default function Admin() {
                   key={panelLabels[i]}
                   className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium text-slate-800">
-                      {PANELIST_DISPLAY_NAMES[i]}
-                    </div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      {storedValue} / 5
-                    </div>
+                  <div className="text-sm font-medium text-slate-800">
+                    {PANELIST_DISPLAY_NAMES[i]}
                   </div>
                   <div className="flex items-center justify-between text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
                     <span className="text-red-600">Strongly Disagree</span>
                     <span className="text-slate-500">Neutral</span>
                     <span className="text-emerald-600">Strongly Agree</span>
                   </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    value={uiValue}
-                    onChange={(e) => {
-                      const nextUiVal = Number(e.target.value)
-                      const nextStoredVal = 6 - nextUiVal
-                      const next = [...panelists]
-                      next[i] = nextStoredVal
-                      setPanelists(next)
-                      commit(prompt, next)
-                    }}
-                    className="mt-1 h-2 w-full cursor-pointer accent-indigo-500"
-                  />
+                  <div className="mt-2 space-y-0.5">
+                    <div
+                      className="grid grid-cols-5 gap-0 px-0.5"
+                      aria-hidden
+                    >
+                      {[1, 2, 3, 4, 5].map((step) => (
+                        <div key={step} className="flex justify-center">
+                          <div className="h-3 w-0.5 rounded-full bg-slate-500" />
+                        </div>
+                      ))}
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      step={1}
+                      value={uiValue}
+                      onChange={(e) => {
+                        const nextUiVal = Number(e.target.value)
+                        const nextStoredVal = 6 - nextUiVal
+                        const next = [...panelists]
+                        next[i] = nextStoredVal
+                        setPanelists(next)
+                        commit(prompt, next)
+                      }}
+                      className="h-2 w-full cursor-pointer accent-indigo-500"
+                    />
+                  </div>
                 </div>
               )})}
             </div>
@@ -1086,9 +1090,6 @@ export default function Admin() {
 
             {qaSlideshowActive ? (
               <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <span className="text-sm text-slate-700">
-                  Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
-                </span>
                 <button
                   type="button"
                   onClick={() => handleQaSlide(-1)}

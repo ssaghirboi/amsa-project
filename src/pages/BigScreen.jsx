@@ -494,40 +494,8 @@ export default function BigScreen() {
     </div>
   )
 
-  const dots = (
-    <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
-      {presentationSlides.map((_, i) => (
-        <span
-          key={i}
-          className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${
-            i === slideshowIndex
-              ? 'scale-110 bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.45)]'
-              : 'scale-100 bg-slate-300/90'
-          }`}
-          aria-hidden
-        />
-      ))}
-    </div>
-  )
-
-  const qaDots = (
-    <div className="flex justify-center gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2">
-      {Array.from({ length: QA_SLIDE_COUNT }, (_, i) => (
-        <span
-          key={i}
-          className={`h-2.5 w-2.5 rounded-full transition-all duration-500 ease-out ${
-            i === qaSlideshowIndex
-              ? 'scale-110 bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.45)]'
-              : 'scale-100 bg-slate-300/90'
-          }`}
-          aria-hidden
-        />
-      ))}
-    </div>
-  )
-
   const qaSlideshowContent = (
-    <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-800">
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-800">
       {qaSlideshowIndex !== QA_SLIDE_COUNT - 1 ? (
         <div className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-20 -translate-x-1/2 drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]">
           <EventBranding variant="presentationCorner" className="shrink-0" />
@@ -580,12 +548,11 @@ export default function BigScreen() {
           </div>
         </div>
       )}
-      {qaDots}
     </div>
   )
 
   const slideshowContent = (
-    <div className="relative flex min-h-[100dvh] min-h-screen flex-col text-slate-800">
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-800">
       <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
         {!cornerLayout ? (
           <div
@@ -614,7 +581,6 @@ export default function BigScreen() {
           </div>
         )}
       </div>
-      {dots}
     </div>
   );
 
