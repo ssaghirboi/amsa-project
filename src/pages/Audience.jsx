@@ -88,8 +88,12 @@ export default function Audience() {
     }
   }, [])
 
+  /** Q&A end deck slide 2 (e.g. title card) — pause submissions on /ask. */
+  const questionFormLocked = qaSlideshowActive && qaSlideshowIndex === 1
+
   const onSubmit = async (e) => {
     e.preventDefault()
+    if (questionFormLocked) return
     const text = question.trim()
     if (!text) return
 
@@ -155,13 +159,26 @@ export default function Audience() {
             onSubmit={onSubmit}
             className="grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-start"
           >
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-3">
+              {questionFormLocked ? (
+                <p
+                  id="ask-form-locked-hint"
+                  className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-center text-xs font-medium leading-snug text-slate-600"
+                >
+                  Questions are paused while this segment is on screen.
+                </p>
+              ) : null}
+              <fieldset
+                disabled={questionFormLocked}
+                className="min-w-0 space-y-4 border-0 p-0 disabled:pointer-events-none disabled:opacity-45"
+                aria-describedby={questionFormLocked ? 'ask-form-locked-hint' : undefined}
+              >
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
                   Select a panelist to direct your question or comment towards
                 </p>
                 <select
-                  className="mt-3 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[16px] text-slate-900 outline-none ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem]"
+                  className="mt-3 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[16px] text-slate-900 outline-none ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 enabled:cursor-pointer disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 sm:text-[0.95rem]"
                   value={targetPanel}
                   onChange={(e) => setTargetPanel(e.target.value)}
                 >
@@ -175,7 +192,7 @@ export default function Audience() {
 
               <div>
                 <textarea
-                  className={`mt-2 min-h-[130px] w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[16px] text-slate-900 outline-none placeholder:text-slate-500 ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 sm:text-[0.95rem] ${
+                  className={`mt-2 min-h-[130px] w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-[16px] text-slate-900 outline-none placeholder:text-slate-500 ring-1 ring-slate-200 transition hover:border-slate-400 hover:bg-white focus:border-indigo-500/70 focus:ring-2 focus:ring-indigo-500/30 enabled:cursor-text disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 sm:text-[0.95rem] ${
                     justSubmitted ? 'ask-textarea-submitted' : ''
                   }`}
                   placeholder="Type your question or comment..."
@@ -186,11 +203,12 @@ export default function Audience() {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || questionFormLocked}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-500 px-4 py-2.75 text-[16px] font-semibold text-white shadow-[0_18px_45px_rgba(79,70,229,0.45)] transition hover:bg-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[0.95rem]"
               >
                 {submitting ? 'Sending…' : 'Submit question'}
               </button>
+              </fieldset>
             </div>
 
             <aside className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 ring-1 ring-slate-100 sm:p-5">
