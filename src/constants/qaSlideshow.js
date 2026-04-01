@@ -26,6 +26,42 @@ export function clampQaSlideIndex(raw) {
   return Math.max(0, Math.min(QA_SLIDE_COUNT - 1, n))
 }
 
+function extractQaSlidesArrayForMerge(raw) {
+  if (raw == null) return null
+  let v = raw
+  if (typeof raw === 'string') {
+    try {
+      v = JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  if (Array.isArray(v)) return v
+  if (v && typeof v === 'object' && Array.isArray(v.slides)) return v.slides
+  return null
+}
+
+/**
+ * When `qa_slideshow_slides` is stored as `{ slides, index }`, read slide index.
+ * Prefer this over `qa_slideshow_index` when that column is boolean/mis-typed (only 0–1 work).
+ */
+export function extractEmbeddedQaSlideIndex(raw) {
+  if (raw == null) return null
+  let v = raw
+  if (typeof raw === 'string') {
+    try {
+      v = JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  if (v && typeof v === 'object' && !Array.isArray(v) && 'index' in v) {
+    const n = Math.floor(Number(v.index))
+    if (Number.isFinite(n)) return clampQaSlideIndex(n)
+  }
+  return null
+}
+
 const DEFAULT_SLIDES = [
   { kind: QA_SLIDE_KIND.AUDIENCE_QR, title: QA_SLIDESHOW_TITLE },
   {
@@ -45,18 +81,10 @@ const DEFAULT_SLIDES = [
  */
 export function mergeQaSlidesFromRemote(raw) {
   const defaults = DEFAULT_SLIDES.map((s) => ({ ...s }))
-  let arr = raw
-  if (raw == null) {
+  const arr = extractQaSlidesArrayForMerge(raw)
+  if (arr == null) {
     return defaults
   }
-  if (typeof raw === 'string') {
-    try {
-      arr = JSON.parse(raw)
-    } catch {
-      return defaults
-    }
-  }
-  if (!Array.isArray(arr)) return defaults
 
   return defaults.map((def, i) => {
     const partial = arr[i]

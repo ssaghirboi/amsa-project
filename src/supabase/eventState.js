@@ -4,6 +4,7 @@ import {
 } from '../constants/presentationSlides.js'
 import {
   clampQaSlideIndex,
+  extractEmbeddedQaSlideIndex,
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow.js'
 
@@ -274,7 +275,10 @@ export function deriveEventStateFromRow(row) {
   const slideshowActive = row.slideshow_active === true
   const slideshowIndex = clampPresentationSlideIndex(row.slideshow_index ?? 0)
   const qaSlideshowActive = row.qa_slideshow_active === true
-  const qaSlideshowIndex = clampQaSlideIndex(row.qa_slideshow_index ?? 0)
+  const embeddedQaIdx = extractEmbeddedQaSlideIndex(row.qa_slideshow_slides)
+  const qaSlideshowIndex = clampQaSlideIndex(
+    embeddedQaIdx != null ? embeddedQaIdx : row.qa_slideshow_index ?? 0,
+  )
   const presentationSlides = mergePresentationSlidesFromRemote(row.presentation_slides)
   const qaSlideshowSlides = mergeQaSlidesFromRemote(row.qa_slideshow_slides)
   const mcQuestions = row.mc_questions ?? null
@@ -439,7 +443,11 @@ export async function writeEventState(
   }
 
   if (qaSlideshowSlidesColumnAvailable !== false) {
-    payload.qa_slideshow_slides = mergeQaSlidesFromRemote(qaSlideshowSlides)
+    const mergedQaSlides = mergeQaSlidesFromRemote(qaSlideshowSlides)
+    payload.qa_slideshow_slides = {
+      slides: mergedQaSlides,
+      index: clampQaSlideIndex(qaSlideshowIndex),
+    }
   }
 
   if (mcQuestionsColumnsAvailable !== false) {

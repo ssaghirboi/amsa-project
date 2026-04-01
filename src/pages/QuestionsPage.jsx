@@ -6,6 +6,7 @@ import {
   getEmptyMcQuestionSlots,
   normalizeQaAudienceQueue,
 } from '../constants/panelists'
+import { QA_SLIDESHOW_TITLE } from '../constants/qaSlideshow'
 import { EventBranding } from '../components/EventBranding'
 import { supabase } from '../supabaseClient'
 import {
@@ -516,7 +517,11 @@ export default function QuestionsPage() {
           <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.18)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <h1 className="min-w-0 text-balance text-xl font-semibold leading-snug tracking-tight text-slate-900 sm:text-2xl md:text-[1.75rem]">
-                {eventPrompt?.trim() ? eventPrompt.trim() : 'Waiting for the current prompt…'}
+                {qaMode
+                  ? QA_SLIDESHOW_TITLE
+                  : eventPrompt?.trim()
+                    ? eventPrompt.trim()
+                    : 'Waiting for the current prompt…'}
               </h1>
               <div className="shrink-0 text-right">
                 <button
