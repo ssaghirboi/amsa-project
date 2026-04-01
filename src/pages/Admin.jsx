@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDE_COUNT,
+  clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
 import {
   QA_SLIDE_COUNT,
+  clampQaSlideIndex,
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
 import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
@@ -526,8 +528,8 @@ export default function Admin() {
 
   const handlePresentationSlide = async (delta) => {
     if (!slideshowActive) return
-    const len = PRESENTATION_SLIDE_COUNT
-    const next = (slideshowIndex + delta + len) % len
+    const next = clampPresentationSlideIndex(slideshowIndex + delta)
+    if (next === slideshowIndex) return
     cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
@@ -553,8 +555,8 @@ export default function Admin() {
 
   const handleQaSlide = async (delta) => {
     if (!qaSlideshowActive) return
-    const len = QA_SLIDE_COUNT
-    const next = (qaSlideshowIndex + delta + len) % len
+    const next = clampQaSlideIndex(qaSlideshowIndex + delta)
+    if (next === qaSlideshowIndex) return
     cancelPendingPresentationSlideSave()
     setStatus('Updating...')
     try {
@@ -718,7 +720,7 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={() => handlePresentationSlide(-1)}
-                disabled={status === 'Updating...'}
+                disabled={status === 'Updating...' || slideshowIndex <= 0}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:opacity-60"
               >
                 Previous slide
@@ -726,7 +728,10 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={() => handlePresentationSlide(1)}
-                disabled={status === 'Updating...'}
+                disabled={
+                  status === 'Updating...' ||
+                  slideshowIndex >= PRESENTATION_SLIDE_COUNT - 1
+                }
                 className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-60"
               >
                 Next slide
@@ -1087,7 +1092,7 @@ export default function Admin() {
                 <button
                   type="button"
                   onClick={() => handleQaSlide(-1)}
-                  disabled={status === 'Updating...'}
+                  disabled={status === 'Updating...' || qaSlideshowIndex <= 0}
                   className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-100 disabled:opacity-60"
                 >
                   Previous Q&amp;A slide
@@ -1095,7 +1100,9 @@ export default function Admin() {
                 <button
                   type="button"
                   onClick={() => handleQaSlide(1)}
-                  disabled={status === 'Updating...'}
+                  disabled={
+                    status === 'Updating...' || qaSlideshowIndex >= QA_SLIDE_COUNT - 1
+                  }
                   className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
                 >
                   Next Q&amp;A slide

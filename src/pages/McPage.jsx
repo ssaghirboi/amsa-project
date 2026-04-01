@@ -11,7 +11,11 @@ import {
   PRESENTATION_SLIDE_COUNT,
   clampPresentationSlideIndex,
 } from '../constants/presentationSlides'
-import { QA_SLIDE_COUNT, mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
+import {
+  QA_SLIDE_COUNT,
+  clampQaSlideIndex,
+  mergeQaSlidesFromRemote,
+} from '../constants/qaSlideshow'
 import {
   GENERAL_TARGET_KEY,
   PANELIST_DISPLAY_NAMES,
@@ -391,8 +395,8 @@ export default function McPage() {
 
   const stepPresentationSlide = async (delta) => {
     if (!slideshowActive || qaSlideshowActive) return
-    const len = PRESENTATION_SLIDE_COUNT
-    const nextIdx = (slideshowIndex + delta + len) % len
+    const nextIdx = clampPresentationSlideIndex(slideshowIndex + delta)
+    if (nextIdx === slideshowIndex) return
     setStatus('Updating…')
     setError('')
     try {
@@ -420,8 +424,8 @@ export default function McPage() {
 
   const stepQaSlide = async (delta) => {
     if (!qaSlideshowActive) return
-    const len = QA_SLIDE_COUNT
-    const nextIdx = (qaSlideshowIndex + delta + len) % len
+    const nextIdx = clampQaSlideIndex(qaSlideshowIndex + delta)
+    if (nextIdx === qaSlideshowIndex) return
     setStatus('Updating…')
     setError('')
     try {
@@ -605,7 +609,7 @@ export default function McPage() {
                   <button
                     type="button"
                     onClick={() => stepQaSlide(-1)}
-                    disabled={mcSlideBusy}
+                    disabled={mcSlideBusy || qaSlideshowIndex <= 0}
                     className="min-h-[2.75rem] rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Previous slide
@@ -613,7 +617,7 @@ export default function McPage() {
                   <button
                     type="button"
                     onClick={() => stepQaSlide(1)}
-                    disabled={mcSlideBusy}
+                    disabled={mcSlideBusy || qaSlideshowIndex >= QA_SLIDE_COUNT - 1}
                     className="min-h-[2.75rem] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Next slide
@@ -629,7 +633,7 @@ export default function McPage() {
                   <button
                     type="button"
                     onClick={() => stepPresentationSlide(-1)}
-                    disabled={mcSlideBusy}
+                    disabled={mcSlideBusy || slideshowIndex <= 0}
                     className="min-h-[2.75rem] rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Previous slide
@@ -637,7 +641,9 @@ export default function McPage() {
                   <button
                     type="button"
                     onClick={() => stepPresentationSlide(1)}
-                    disabled={mcSlideBusy}
+                    disabled={
+                      mcSlideBusy || slideshowIndex >= PRESENTATION_SLIDE_COUNT - 1
+                    }
                     className="min-h-[2.75rem] rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-md transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Next slide
