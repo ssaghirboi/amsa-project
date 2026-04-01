@@ -115,11 +115,26 @@ export default function BigScreen() {
   const hasSeededRef = useRef(false)
   /** Set when MC navigates to previous prompt — skip typewriter + FLIP on BigScreen */
   const skipDebateIntroRef = useRef(false)
+  /** MC “Reset to first” bumps this so intro replays even when the prompt text is unchanged. */
+  const [introRestartKick, setIntroRestartKick] = useState(0)
+  const lastIntroRestartTokenRef = useRef(null)
+  const eventStateHydratedRef = useRef(false)
 
   function applyEventStateFromRemote(next) {
     if (next.mcQuestions?.skipDebateIntro === true) {
       skipDebateIntroRef.current = true
     }
+    const introTok = next.mcQuestions?.introRestartToken
+    if (typeof introTok === 'number') {
+      if (!eventStateHydratedRef.current) {
+        lastIntroRestartTokenRef.current = introTok
+      } else if (introTok !== lastIntroRestartTokenRef.current) {
+        lastIntroRestartTokenRef.current = introTok
+        setIntroRestartKick((k) => k + 1)
+      }
+    }
+    eventStateHydratedRef.current = true
+
     setPrompt(next.prompt)
     setDebateRevealAck(Boolean(next.debateRevealAck))
     setPanelists(next.panelists)
@@ -310,6 +325,22 @@ export default function BigScreen() {
   // Logo layout follows slide index; omit presentationSlides text-only edits from deps.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slideshowActive, slideshowIndex, qaSlideshowActive])
+
+  /** MC Reset to first: rerun typewriter → await Reveal → shrink without changing prompt text. */
+  useEffect(() => {
+    if (introRestartKick === 0) return
+    if (slideshowActive || qaSlideshowActive) return
+
+    skipDebateIntroRef.current = false
+    prevPromptRef.current = prompt
+    queueMicrotask(() => {
+      setFlyTo(null)
+      setRevealedCount(0)
+      setDebateTableOpacity(0)
+      setIntroPhase('typing')
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when kick bumps; prompt read from same render as setIntroRestartKick
+  }, [introRestartKick, slideshowActive, qaSlideshowActive])
 
   /**
    * When the debate prompt changes: run large typewriter on the overlay. Shrink-to-table runs

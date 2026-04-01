@@ -39,6 +39,9 @@ function emptyMcQuestions(nextPrompt, options = {}) {
   if (options.skipDebateIntro) {
     base.skipDebateIntro = true
   }
+  if (typeof options.introRestartToken === 'number') {
+    base.introRestartToken = options.introRestartToken
+  }
   return base
 }
 
@@ -390,10 +393,12 @@ export default function McPage() {
     if (!firstPrompt) return
 
     const resetPanelists = [3, 3, 3, 3]
+    const introRestartToken = Date.now()
+    const nextMc = emptyMcQuestions(firstPrompt, { introRestartToken })
     mcPromptPendingRef.current = firstPrompt
     setPrompt(firstPrompt)
     setPanelists(resetPanelists)
-    setMcQuestions(emptyMcQuestions(firstPrompt, { skipDebateIntro: true }))
+    setMcQuestions(nextMc)
     setDebateRevealAck(false)
 
     setStatus('Updating…')
@@ -410,7 +415,7 @@ export default function McPage() {
         slideshowIndex,
         qaSlideshowActive: false,
         qaSlideshowIndex: 0,
-        mcQuestions: emptyMcQuestions(firstPrompt, { skipDebateIntro: true }),
+        mcQuestions: nextMc,
         debateRevealAck: false,
       })
       setStatus('Live')
