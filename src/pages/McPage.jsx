@@ -55,6 +55,8 @@ const PANELIST_ONLY = [1, 2, 3, 4].map((n, i) => ({
   title: PANELIST_DISPLAY_NAMES[i],
 }))
 
+const MC_NOTES_STORAGE_KEY = 'amsa-mc-page-notes'
+
 export default function McPage() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([3, 3, 3, 3])
@@ -73,6 +75,25 @@ export default function McPage() {
     mergeQaSlidesFromRemote(null),
   )
   const [debateRevealAck, setDebateRevealAck] = useState(false)
+  const [mcNotes, setMcNotes] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    try {
+      return localStorage.getItem(MC_NOTES_STORAGE_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        localStorage.setItem(MC_NOTES_STORAGE_KEY, mcNotes)
+      } catch {
+        /* ignore */
+      }
+    }, 400)
+    return () => window.clearTimeout(id)
+  }, [mcNotes])
 
   useEffect(() => {
     let unsubscribe = null
@@ -386,17 +407,17 @@ export default function McPage() {
                     {debateRevealAck ? (
                       panelistIdx < 0 ? (
                         <div
-                          className="flex min-h-[2.75rem] w-11 shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/25 px-1 text-[0.6rem] text-slate-500 sm:min-h-[3rem] sm:w-14"
+                          className="flex min-h-[3rem] w-[5.5rem] shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/25 px-1 text-[0.6rem] text-slate-500 sm:min-h-[3.35rem] sm:w-[6.5rem]"
                           title="No panel slider (General)"
                         >
                           —
                         </div>
                       ) : (
                         <div
-                          className={`flex min-h-[2.75rem] w-[4.25rem] shrink-0 flex-col items-center justify-center rounded-xl px-1 py-1 text-center sm:min-h-[3rem] sm:w-[5rem] ${step.boxClass}`}
+                          className={`flex min-h-[3rem] w-[5.5rem] shrink-0 flex-col items-center justify-center rounded-xl px-1.5 py-1.5 text-center sm:min-h-[3.35rem] sm:w-[6.5rem] ${step.boxClass}`}
                           title={step.label}
                         >
-                          <span className="line-clamp-2 max-w-full text-[0.42rem] font-extrabold leading-tight sm:text-[0.46rem]">
+                          <span className="line-clamp-3 max-w-full text-[0.55rem] font-extrabold leading-snug sm:text-[0.68rem] md:text-[0.78rem]">
                             {step.label}
                           </span>
                         </div>
@@ -437,50 +458,84 @@ export default function McPage() {
             </div>
           </aside>
 
-          <section className="flex min-h-0 flex-1 flex-col lg:min-h-0">
+          <section className="relative flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
-                <div className="shrink-0 text-center text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500 sm:text-xs">
-                  Q&amp;A — end · slide {qaSlideshowIndex + 1}/{QA_SLIDE_COUNT} (admin controls slides)
-                </div>
-                <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
-                  {qaSlideshowIndex === 0 ? (
-                    <p className="text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
-                      {qaSlideshowSlides[0]?.title ?? ''}
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-balance text-[clamp(1.75rem,4.5vw,3rem)] font-semibold leading-tight tracking-tight text-slate-50">
-                        {qaSlideshowSlides[1]?.title ?? ''}
+              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
+                <label htmlFor="mc-notes-qa" className="sr-only">
+                  MC script or notes
+                </label>
+                <textarea
+                  id="mc-notes-qa"
+                  value={mcNotes}
+                  onChange={(e) => setMcNotes(e.target.value)}
+                  spellCheck
+                  placeholder="Script or notes…"
+                  className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-4 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-5 sm:text-[1.05rem]"
+                />
+                <div
+                  className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(13.5rem,42vw)] max-w-[90%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-2.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:p-3"
+                  aria-hidden
+                >
+                  <div className="text-center text-[0.5rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[0.55rem]">
+                    Q&amp;A · {qaSlideshowIndex + 1}/{QA_SLIDE_COUNT}
+                  </div>
+                  <div className="mt-1.5 text-center">
+                    {qaSlideshowIndex === 0 ? (
+                      <p className="line-clamp-4 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                        {qaSlideshowSlides[0]?.title ?? ''}
                       </p>
-                      <p className="mt-4 max-w-xl text-pretty text-lg text-slate-400 sm:text-xl">
-                        {qaSlideshowSlides[1]?.subtitle ?? ''}
-                      </p>
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <p className="line-clamp-3 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                          {qaSlideshowSlides[1]?.title ?? ''}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-pretty text-[0.52rem] text-slate-400 sm:text-[0.56rem]">
+                          {qaSlideshowSlides[1]?.subtitle ?? ''}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : slideshowActive ? (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
-                <div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
-                  <div className="shrink-0 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
-                    Current slide
+              <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
+                <label htmlFor="mc-notes-slides" className="sr-only">
+                  MC script or notes
+                </label>
+                <textarea
+                  id="mc-notes-slides"
+                  value={mcNotes}
+                  onChange={(e) => setMcNotes(e.target.value)}
+                  spellCheck
+                  placeholder="Script or notes…"
+                  className="min-h-0 w-full flex-1 resize-none rounded-3xl border-0 bg-transparent px-4 py-4 text-base leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500/25 sm:px-6 sm:py-5 sm:text-[1.05rem]"
+                />
+                <div
+                  className="pointer-events-none absolute bottom-3 right-3 z-10 w-[min(13.5rem,42vw)] max-w-[90%] overflow-hidden rounded-xl border border-white/15 bg-black/70 p-2.5 shadow-2xl ring-1 ring-white/10 backdrop-blur-md sm:bottom-4 sm:right-4 sm:p-3"
+                  aria-hidden
+                >
+                  <div className="text-center text-[0.5rem] font-semibold uppercase tracking-[0.2em] text-slate-500 sm:text-[0.55rem]">
+                    Slide {slideshowIndex + 1}
+                    {Array.isArray(presentationSlides) && presentationSlides.length > 0
+                      ? ` / ${presentationSlides.length}`
+                      : ''}
                   </div>
-
-                  {currentSlide?.kind === 'hero' ? (
-                    <p className="mt-6 text-balance text-[clamp(2.25rem,7vw,5.5rem)] font-semibold leading-tight tracking-tight text-slate-50">
-                      {currentSlide.tagline || ' '}
-                    </p>
-                  ) : (
-                    <div className="mt-6 min-h-0 w-full max-w-[min(100%,72rem)]">
-                      <h1 className="whitespace-nowrap text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-50">
-                        {currentSlide?.title || ' '}
-                      </h1>
-                      <p className="mt-5 whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-300/95">
-                        {currentSlide?.subtitle || ' '}
+                  <div className="mt-1.5 text-center">
+                    {currentSlide?.kind === 'hero' ? (
+                      <p className="line-clamp-5 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                        {currentSlide.tagline || ' '}
                       </p>
-                    </div>
-                  )}
+                    ) : (
+                      <>
+                        <h2 className="line-clamp-3 text-pretty text-[0.62rem] font-semibold leading-snug text-slate-50 sm:text-[0.68rem]">
+                          {currentSlide?.title || ' '}
+                        </h2>
+                        <p className="mt-1 line-clamp-3 text-pretty text-[0.52rem] text-slate-400 sm:text-[0.56rem]">
+                          {currentSlide?.subtitle || ' '}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (

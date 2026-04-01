@@ -658,34 +658,6 @@ export default function Admin() {
               </p>
             </div>
           ) : null}
-          <div className="mt-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-sm font-medium text-slate-900">Event screen — debate reveal</h2>
-              <p className="mt-1 text-xs text-slate-600">
-                When a new prompt appears on <code className="text-slate-700">/screen</code>, adjust the panelist
-                sliders, then press <span className="font-semibold text-slate-800">Reveal</span> to run the zoom-out
-                handoff and show the debate table.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleRevealDebate}
-              disabled={
-                status === 'Updating...' ||
-                !prompt?.trim() ||
-                debateRevealAck ||
-                slideshowActive ||
-                qaSlideshowActive
-              }
-              className={
-                debateRevealAck
-                  ? 'shrink-0 cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-500'
-                  : 'shrink-0 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50'
-              }
-            >
-              {debateRevealAck ? 'Revealed' : 'Reveal'}
-            </button>
-          </div>
         </div>
 
         <div className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6">
@@ -891,6 +863,35 @@ export default function Admin() {
                   />
                 </div>
               )})}
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-slate-900">Event screen — debate reveal</h3>
+                <p className="mt-1 text-xs text-slate-600">
+                  When a new prompt appears on <code className="text-slate-700">/screen</code>, adjust the panelist
+                  sliders above, then press <span className="font-semibold text-slate-800">Reveal</span> to run the
+                  zoom-out handoff and show the debate table.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleRevealDebate}
+                disabled={
+                  status === 'Updating...' ||
+                  !prompt?.trim() ||
+                  debateRevealAck ||
+                  slideshowActive ||
+                  qaSlideshowActive
+                }
+                className={
+                  debateRevealAck
+                    ? 'shrink-0 cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-500'
+                    : 'shrink-0 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50'
+                }
+              >
+                {debateRevealAck ? 'Revealed' : 'Reveal'}
+              </button>
             </div>
           </section>
 
