@@ -276,9 +276,18 @@ export function deriveEventStateFromRow(row) {
   const slideshowIndex = clampPresentationSlideIndex(row.slideshow_index ?? 0)
   const qaSlideshowActive = row.qa_slideshow_active === true
   const embeddedQaIdx = extractEmbeddedQaSlideIndex(row.qa_slideshow_slides)
-  const qaSlideshowIndex = clampQaSlideIndex(
-    embeddedQaIdx != null ? embeddedQaIdx : row.qa_slideshow_index ?? 0,
-  )
+  const hasQaIdxCol = Object.prototype.hasOwnProperty.call(row, 'qa_slideshow_index')
+  const rawQaIdx = row.qa_slideshow_index
+  /** Prefer the dedicated column so stale `{ slides, index }` jsonb cannot override MC navigation. */
+  let resolvedQaIdx = 0
+  if (hasQaIdxCol && rawQaIdx != null) {
+    resolvedQaIdx = rawQaIdx
+  } else if (embeddedQaIdx != null) {
+    resolvedQaIdx = embeddedQaIdx
+  } else if (hasQaIdxCol) {
+    resolvedQaIdx = rawQaIdx ?? 0
+  }
+  const qaSlideshowIndex = clampQaSlideIndex(resolvedQaIdx)
   const presentationSlides = mergePresentationSlidesFromRemote(row.presentation_slides)
   const qaSlideshowSlides = mergeQaSlidesFromRemote(row.qa_slideshow_slides)
   const mcQuestions = row.mc_questions ?? null
@@ -359,6 +368,19 @@ export async function fetchCurrentEventState(supabase) {
 }
 
 export function subscribeToEventState(supabase, onUpdate) {
+  let fetchSeq = 0
+  let debounceTimer = null
+
+  const scheduleFullFetch = () => {
+    if (debounceTimer != null) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(async () => {
+      debounceTimer = null
+      const my = ++fetchSeq
+      const full = await fetchCurrentEventState(supabase).catch(() => null)
+      if (full && my === fetchSeq) onUpdate(full)
+    }, 20)
+  }
+
   const channel = supabase
     .channel('event_state_updates')
     .on(
@@ -368,14 +390,13 @@ export function subscribeToEventState(supabase, onUpdate) {
         const row = payload.new ?? payload.old
         if (!row) return
         if (Number(row.id) !== EVENT_STATE_ID) return
-
-        const derived = deriveEventStateFromRow(row)
-        if (derived) onUpdate(derived)
+        scheduleFullFetch()
       },
     )
     .subscribe()
 
   return () => {
+    if (debounceTimer != null) clearTimeout(debounceTimer)
     supabase.removeChannel(channel)
   }
 }
