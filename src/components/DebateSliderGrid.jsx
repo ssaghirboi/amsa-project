@@ -172,7 +172,7 @@ export function DebateSliderGrid({
         >
           {prompt?.trim() ? prompt : (
             <span className="text-lg font-normal text-slate-500/95 md:text-xl">
-              Waiting for the current prompt…
+              Waiting for the next prompt…
             </span>
           )}
         </PromptBox>

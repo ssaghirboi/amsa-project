@@ -404,14 +404,12 @@ export default function McPage() {
 
   const goFirstPrompt = async () => {
     if (slideshowActive || qaSlideshowActive) return
-    const firstPrompt = promptSequence?.[0]
-    if (!firstPrompt) return
+    if (!promptSequence?.[0]) return
 
     const resetPanelists = [3, 3, 3, 3]
-    const introRestartToken = Date.now()
-    const nextMc = emptyMcQuestions(firstPrompt, { introRestartToken })
-    mcPromptPendingRef.current = firstPrompt
-    setPrompt(firstPrompt)
+    const nextMc = emptyMcQuestions('')
+    mcPromptPendingRef.current = ''
+    setPrompt('')
     setPanelists(resetPanelists)
     setMcQuestions(nextMc)
     setDebateRevealAck(false)
@@ -420,7 +418,7 @@ export default function McPage() {
     setError('')
     try {
       await writeEventState(supabase, {
-        prompt: firstPrompt,
+        prompt: '',
         panelists: resetPanelists,
         panelistIcons,
         promptSequence,
@@ -1007,7 +1005,7 @@ export default function McPage() {
 
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-1 py-6 text-center sm:px-3 sm:py-8 lg:py-10">
                   <p className="w-full max-w-[min(100%,80vw)] text-balance break-words text-pretty text-[clamp(1.75rem,4.5vw,3.4rem)] font-semibold leading-[1.12] tracking-tight text-slate-50 [overflow-wrap:anywhere]">
-                    {prompt?.trim() ? prompt.trim() : 'Waiting for the current prompt…'}
+                    {prompt?.trim() ? prompt.trim() : 'Waiting for the next prompt…'}
                   </p>
                 </div>
               </div>

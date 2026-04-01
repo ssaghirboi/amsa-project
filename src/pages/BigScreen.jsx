@@ -339,7 +339,7 @@ export default function BigScreen() {
 
     if (!hasSeededRef.current) {
       prevPromptRef.current = prompt
-      if (next.length > 0) hasSeededRef.current = true
+      hasSeededRef.current = true
       return
     }
 
@@ -358,6 +358,12 @@ export default function BigScreen() {
     if (next === prev) return
     if (!next) {
       prevPromptRef.current = prompt
+      queueMicrotask(() => {
+        setIntroPhase('idle')
+        setFlyTo(null)
+        setRevealedCount(0)
+        setDebateTableOpacity(1)
+      })
       return
     }
 
