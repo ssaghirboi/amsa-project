@@ -18,42 +18,35 @@ export const PRESENTATION_SLIDES = [
     title: 'Does God Exist?',
     subtitle: 'A conversation across perspectives',
   },
-  /** Slide 5 — blank title card (between slide 4 and former speaker 1). */
+  /** Slide 5 — blank title card (between slide 4 and Speaker 2). */
   {
     kind: 'segment',
     id: 'blank-between-4-5',
     title: '',
     subtitle: '',
   },
-  /** Slide 6 — Speaker 1 introduction (filler text for now). */
-  {
-    kind: 'segment',
-    id: 'speaker-1',
-    title: 'Speaker 1',
-    subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-  },
-  /** Slide 7 — Speaker 2 introduction (filler text for now). */
+  /** Slide 6 — Speaker 2 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-2',
     title: 'Speaker 2',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 8 — Speaker 3 introduction (filler text for now). */
+  /** Slide 7 — Speaker 3 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-3',
     title: 'Speaker 3',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 9 — Speaker 4 introduction (filler text for now). */
+  /** Slide 8 — Speaker 4 introduction (filler text for now). */
   {
     kind: 'segment',
     id: 'speaker-4',
     title: 'Speaker 4',
     subtitle: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
   },
-  /** Slide 10 — Saghir Saeed intro */
+  /** Slide 9 — Saghir Saeed intro */
   {
     kind: 'segment',
     id: 'saghir-saeed',
