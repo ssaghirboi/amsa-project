@@ -490,7 +490,7 @@ export default function McPage() {
     presentationSlideNavRef.current = true
     setSlideshowIndex(nextIdx)
     slideshowIndexRef.current = nextIdx
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 550
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 720
     setError('')
     try {
       await writeEventState(supabase, {
@@ -533,7 +533,7 @@ export default function McPage() {
     qaSlideNavRef.current = true
     setQaSlideshowIndex(nextIdx)
     qaSlideshowIndexRef.current = nextIdx
-    qaSlideEchoIgnoreUntilRef.current = Date.now() + 550
+    qaSlideEchoIgnoreUntilRef.current = Date.now() + 720
     setError('')
     try {
       await writeEventState(supabase, {

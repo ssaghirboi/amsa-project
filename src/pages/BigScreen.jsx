@@ -145,7 +145,7 @@ export default function BigScreen() {
       si !== slideshowIndexAppliedRef.current
     if (!skipPres) {
       if (Boolean(next.slideshowActive) && si !== slideshowIndexAppliedRef.current) {
-        presentationSlideStaleIgnoreUntilRef.current = Date.now() + 280
+        presentationSlideStaleIgnoreUntilRef.current = Date.now() + 420
       }
       slideshowIndexAppliedRef.current = si
       setSlideshowIndex(si)
@@ -160,7 +160,7 @@ export default function BigScreen() {
       qaIdx !== qaSlideshowIndexAppliedRef.current
     if (!skipQa) {
       if (Boolean(next.qaSlideshowActive) && qaIdx !== qaSlideshowIndexAppliedRef.current) {
-        qaSlideStaleIgnoreUntilRef.current = Date.now() + 280
+        qaSlideStaleIgnoreUntilRef.current = Date.now() + 420
       }
       qaSlideshowIndexAppliedRef.current = qaIdx
       setQaSlideshowIndex(qaIdx)
@@ -520,6 +520,10 @@ export default function BigScreen() {
           <EventBranding variant="presentationCorner" className="shrink-0" />
         </div>
       ) : null}
+      <div
+        key={qaSlideshowIndex}
+        className="presentation-slide-enter flex min-h-0 flex-1 flex-col"
+      >
       {qaSlideshowIndex === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-6 pt-[clamp(6.5rem,18vh,11rem)]">
           <div className="flex flex-col items-center gap-10 sm:gap-12">
@@ -567,12 +571,16 @@ export default function BigScreen() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 
   const slideshowContent = (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-800">
-      <div className="relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8">
+      <div
+        key={slideshowIndex}
+        className="presentation-slide-enter relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8"
+      >
         {!cornerLayout ? (
           <div
             className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-3xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"

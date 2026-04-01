@@ -580,6 +580,11 @@ export default function Admin() {
     const next = !slideshowActive
     const idx = next ? 0 : slideshowIndex
     await cancelPendingPresentationSlideSave()
+    slideshowIndexRef.current = idx
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 720
+    setSlideshowActive(next)
+    setSlideshowIndex(idx)
+    if (next) setQaSlideshowActive(false)
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -594,9 +599,6 @@ export default function Admin() {
         qaSlideshowActive: next ? false : qaSlideshowActive,
         qaSlideshowIndex,
       })
-      setSlideshowActive(next)
-      setSlideshowIndex(idx)
-      if (next) setQaSlideshowActive(false)
       setStatus('Live')
       setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
       setShowPresentationSlidesMigrateBanner(shouldPresentationSlidesMigrate())
@@ -613,6 +615,12 @@ export default function Admin() {
   const handleToggleQaSlideshow = async () => {
     const next = !qaSlideshowActive
     await cancelPendingPresentationSlideSave()
+    const nextQaIdx = next ? 0 : qaSlideshowIndex
+    qaSlideshowIndexRef.current = nextQaIdx
+    qaSlideEchoIgnoreUntilRef.current = Date.now() + 720
+    if (next) setSlideshowActive(false)
+    setQaSlideshowActive(next)
+    setQaSlideshowIndex(nextQaIdx)
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -625,11 +633,8 @@ export default function Admin() {
         slideshowActive: next ? false : slideshowActive,
         slideshowIndex,
         qaSlideshowActive: next,
-        qaSlideshowIndex: next ? 0 : qaSlideshowIndex,
+        qaSlideshowIndex: nextQaIdx,
       })
-      if (next) setSlideshowActive(false)
-      setQaSlideshowActive(next)
-      if (next) setQaSlideshowIndex(0)
       setStatus('Live')
       setShowQaSlideshowMigrateBanner(
         shouldQaSlideshowMigrate() || shouldQaSlideshowIndexMigrate(),
@@ -647,7 +652,8 @@ export default function Admin() {
     if (next === slideshowIndex) return
     await cancelPendingPresentationSlideSave()
     slideshowIndexRef.current = next
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 550
+    presentationSlideEchoIgnoreUntilRef.current = Date.now() + 720
+    setSlideshowIndex(next)
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -662,7 +668,6 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
       })
-      setSlideshowIndex(next)
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
@@ -676,7 +681,8 @@ export default function Admin() {
     if (next === qaSlideshowIndex) return
     await cancelPendingPresentationSlideSave()
     qaSlideshowIndexRef.current = next
-    qaSlideEchoIgnoreUntilRef.current = Date.now() + 550
+    qaSlideEchoIgnoreUntilRef.current = Date.now() + 720
+    setQaSlideshowIndex(next)
     setStatus('Updating...')
     try {
       await writeEventState(supabase, {
@@ -691,7 +697,6 @@ export default function Admin() {
         qaSlideshowActive: true,
         qaSlideshowIndex: next,
       })
-      setQaSlideshowIndex(next)
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
@@ -972,6 +977,15 @@ export default function Admin() {
             <p className="mt-2 text-sm text-slate-600">
               Adjust how each representative is shown on the Strongly Disagree ↔ Strongly Agree scale on the event screen.
             </p>
+
+            <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50/90 px-4 py-3 shadow-sm">
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-indigo-600">
+                Current debate prompt
+              </div>
+              <p className="mt-1.5 text-pretty text-base font-medium leading-snug text-slate-900 sm:text-lg">
+                {prompt?.trim() ? prompt.trim() : '— No prompt set —'}
+              </p>
+            </div>
 
             <div className="mt-4 space-y-5">
               {panelists.map((storedValue, i) => {

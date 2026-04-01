@@ -74,6 +74,25 @@ body {
     max-height 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+@keyframes presentation-slide-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.presentation-slide-enter {
+  animation: presentation-slide-enter 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .presentation-slide-enter {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .presentation-logo-shell,
   .presentation-branding-transition img {
