@@ -34,6 +34,8 @@ export default function Admin() {
   const [prompt, setPrompt] = useState('')
   const [panelists, setPanelists] = useState([1, 1, 1, 1])
   const panelistsRef = useRef(panelists)
+  const promptRef = useRef(prompt)
+  const panelistCommitTimerRef = useRef(null)
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [promptSequenceDraft, setPromptSequenceDraft] = useState(
@@ -84,6 +86,16 @@ export default function Admin() {
   useEffect(() => {
     panelistsRef.current = panelists
   }, [panelists])
+
+  useEffect(() => {
+    promptRef.current = prompt
+  }, [prompt])
+
+  useEffect(() => {
+    return () => {
+      if (panelistCommitTimerRef.current) clearTimeout(panelistCommitTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     writeContextRef.current = {
@@ -260,7 +272,7 @@ export default function Admin() {
     setStatus('Updating...')
     const promptChanged = nextPrompt !== prompt
     try {
-      const snap = await writeEventState(supabase, {
+      await writeEventState(supabase, {
         prompt: nextPrompt,
         panelists: nextPanelists,
         panelistIcons: nextPanelistIcons,
@@ -273,28 +285,8 @@ export default function Admin() {
         qaSlideshowIndex,
         debateRevealAck: promptChanged ? false : undefined,
       })
-      if (snap) {
-        setPrompt(snap.prompt)
-        setPanelists(snap.panelists)
-        panelistsRef.current = snap.panelists
-        setPanelistIcons(snap.panelistIcons ?? [null, null, null, null])
-        const seq =
-          snap.promptSequence?.length > 0
-            ? snap.promptSequence.map((s) => String(s))
-            : DEFAULT_PROMPT_SEQUENCE
-        setPromptSequence(seq)
-        setPromptSequenceDraft([...seq])
-        setPresentationSlides(mergePresentationSlidesFromRemote(snap.presentationSlides ?? null))
-        setQaSlideshowSlides(mergeQaSlidesFromRemote(snap.qaSlideshowSlides ?? null))
-        setSlideshowActive(Boolean(snap.slideshowActive))
-        setSlideshowIndex(snap.slideshowIndex ?? 0)
-        setQaSlideshowActive(Boolean(snap.qaSlideshowActive))
-        setQaSlideshowIndex(snap.qaSlideshowIndex ?? 0)
-        setDebateRevealAck(Boolean(snap.debateRevealAck))
-      } else if (promptChanged) {
-        setDebateRevealAck(false)
-      }
       setStatus('Live')
+      if (promptChanged) setDebateRevealAck(false)
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -312,6 +304,10 @@ export default function Admin() {
       qaSlidesSaveTimerRef.current = null
     }
     qaSlidesLatestRef.current = null
+    if (panelistCommitTimerRef.current) {
+      clearTimeout(panelistCommitTimerRef.current)
+      panelistCommitTimerRef.current = null
+    }
   }
 
   const flushPresentationSlidesSave = async () => {
@@ -922,7 +918,13 @@ export default function Admin() {
                         next[i] = nextStoredVal
                         panelistsRef.current = next
                         setPanelists(next)
-                        commit(prompt, next)
+                        if (panelistCommitTimerRef.current) {
+                          clearTimeout(panelistCommitTimerRef.current)
+                        }
+                        panelistCommitTimerRef.current = setTimeout(() => {
+                          panelistCommitTimerRef.current = null
+                          commit(promptRef.current, panelistsRef.current)
+                        }, 90)
                       }}
                       className="h-2 w-full cursor-pointer accent-indigo-500"
                     />

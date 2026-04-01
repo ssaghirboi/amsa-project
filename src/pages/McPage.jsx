@@ -421,10 +421,11 @@ export default function McPage() {
     const nextIdx = clampPresentationSlideIndex(current + delta)
     if (nextIdx === current) return
     presentationSlideNavRef.current = true
-    setStatus('Updating…')
+    setSlideshowIndex(nextIdx)
+    slideshowIndexRef.current = nextIdx
     setError('')
     try {
-      const snap = await writeEventState(supabase, {
+      await writeEventState(supabase, {
         prompt,
         panelists,
         panelistIcons,
@@ -439,18 +440,18 @@ export default function McPage() {
         debateRevealAck,
         mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
-      if (snap) {
-        const v = clampPresentationSlideIndex(snap.slideshowIndex ?? nextIdx)
-        setSlideshowIndex(v)
-        slideshowIndexRef.current = v
-      } else {
-        setSlideshowIndex(nextIdx)
-        slideshowIndexRef.current = nextIdx
-      }
-      setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
-      setStatus('Live (write failed)')
+      try {
+        const fix = await fetchCurrentEventState(supabase).catch(() => null)
+        if (fix) {
+          const v = clampPresentationSlideIndex(fix.slideshowIndex ?? 0)
+          setSlideshowIndex(v)
+          slideshowIndexRef.current = v
+        }
+      } catch {
+        /* ignore */
+      }
     } finally {
       presentationSlideNavRef.current = false
     }
@@ -462,10 +463,11 @@ export default function McPage() {
     const nextIdx = clampQaSlideIndex(current + delta)
     if (nextIdx === current) return
     qaSlideNavRef.current = true
-    setStatus('Updating…')
+    setQaSlideshowIndex(nextIdx)
+    qaSlideshowIndexRef.current = nextIdx
     setError('')
     try {
-      const snap = await writeEventState(supabase, {
+      await writeEventState(supabase, {
         prompt,
         panelists,
         panelistIcons,
@@ -480,18 +482,18 @@ export default function McPage() {
         debateRevealAck,
         mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
-      if (snap) {
-        const v = clampQaSlideIndex(snap.qaSlideshowIndex ?? nextIdx)
-        setQaSlideshowIndex(v)
-        qaSlideshowIndexRef.current = v
-      } else {
-        setQaSlideshowIndex(nextIdx)
-        qaSlideshowIndexRef.current = nextIdx
-      }
-      setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
-      setStatus('Live (write failed)')
+      try {
+        const fix = await fetchCurrentEventState(supabase).catch(() => null)
+        if (fix) {
+          const v = clampQaSlideIndex(fix.qaSlideshowIndex ?? 0)
+          setQaSlideshowIndex(v)
+          qaSlideshowIndexRef.current = v
+        }
+      } catch {
+        /* ignore */
+      }
     } finally {
       qaSlideNavRef.current = false
     }

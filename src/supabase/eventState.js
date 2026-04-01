@@ -378,7 +378,7 @@ export function subscribeToEventState(supabase, onUpdate) {
       const my = ++fetchSeq
       const full = await fetchCurrentEventState(supabase).catch(() => null)
       if (full && my === fetchSeq) onUpdate(full)
-    }, 60)
+    }, 20)
   }
 
   const channel = supabase
@@ -401,14 +401,7 @@ export function subscribeToEventState(supabase, onUpdate) {
   }
 }
 
-/** One-at-a-time writes so rapid Admin/MC updates don’t reorder and drop fields in PostgREST. */
-let eventStateWriteQueue = Promise.resolve()
-
-/**
- * Persist event_state row. Returns a freshly fetched snapshot after a successful write (or null if fetch fails).
- * Writes are queued globally so concurrent callers don’t race.
- */
-export function writeEventState(
+export async function writeEventState(
   supabase,
   {
     prompt,
@@ -425,45 +418,6 @@ export function writeEventState(
     /** Omit to leave DB value unchanged; `false` after prompt change; `true` when admin reveals debate table. */
     debateRevealAck,
     /** Omit to leave DB unchanged; object keyed e.g. `presentation:0`, `qa:1`. */
-    mcSlideNotes,
-  },
-) {
-  const queued = eventStateWriteQueue.then(() =>
-    performEventStateWrite(supabase, {
-      prompt,
-      panelists,
-      panelistIcons,
-      promptSequence,
-      presentationSlides,
-      qaSlideshowSlides,
-      slideshowActive,
-      slideshowIndex,
-      qaSlideshowActive,
-      qaSlideshowIndex,
-      mcQuestions,
-      debateRevealAck,
-      mcSlideNotes,
-    }),
-  )
-  eventStateWriteQueue = queued.then(() => undefined).catch(() => undefined)
-  return queued
-}
-
-async function performEventStateWrite(
-  supabase,
-  {
-    prompt,
-    panelists,
-    panelistIcons,
-    promptSequence,
-    presentationSlides,
-    qaSlideshowSlides,
-    slideshowActive = false,
-    slideshowIndex = 0,
-    qaSlideshowActive = false,
-    qaSlideshowIndex = 0,
-    mcQuestions = null,
-    debateRevealAck,
     mcSlideNotes,
   },
 ) {
@@ -628,5 +582,4 @@ async function performEventStateWrite(
   }
 
   if (error) throw error
-  return await fetchCurrentEventState(supabase).catch(() => null)
 }
