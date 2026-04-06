@@ -10,17 +10,26 @@
     return String(format).replace(/\{\{\s*amount[^}]*\}\}/, amount).replace(/\{\{\s*amount\s*\}\}/, amount);
   }
 
+  function normOpt(val) {
+    if (val === undefined || val === null) return '';
+    return String(val).trim();
+  }
+
   function getInitialSelections(variant) {
     return {
-      option1: variant.option1 != null ? variant.option1 : null,
-      option2: variant.option2 != null ? variant.option2 : null,
-      option3: variant.option3 != null ? variant.option3 : null,
+      option1: normOpt(variant.option1),
+      option2: normOpt(variant.option2),
+      option3: normOpt(variant.option3),
     };
   }
 
   function findVariant(product, sel) {
     return product.variants.find(function (v) {
-      return v.option1 === sel.option1 && v.option2 === sel.option2 && v.option3 === sel.option3;
+      return (
+        normOpt(v.option1) === normOpt(sel.option1) &&
+        normOpt(v.option2) === normOpt(sel.option2) &&
+        normOpt(v.option3) === normOpt(sel.option3)
+      );
     });
   }
 
@@ -43,7 +52,7 @@
 
     root.querySelectorAll('.ph-picker__pill, .ph-picker__swatch').forEach(function (el) {
       var pos = parseInt(el.getAttribute('data-option-position'), 10);
-      var val = el.getAttribute('data-value');
+      var val = normOpt(el.getAttribute('data-value'));
       var match = selectionValue(selections, pos) === val;
       el.classList.toggle('is-active', match);
       if (el.classList.contains('ph-picker__swatch')) {
@@ -118,7 +127,7 @@
       var btn = e.target.closest('.ph-picker__pill, .ph-picker__swatch');
       if (!btn || !root.contains(btn)) return;
       var pos = parseInt(btn.getAttribute('data-option-position'), 10);
-      var val = btn.getAttribute('data-value');
+      var val = normOpt(btn.getAttribute('data-value'));
       if (pos === 1) selections.option1 = val;
       if (pos === 2) selections.option2 = val;
       if (pos === 3) selections.option3 = val;

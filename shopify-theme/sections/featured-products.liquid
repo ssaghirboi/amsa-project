@@ -167,10 +167,171 @@
                   {% assign bp = bundle_3 %}
               {% endcase %}
 
-              {% if bp != blank %}
-                <form method="post" action="{{ routes.cart_add_url }}" class="bundle-pill-form" data-bundle-form data-bundle-section="{{ section.id }}-{{ i }}">
+              {% if bp == blank %}
+                {% continue %}
+              {% endif %}
+
+              {% comment %} Nose strips: only Adult / 50 variant {% endcomment %}
+              {% if bp.handle == 'wakestrips' %}
+                {% assign nose_variant = nil %}
+                {% for v in bp.variants %}
+                  {% assign vt = v.title | downcase %}
+                  {% if vt contains 'adult' and vt contains '50' %}
+                    {% assign nose_variant = v %}
+                    {% break %}
+                  {% endif %}
+                {% endfor %}
+                {% if nose_variant == nil %}
+                  {% assign nose_variant = bp.selected_or_first_available_variant %}
+                {% endif %}
+                <form method="post" action="{{ routes.cart_add_url }}" class="bundle-pill-form" data-bundle-form>
                   <input type="hidden" name="quantity" value="1">
-                  <input type="hidden" name="id" value="{{ bp.selected_or_first_available_variant.id }}" data-bundle-variant-id>
+                  <input type="hidden" name="id" value="{{ nose_variant.id }}">
+                  <div class="bundle-pill">
+                    <span class="bundle-pill__name">{{ bp.title }}</span>
+                    <span class="bundle-pill__badge">{{ section.settings.bundle_nose_variant_label }}</span>
+                    <button
+                      type="submit"
+                      class="bundle-pill__action"
+                      {% unless nose_variant.available %}
+                        disabled
+                      {% endunless %}
+                    >
+                      {% if nose_variant.available %}
+                        {{ section.settings.bundle_button_label }}
+                      {% else %}
+                        Sold out
+                      {% endif %}
+                    </button>
+                  </div>
+                </form>
+
+                {% comment %} Rize mask: open color modal; default Black {% endcomment %}
+              {% elsif bp.handle == 'therizemask' %}
+                {% assign mask_default = nil %}
+                {% for v in bp.variants %}
+                  {% assign vt = v.title | downcase %}
+                  {% if vt contains 'black' %}
+                    {% assign mask_default = v %}
+                    {% break %}
+                  {% endif %}
+                {% endfor %}
+                {% if mask_default == nil %}
+                  {% assign mask_default = bp.selected_or_first_available_variant %}
+                {% endif %}
+                <form
+                  id="bundle-mask-form-{{ section.id }}"
+                  method="post"
+                  action="{{ routes.cart_add_url }}"
+                  class="bundle-pill-form bundle-pill-form--mask"
+                >
+                  <input type="hidden" name="quantity" value="1">
+                  <input
+                    type="hidden"
+                    name="id"
+                    value="{{ mask_default.id }}"
+                    data-bundle-variant-id
+                    id="bundle-mask-variant-{{ section.id }}"
+                  >
+                  <div class="bundle-pill bundle-pill--mask-trigger">
+                    <span class="bundle-pill__name">{{ bp.title }}</span>
+                    <button
+                      type="button"
+                      class="bundle-pill__action bundle-pill__action--open-mask"
+                      data-mask-open="{{ section.id }}"
+                      aria-haspopup="dialog"
+                      aria-controls="bundle-mask-dialog-{{ section.id }}"
+                    >
+                      {{ section.settings.bundle_mask_button_label }}
+                    </button>
+                  </div>
+                </form>
+
+                <dialog
+                  id="bundle-mask-dialog-{{ section.id }}"
+                  class="bundle-mask-dialog"
+                  aria-labelledby="bundle-mask-title-{{ section.id }}"
+                >
+                  <div class="bundle-mask-dialog__panel">
+                    <button
+                      type="button"
+                      class="bundle-mask-dialog__close"
+                      data-mask-close="{{ section.id }}"
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
+                    <h2 class="bundle-mask-dialog__title" id="bundle-mask-title-{{ section.id }}">
+                      {{ section.settings.bundle_mask_modal_title }}
+                    </h2>
+                    <p class="bundle-mask-dialog__lede">{{ section.settings.bundle_mask_modal_lede }}</p>
+                    <p class="bundle-mask-dialog__hint">{{ section.settings.bundle_mask_modal_hint }}</p>
+
+                    <div class="bundle-mask-dialog__swatches" role="group" aria-label="{{ bp.title }}">
+                      {% for variant in bp.variants %}
+                        {% assign is_mask_sel = false %}
+                        {% if variant.id == mask_default.id %}
+                          {% assign is_mask_sel = true %}
+                        {% endif %}
+                        <button
+                          type="button"
+                          class="bundle-mask-dialog__swatch ph-picker__swatch{% if is_mask_sel %} is-active{% endif %}"
+                          data-mask-swatch="{{ section.id }}"
+                          data-variant-id="{{ variant.id }}"
+                          data-available="{{ variant.available }}"
+                          aria-pressed="{% if is_mask_sel %}true{% else %}false{% endif %}"
+                          aria-label="{{ variant.title }}"
+                          {% unless variant.available %}
+                            disabled
+                          {% endunless %}
+                        >
+                          {% if variant.image %}
+                            <img
+                              src="{{ variant.image | image_url: width: 200 }}"
+                              alt=""
+                              width="200"
+                              height="200"
+                              loading="lazy"
+                            >
+                          {% else %}
+                            <span class="ph-picker__swatch-fallback">{{ variant.title }}</span>
+                          {% endif %}
+                        </button>
+                      {% endfor %}
+                    </div>
+
+                    <button
+                      type="submit"
+                      class="product-highlight__button product-highlight__button--primary bundle-mask-dialog__submit"
+                      form="bundle-mask-form-{{ section.id }}"
+                      {% unless mask_default.available %}
+                        disabled
+                      {% endunless %}
+                    >
+                      {% if mask_default.available %}
+                        {{ section.settings.bundle_mask_confirm_label }}
+                      {% else %}
+                        Sold out
+                      {% endif %}
+                    </button>
+                  </div>
+                </dialog>
+
+              {% else %}
+                <form
+                  method="post"
+                  action="{{ routes.cart_add_url }}"
+                  class="bundle-pill-form"
+                  data-bundle-form
+                  data-bundle-section="{{ section.id }}-{{ i }}"
+                >
+                  <input type="hidden" name="quantity" value="1">
+                  <input
+                    type="hidden"
+                    name="id"
+                    value="{{ bp.selected_or_first_available_variant.id }}"
+                    data-bundle-variant-id
+                  >
                   {% if bp.variants.size > 1 %}
                     <div class="bundle-pill__chooser" role="group" aria-label="{{ bp.title }} — options">
                       {% for variant in bp.variants %}
@@ -238,6 +399,37 @@
             o.classList.toggle('is-active', o === opt);
           });
         });
+      });
+    });
+
+    var sid = '{{ section.id }}';
+    var maskDlg = document.getElementById('bundle-mask-dialog-' + sid);
+    var maskOpen = document.querySelector('[data-mask-open="' + sid + '"]');
+
+    if (maskOpen && maskDlg && maskDlg.showModal) {
+      maskOpen.addEventListener('click', function () {
+        maskDlg.showModal();
+      });
+    }
+
+    document.querySelectorAll('[data-mask-close="' + sid + '"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (maskDlg && maskDlg.close) maskDlg.close();
+      });
+    });
+
+    document.querySelectorAll('[data-mask-swatch="' + sid + '"]').forEach(function (sw) {
+      sw.addEventListener('click', function () {
+        if (sw.disabled) return;
+        var id = sw.getAttribute('data-variant-id');
+        var hidden = document.getElementById('bundle-mask-variant-' + sid);
+        if (hidden && id) hidden.value = id;
+        document.querySelectorAll('[data-mask-swatch="' + sid + '"]').forEach(function (s) {
+          s.classList.toggle('is-active', s === sw);
+          s.setAttribute('aria-pressed', s === sw ? 'true' : 'false');
+        });
+        var sub = maskDlg && maskDlg.querySelector('.bundle-mask-dialog__submit');
+        if (sub) sub.disabled = sw.getAttribute('data-available') === 'false';
       });
     });
   })();
@@ -332,6 +524,43 @@
       "id": "bundle_button_label",
       "label": "Bundle row button",
       "default": "Add"
+    },
+    {
+      "type": "text",
+      "id": "bundle_nose_variant_label",
+      "label": "Nose strips — variant note",
+      "info": "Shown next to Wake Strips when locked to Adult 50.",
+      "default": "Adult 50"
+    },
+    {
+      "type": "text",
+      "id": "bundle_mask_button_label",
+      "label": "Rize mask — open popup button",
+      "default": "Choose color"
+    },
+    {
+      "type": "text",
+      "id": "bundle_mask_modal_title",
+      "label": "Rize mask — popup title",
+      "default": "Choose your mask color"
+    },
+    {
+      "type": "textarea",
+      "id": "bundle_mask_modal_lede",
+      "label": "Rize mask — popup intro",
+      "default": "Select a color below. Black is the default."
+    },
+    {
+      "type": "text",
+      "id": "bundle_mask_modal_hint",
+      "label": "Rize mask — popup hint",
+      "default": "Tap a swatch to change color, then add to cart."
+    },
+    {
+      "type": "text",
+      "id": "bundle_mask_confirm_label",
+      "label": "Rize mask — popup add button",
+      "default": "Add to cart"
     },
     {
       "type": "header",
