@@ -1,50 +1,185 @@
 {% comment %}
-  This section is used in the product template to render product page with
-  media, content, and add-to-cart form.
-
-  https://shopify.dev/docs/storefronts/themes/architecture/templates/product
+  Product template — product highlight layout (gallery + title/price row + stars + buy box).
 {% endcomment %}
 
-<div class="product-images">
-  {% for image in product.images %}
-    {% render 'image', class: 'product-image', image: image %}
-  {% endfor %}
-</div>
+{{ 'product-highlight.css' | asset_url | stylesheet_tag }}
 
-<div class="product-info">
-  <h1>{{ product.title }}</h1>
-  <p>{{ product.price | money }}</p>
-  <p>{{ product.description }}</p>
-</div>
-
-<div class="product-form">
-  {% form 'product', product %}
-    {% assign current_variant = product.selected_or_first_available_variant %}
-
-    <select name="id">
-      {% for variant in product.variants %}
-        <option
-          value="{{ variant.id }}"
-          {% if variant == current_variant %}
-            selected="selected"
+<section class="product-highlight" id="ProductHighlight-{{ section.id }}">
+  <div class="product-highlight__panel">
+    <div class="product-highlight__inner">
+      <div class="product-highlight__gallery">
+        <div class="product-highlight__main-image">
+          {% if product.images.size > 0 %}
+            {% assign main_img = product.images.first %}
+            <img
+              data-ph-main
+              src="{{ main_img | image_url: width: 1200 }}"
+              alt="{{ main_img.alt | default: product.title | escape }}"
+              loading="eager"
+              width="1200"
+              height="1200"
+            >
+          {% elsif product.featured_image %}
+            <img
+              data-ph-main
+              src="{{ product.featured_image | image_url: width: 1200 }}"
+              alt="{{ product.featured_image.alt | default: product.title | escape }}"
+              loading="eager"
+              width="1200"
+              height="1200"
+            >
+          {% else %}
+            <div class="product-highlight__placeholder" role="img" aria-label="{{ product.title | escape }}"></div>
           {% endif %}
-        >
-          {{ variant.title }} - {{ variant.price | money }}
-        </option>
-      {% endfor %}
-    </select>
+        </div>
 
-    <input type="text" name="quantity" min="1" value="1">
+        {% if product.images.size > 1 %}
+          <div class="product-highlight__thumbnails">
+            {% for img in product.images limit: 8 %}
+              <button
+                type="button"
+                class="product-highlight__thumb{% if forloop.first %} is-active{% endif %}"
+                data-ph-thumb
+                data-full="{{ img | image_url: width: 1200 }}"
+                aria-label="Show image {{ forloop.index }}"
+              >
+                <img
+                  src="{{ img | image_url: width: 120 }}"
+                  alt="{{ img.alt | default: product.title | escape }}"
+                  loading="lazy"
+                  width="120"
+                  height="120"
+                >
+              </button>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
 
-    <input type="submit" value="Add to cart">
-    {{ form | payment_button }}
-  {% endform %}
-</div>
+      <div class="product-highlight__details">
+        <div class="product-highlight__title-row">
+          <h1 class="product-highlight__title">{{ product.title }}</h1>
+          <div class="product-highlight__price-wrap">
+            <span class="product-highlight__price">{{ product.price | money }}</span>
+            {% if product.compare_at_price > product.price %}
+              <span class="product-highlight__compare-price">{{ product.compare_at_price | money }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if section.settings.show_rating %}
+          <div class="product-highlight__rating">
+            <span class="product-highlight__stars" aria-hidden="true">★★★★★</span>
+            <span class="product-highlight__reviews">({{ section.settings.review_count }})</span>
+          </div>
+        {% endif %}
+
+        {% if product.description != blank %}
+          <div class="product-highlight__description rte">{{ product.description }}</div>
+        {% endif %}
+
+        {% form 'product', product %}
+          {% assign current_variant = product.selected_or_first_available_variant %}
+
+          {% if product.variants.size > 1 %}
+            <div class="product-highlight__variant">
+              <label class="visually-hidden" for="Variant-{{ section.id }}">Variant</label>
+              <select name="id" id="Variant-{{ section.id }}">
+                {% for variant in product.variants %}
+                  <option
+                    value="{{ variant.id }}"
+                    {% if variant == current_variant %}
+                      selected
+                    {% endif %}
+                    {% unless variant.available %}
+                      disabled
+                    {% endunless %}
+                  >
+                    {{ variant.title }} — {{ variant.price | money }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          {% else %}
+            <input type="hidden" name="id" value="{{ current_variant.id }}">
+          {% endif %}
+
+          <input type="hidden" name="quantity" value="1">
+
+          <button type="submit" name="add" class="product-highlight__button"{% unless current_variant.available %} disabled{% endunless %}>
+            {% if current_variant.available %}
+              {{ section.settings.button_text }}
+            {% else %}
+              Sold out
+            {% endif %}
+          </button>
+
+          {{ form | payment_button }}
+        {% endform %}
+
+        {% if section.settings.subtext != blank %}
+          <p class="product-highlight__subtext">{{ section.settings.subtext }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var root = document.getElementById('ProductHighlight-{{ section.id }}');
+    if (!root) return;
+    var main = root.querySelector('[data-ph-main]');
+    if (!main) return;
+    root.querySelectorAll('[data-ph-thumb]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var url = btn.getAttribute('data-full');
+        if (url) {
+          main.src = url;
+          main.removeAttribute('srcset');
+        }
+        root.querySelectorAll('[data-ph-thumb]').forEach(function (b) {
+          b.classList.remove('is-active');
+        });
+        btn.classList.add('is-active');
+      });
+    });
+  })();
+</script>
 
 {% schema %}
 {
   "name": "t:general.product",
-  "settings": [],
+  "settings": [
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Add to cart label",
+      "default": "Add to cart"
+    },
+    {
+      "type": "text",
+      "id": "subtext",
+      "label": "Line under button",
+      "default": "Free shipping"
+    },
+    {
+      "type": "header",
+      "content": "Rating"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_rating",
+      "label": "Show star rating",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "review_count",
+      "label": "Review count (display)",
+      "default": "312"
+    }
+  ],
   "disabled_on": {
     "groups": ["header", "footer"]
   }
