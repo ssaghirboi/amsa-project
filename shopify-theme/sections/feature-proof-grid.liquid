@@ -1,0 +1,350 @@
+{% comment %}
+  Three-column proof points: image, title, copy, dual stats.
+  Intended for dark backgrounds; copy is editable per block.
+{% endcomment %}
+
+<section class="feature-proof" id="FeatureProof-{{ section.id }}">
+  <div class="feature-proof__wrap">
+    {% if section.settings.heading != blank %}
+      <header class="feature-proof__header">
+        {% if section.settings.eyebrow != blank %}
+          <p class="feature-proof__eyebrow">{{ section.settings.eyebrow }}</p>
+        {% endif %}
+        <h2 class="feature-proof__heading">{{ section.settings.heading }}</h2>
+      </header>
+    {% endif %}
+
+    <div class="feature-proof__grid" role="list">
+      {% for block in section.blocks %}
+        <article class="feature-proof__card feature-proof__card--{% cycle 'a', 'b', 'c' %}" role="listitem" {{ block.shopify_attributes }}>
+          <div class="feature-proof__media">
+            {% if block.settings.image != blank %}
+              <img
+                class="feature-proof__img"
+                src="{{ block.settings.image | image_url: width: 900 }}"
+                alt="{{ block.settings.image.alt | default: block.settings.title | escape }}"
+                loading="lazy"
+                width="900"
+                height="675"
+              >
+            {% else %}
+              <div class="feature-proof__img feature-proof__img--placeholder" aria-hidden="true"></div>
+            {% endif %}
+            <div class="feature-proof__media-shine" aria-hidden="true"></div>
+          </div>
+
+          <div class="feature-proof__body">
+            {% if block.settings.title != blank %}
+              <h3 class="feature-proof__title">{{ block.settings.title }}</h3>
+            {% endif %}
+            {% if block.settings.text != blank %}
+              <p class="feature-proof__text">{{ block.settings.text }}</p>
+            {% endif %}
+          </div>
+
+          <div class="feature-proof__stats">
+            <div class="feature-proof__stat">
+              {% if block.settings.stat_1_value != blank %}
+                <span class="feature-proof__stat-num">{{ block.settings.stat_1_value }}</span>
+              {% endif %}
+              {% if block.settings.stat_1_label != blank %}
+                <span class="feature-proof__stat-label">{{ block.settings.stat_1_label }}</span>
+              {% endif %}
+            </div>
+            <div class="feature-proof__stat-divider" aria-hidden="true"></div>
+            <div class="feature-proof__stat">
+              {% if block.settings.stat_2_value != blank %}
+                <span class="feature-proof__stat-num">{{ block.settings.stat_2_value }}</span>
+              {% endif %}
+              {% if block.settings.stat_2_label != blank %}
+                <span class="feature-proof__stat-label">{{ block.settings.stat_2_label }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .feature-proof {
+    --fp-accent: var(--color-accent, #34d399);
+    --fp-surface: #050505;
+    --fp-card: #0d0d0d;
+    --fp-line: rgba(255, 255, 255, 0.08);
+    --fp-muted: rgba(255, 255, 255, 0.62);
+    padding: clamp(3rem, 7vw, 5rem) var(--page-margin, 1rem);
+    background: var(--fp-surface);
+    color: #fff;
+  }
+
+  .feature-proof__wrap {
+    max-width: min(var(--page-width, 1180px), 100%);
+    margin: 0 auto;
+  }
+
+  .feature-proof__header {
+    text-align: center;
+    max-width: 40rem;
+    margin: 0 auto clamp(2.25rem, 5vw, 3.25rem);
+  }
+
+  .feature-proof__eyebrow {
+    margin: 0 0 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--fp-muted);
+  }
+
+  .feature-proof__heading {
+    margin: 0;
+    font-size: clamp(1.65rem, 3.8vw, 2.35rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+
+  .feature-proof__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1.35rem, 3vw, 1.75rem);
+  }
+
+  @media (min-width: 900px) {
+    .feature-proof__grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: stretch;
+      gap: 1.25rem;
+    }
+
+    .feature-proof__card--b {
+      transform: translateY(-0.35rem);
+    }
+  }
+
+  .feature-proof__card {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.05) 0%, transparent 42%), var(--fp-card);
+    border: 1px solid var(--fp-line);
+    border-radius: 1.35rem;
+    overflow: hidden;
+    min-height: 100%;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+      0 24px 56px rgba(0, 0, 0, 0.45);
+  }
+
+  .feature-proof__card--a {
+    border-color: color-mix(in srgb, var(--fp-accent) 22%, var(--fp-line));
+  }
+
+  .feature-proof__card--c {
+    border-color: color-mix(in srgb, var(--fp-accent) 14%, var(--fp-line));
+  }
+
+  .feature-proof__media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: #111;
+  }
+
+  .feature-proof__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .feature-proof__img--placeholder {
+    background:
+      radial-gradient(120% 80% at 20% 20%, color-mix(in srgb, var(--fp-accent) 35%, transparent), transparent 55%),
+      linear-gradient(145deg, #141414 0%, #0a0a0a 100%);
+  }
+
+  .feature-proof__media-shine {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(125deg, rgba(255, 255, 255, 0.07), transparent 42%);
+    pointer-events: none;
+  }
+
+  .feature-proof__body {
+    padding: clamp(1.15rem, 2.5vw, 1.45rem) clamp(1.15rem, 2.5vw, 1.35rem) 0;
+    flex: 1;
+  }
+
+  .feature-proof__title {
+    margin: 0 0 0.55rem;
+    font-size: clamp(1.15rem, 2.2vw, 1.35rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .feature-proof__text {
+    margin: 0;
+    font-size: clamp(0.98rem, 1.8vw, 1.05rem);
+    line-height: 1.6;
+    color: var(--fp-muted);
+  }
+
+  .feature-proof__stats {
+    display: flex;
+    align-items: stretch;
+    gap: 0.85rem;
+    margin-top: auto;
+    padding: clamp(1.1rem, 2.2vw, 1.35rem);
+    border-top: 1px solid var(--fp-line);
+    background: rgba(0, 0, 0, 0.28);
+  }
+
+  .feature-proof__stat {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    justify-content: center;
+  }
+
+  .feature-proof__stat-num {
+    font-size: clamp(1.55rem, 3vw, 1.95rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .feature-proof__stat-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--fp-accent) 72%, #fff);
+    opacity: 0.95;
+  }
+
+  .feature-proof__stat-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--fp-line);
+    flex-shrink: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Feature proof grid",
+  "tag": "section",
+  "class": "section-feature-proof",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Why it works"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Engineered for mornings that feel effortless"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature column",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Title"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Description",
+          "default": "Short supporting copy."
+        },
+        {
+          "type": "text",
+          "id": "stat_1_value",
+          "label": "Stat 1 — value",
+          "default": "0"
+        },
+        {
+          "type": "text",
+          "id": "stat_1_label",
+          "label": "Stat 1 — label",
+          "default": "LABEL"
+        },
+        {
+          "type": "text",
+          "id": "stat_2_value",
+          "label": "Stat 2 — value",
+          "default": "100%"
+        },
+        {
+          "type": "text",
+          "id": "stat_2_label",
+          "label": "Stat 2 — label",
+          "default": "LABEL"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Feature proof grid",
+      "blocks": [
+        {
+          "type": "feature",
+          "settings": {
+            "title": "Room stays at zero decibels",
+            "text": "There’s no speaker and no beep—only a vibration path that reaches you, not the air in the room. Most people still describe the bedside as effectively silent for anyone beside them.",
+            "stat_1_value": "0 dB",
+            "stat_1_label": "From the device",
+            "stat_2_value": "100%",
+            "stat_2_label": "Still & quiet"
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "title": "Battery you can forget",
+            "text": "Expect on the order of two weeks of regular use from one charge—stretch toward twenty days on Pro hardware. When it’s time, about an hour on USB brings you back to full.",
+            "stat_1_value": "14+",
+            "stat_1_label": "Day runtime",
+            "stat_2_value": "1 hr",
+            "stat_2_label": "USB top-up"
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "title": "Three-stage haptic wake",
+            "text": "It begins soft, then climbs through three distinct intensities so your mind can’t habituate the way it does to repeating tones. In surveys, roughly nine in ten wearers report a reliable wake on the first cycle.",
+            "stat_1_value": "3",
+            "stat_1_label": "Intensity steps",
+            "stat_2_value": "99%",
+            "stat_2_label": "Wake success"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
