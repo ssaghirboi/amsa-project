@@ -194,7 +194,7 @@
 {% stylesheet %}
   .reviews-showcase {
     padding: clamp(2.5rem, 6vw, 4rem) var(--page-margin, 1rem);
-    background: color-mix(in srgb, var(--color-foreground) 3.5%, var(--color-background));
+    background: color-mix(in srgb, var(--color-foreground) 4.5%, var(--color-background));
   }
 
   .reviews-showcase__inner {
@@ -301,14 +301,35 @@
   .reviews-showcase__card {
     width: 100%;
     min-height: clamp(22rem, 52vh, 32rem);
-    background: var(--color-background);
+    background: color-mix(in srgb, var(--color-foreground) 11%, var(--color-background));
     border-radius: 1.125rem;
     padding: clamp(1.75rem, 4vw, 2.35rem) clamp(1.5rem, 3.5vw, 2rem);
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.06);
-    border: 1px solid color-mix(in srgb, var(--color-foreground) 9%, var(--color-background));
+    border: 1px solid color-mix(in srgb, var(--color-foreground) 14%, var(--color-background));
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.45) inset,
+      0 2px 4px rgba(0, 0, 0, 0.04),
+      0 14px 36px rgba(0, 0, 0, 0.1),
+      0 28px 64px rgba(0, 0, 0, 0.08);
+    transform: translateY(0);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .reviews-showcase__slide:hover .reviews-showcase__card {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.5) inset,
+      0 4px 8px rgba(0, 0, 0, 0.06),
+      0 20px 48px rgba(0, 0, 0, 0.12),
+      0 40px 80px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reviews-showcase__slide:hover .reviews-showcase__card {
+      transform: none;
+    }
   }
 
   .reviews-showcase__card-head {

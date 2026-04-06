@@ -10,35 +10,64 @@
   <div class="product-highlight__panel">
     <div class="product-highlight__inner">
       <div class="product-highlight__gallery">
-        <div class="product-highlight__main-image">
+        <div class="product-highlight__main-image" data-ph-main-viewport>
           {% if product and product.images.size > 0 %}
-            {% assign main_img = product.images.first %}
-            <img
-              data-ph-main
-              src="{{ main_img | image_url: width: 1200 }}"
-              alt="{{ main_img.alt | default: product.title | escape }}"
-              loading="lazy"
-              width="1200"
-              height="1200"
+            {% assign ph_slide_total = product.images.size %}
+            <div
+              class="product-highlight__carousel-track"
+              data-ph-carousel-track
+              style="--ph-slide: 0; --ph-slides: {{ ph_slide_total }};"
             >
+              {% for img in product.images limit: 24 %}
+                <div class="product-highlight__carousel-cell">
+                  <img
+                    data-ph-main
+                    data-ph-slide-index="{{ forloop.index0 }}"
+                    src="{{ img | image_url: width: 1200 }}"
+                    alt="{{ img.alt | default: product.title | escape }}"
+                    loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+                    width="1200"
+                    height="1200"
+                  >
+                </div>
+              {% endfor %}
+            </div>
           {% elsif product and product.featured_image %}
-            <img
-              data-ph-main
-              src="{{ product.featured_image | image_url: width: 1200 }}"
-              alt="{{ product.featured_image.alt | default: product.title | escape }}"
-              loading="lazy"
-              width="1200"
-              height="1200"
+            <div
+              class="product-highlight__carousel-track"
+              data-ph-carousel-track
+              style="--ph-slide: 0; --ph-slides: 1;"
             >
+              <div class="product-highlight__carousel-cell">
+                <img
+                  data-ph-main
+                  data-ph-slide-index="0"
+                  src="{{ product.featured_image | image_url: width: 1200 }}"
+                  alt="{{ product.featured_image.alt | default: product.title | escape }}"
+                  loading="lazy"
+                  width="1200"
+                  height="1200"
+                >
+              </div>
+            </div>
           {% elsif section.settings.image %}
-            <img
-              data-ph-main
-              src="{{ section.settings.image | image_url: width: 1200 }}"
-              alt="{{ section.settings.image.alt | default: product.title | escape }}"
-              loading="lazy"
-              width="1200"
-              height="1200"
+            <div
+              class="product-highlight__carousel-track"
+              data-ph-carousel-track
+              style="--ph-slide: 0; --ph-slides: 1;"
             >
+              <div class="product-highlight__carousel-cell">
+                <img
+                  data-ph-main
+                  data-ph-slide-index="0"
+                  src="{{ section.settings.image | image_url: width: 1200 }}"
+                  alt="{{ section.settings.image.alt | default: product.title | escape }}"
+                  loading="lazy"
+                  width="1200"
+                  height="1200"
+                >
+              </div>
+            </div>
           {% else %}
             <div class="product-highlight__placeholder" role="img" aria-label="{{ product.title | default: 'Product' }}"></div>
           {% endif %}
@@ -51,6 +80,7 @@
                 type="button"
                 class="product-highlight__thumb{% if forloop.first %} is-active{% endif %}"
                 data-ph-thumb
+                data-ph-thumb-index="{{ forloop.index0 }}"
                 data-full="{{ img | image_url: width: 1200 }}"
                 aria-label="Show image {{ forloop.index }}"
               >
@@ -100,9 +130,15 @@
         {% endif %}
 
         {% if product and product.description != blank %}
-          <div class="product-highlight__description rte">{{ product.description | strip_html | truncate: 320 }}</div>
+          <details class="product-highlight__readmore">
+            <summary>{{ section.settings.read_more_label }}</summary>
+            <div class="product-highlight__readmore-body rte">{{ product.description }}</div>
+          </details>
         {% elsif section.settings.custom_description != blank %}
-          <p class="product-highlight__description">{{ section.settings.custom_description }}</p>
+          <details class="product-highlight__readmore">
+            <summary>{{ section.settings.read_more_label }}</summary>
+            <div class="product-highlight__readmore-body">{{ section.settings.custom_description | escape | newline_to_br }}</div>
+          </details>
         {% endif %}
 
         {% if product %}
@@ -143,12 +179,6 @@
           <p class="product-highlight__subtext">{{ section.settings.subtext }}</p>
         {% endif %}
 
-        {% if product %}
-          <a href="{{ product.url }}" class="product-highlight__view-link">
-            {{ section.settings.view_full_label }}
-          </a>
-        {% endif %}
-
         {% assign bundle_1 = section.settings.bundle_product_1 %}
         {% assign bundle_2 = section.settings.bundle_product_2 %}
         {% assign bundle_3 = section.settings.bundle_product_3 %}
@@ -184,6 +214,11 @@
                 {% if nose_variant == nil %}
                   {% assign nose_variant = bp.selected_or_first_available_variant %}
                 {% endif %}
+                {% assign nose_save_pct = 0 %}
+                {% if nose_variant.compare_at_price and nose_variant.compare_at_price > nose_variant.price %}
+                  {% assign nose_diff = nose_variant.compare_at_price | minus: nose_variant.price %}
+                  {% assign nose_save_pct = nose_diff | times: 100 | divided_by: nose_variant.compare_at_price %}
+                {% endif %}
                 <form method="post" action="{{ routes.cart_add_url }}" class="bundle-pill-form" data-bundle-form>
                   <input type="hidden" name="quantity" value="1">
                   <input type="hidden" name="id" value="{{ nose_variant.id }}">
@@ -197,11 +232,16 @@
                         disabled
                       {% endunless %}
                     >
-                      {% if nose_variant.available %}
-                        {{ section.settings.bundle_button_label }}
-                      {% else %}
-                        Sold out
+                      {% if nose_save_pct > 0 %}
+                        <span class="bundle-pill__pct-off">{{ nose_save_pct }}% off</span>
                       {% endif %}
+                      <span class="bundle-pill__action-label">
+                        {% if nose_variant.available %}
+                          {{ section.settings.bundle_button_label }}
+                        {% else %}
+                          Sold out
+                        {% endif %}
+                      </span>
                     </button>
                   </div>
                 </form>
@@ -218,6 +258,11 @@
                 {% endfor %}
                 {% if mask_default == nil %}
                   {% assign mask_default = bp.selected_or_first_available_variant %}
+                {% endif %}
+                {% assign mask_save_pct = 0 %}
+                {% if mask_default.compare_at_price and mask_default.compare_at_price > mask_default.price %}
+                  {% assign mask_diff = mask_default.compare_at_price | minus: mask_default.price %}
+                  {% assign mask_save_pct = mask_diff | times: 100 | divided_by: mask_default.compare_at_price %}
                 {% endif %}
                 <form
                   id="bundle-mask-form-{{ section.id }}"
@@ -242,7 +287,10 @@
                       aria-haspopup="dialog"
                       aria-controls="bundle-mask-dialog-{{ section.id }}"
                     >
-                      {{ section.settings.bundle_mask_button_label }}
+                      {% if mask_save_pct > 0 %}
+                        <span class="bundle-pill__pct-off">{{ mask_save_pct }}% off</span>
+                      {% endif %}
+                      <span class="bundle-pill__action-label">{{ section.settings.bundle_mask_button_label }}</span>
                     </button>
                   </div>
                 </form>
@@ -318,6 +366,12 @@
                 </dialog>
 
               {% else %}
+                {% assign bundle_line_variant = bp.selected_or_first_available_variant %}
+                {% assign bundle_line_pct = 0 %}
+                {% if bundle_line_variant.compare_at_price and bundle_line_variant.compare_at_price > bundle_line_variant.price %}
+                  {% assign bundle_line_diff = bundle_line_variant.compare_at_price | minus: bundle_line_variant.price %}
+                  {% assign bundle_line_pct = bundle_line_diff | times: 100 | divided_by: bundle_line_variant.compare_at_price %}
+                {% endif %}
                 <form
                   method="post"
                   action="{{ routes.cart_add_url }}"
@@ -329,7 +383,7 @@
                   <input
                     type="hidden"
                     name="id"
-                    value="{{ bp.selected_or_first_available_variant.id }}"
+                    value="{{ bundle_line_variant.id }}"
                     data-bundle-variant-id
                   >
                   {% if bp.variants.size > 1 %}
@@ -351,11 +405,16 @@
                   <div class="bundle-pill">
                     <span class="bundle-pill__name">{{ bp.title }}</span>
                     <button type="submit" class="bundle-pill__action"{% unless bp.available %} disabled{% endunless %}>
-                      {% if bp.available %}
-                        {{ section.settings.bundle_button_label }}
-                      {% else %}
-                        Sold out
+                      {% if bundle_line_pct > 0 %}
+                        <span class="bundle-pill__pct-off">{{ bundle_line_pct }}% off</span>
                       {% endif %}
+                      <span class="bundle-pill__action-label">
+                        {% if bp.available %}
+                          {{ section.settings.bundle_button_label }}
+                        {% else %}
+                          Sold out
+                        {% endif %}
+                      </span>
                     </button>
                   </div>
                 </form>
@@ -372,14 +431,23 @@
   (function () {
     var root = document.getElementById('ProductHighlight-{{ section.id }}');
     if (!root) return;
-    var main = root.querySelector('[data-ph-main]');
-    if (main) {
+    var track = root.querySelector('[data-ph-carousel-track]');
+    var fallbackMain = root.querySelector('[data-ph-main]');
+    if (track || fallbackMain) {
       root.querySelectorAll('[data-ph-thumb]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          var url = btn.getAttribute('data-full');
-          if (url) {
-            main.src = url;
-            main.removeAttribute('srcset');
+          var idx = parseInt(btn.getAttribute('data-ph-thumb-index'), 10);
+          if (track && !Number.isNaN(idx)) {
+            var imgs = track.querySelectorAll('[data-ph-main]');
+            var n = imgs.length || 1;
+            track.style.setProperty('--ph-slide', String(idx));
+            track.style.setProperty('--ph-slides', String(n));
+          } else if (fallbackMain) {
+            var url = btn.getAttribute('data-full');
+            if (url) {
+              fallbackMain.src = url;
+              fallbackMain.removeAttribute('srcset');
+            }
           }
           root.querySelectorAll('[data-ph-thumb]').forEach(function (b) {
             b.classList.remove('is-active');
@@ -503,9 +571,9 @@
     },
     {
       "type": "text",
-      "id": "view_full_label",
-      "label": "Link to product page",
-      "default": "View full details"
+      "id": "read_more_label",
+      "label": "Read more — summary label",
+      "default": "Read more"
     },
     {
       "type": "header",

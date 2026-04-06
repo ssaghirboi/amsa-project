@@ -1,5 +1,6 @@
 /**
  * Pills + image swatches variant picker. Initializes each [data-ph-picker] root.
+ * Syncs optional main gallery carousel [data-ph-carousel-track] on variant change.
  */
 (function () {
   function formatMoney(cents, format) {
@@ -39,11 +40,69 @@
     return selections.option3;
   }
 
-  function variantImageSrc(variant) {
+  function variantImageSrc(variant, product) {
     var img = variant.featured_image || variant.image;
-    if (!img) return null;
-    if (typeof img === 'string') return img;
-    return img.src || null;
+    if (img) {
+      if (typeof img === 'string') return img;
+      return img.src || null;
+    }
+    if (product && product.images && variant.image_id) {
+      var found = product.images.find(function (im) {
+        return im && im.id === variant.image_id;
+      });
+      if (found && found.src) return found.src;
+    }
+    return null;
+  }
+
+  function normalizeShopifyPath(u) {
+    if (!u) return '';
+    var s = typeof u === 'string' ? u : u.src || '';
+    if (!s) return '';
+    try {
+      var url = new URL(s, window.location.origin);
+      return url.pathname.replace(/\/$/, '');
+    } catch (e) {
+      return String(s).split('?')[0].replace(/^https?:\/\/[^/]+/i, '');
+    }
+  }
+
+  function setCarouselSlide(section, slideIndex) {
+    var track = section.querySelector('[data-ph-carousel-track]');
+    if (!track) return;
+    var imgs = track.querySelectorAll('[data-ph-main]');
+    var n = imgs.length || 1;
+    var i = Math.max(0, Math.min(parseInt(slideIndex, 10) || 0, n - 1));
+    track.style.setProperty('--ph-slide', String(i));
+    track.style.setProperty('--ph-slides', String(n));
+
+    section.querySelectorAll('[data-ph-thumb]').forEach(function (btn) {
+      var ti = parseInt(btn.getAttribute('data-ph-thumb-index'), 10);
+      if (Number.isNaN(ti)) return;
+      btn.classList.toggle('is-active', ti === i);
+    });
+  }
+
+  function findSlideIndexForVariantImage(section, variantSrc) {
+    var track = section.querySelector('[data-ph-carousel-track]');
+    if (!track || !variantSrc) return 0;
+    var target = normalizeShopifyPath(variantSrc);
+    var imgs = track.querySelectorAll('[data-ph-main]');
+    if (!imgs.length) return 0;
+
+    var best = 0;
+    var j;
+    for (j = 0; j < imgs.length; j++) {
+      var p = normalizeShopifyPath(imgs[j].getAttribute('src') || imgs[j].src);
+      if (p && target && p === target) return j;
+    }
+    var fileTarget = target.split('/').pop() || '';
+    for (j = 0; j < imgs.length; j++) {
+      var p2 = normalizeShopifyPath(imgs[j].getAttribute('src') || imgs[j].src);
+      var file = p2.split('/').pop() || '';
+      if (fileTarget && file && (file === fileTarget || p2.indexOf(fileTarget) !== -1)) return j;
+    }
+    return 0;
   }
 
   function updatePickerUI(root, product, selections) {
@@ -80,12 +139,18 @@
       }
     }
 
-    var mainImg = section.querySelector('[data-ph-main]');
-    var src = variantImageSrc(variant);
-    if (mainImg && src) {
-      var u = src.split('?')[0];
-      mainImg.src = u + (u.indexOf('cdn.shopify') !== -1 ? '?width=1200' : '');
-      mainImg.removeAttribute('srcset');
+    var src = variantImageSrc(variant, product);
+    var track = section.querySelector('[data-ph-carousel-track]');
+    if (track && src) {
+      var idx = findSlideIndexForVariantImage(section, src);
+      setCarouselSlide(section, idx);
+    } else {
+      var mainImg = section.querySelector('[data-ph-main]');
+      if (mainImg && src) {
+        var u = String(src).split('?')[0];
+        mainImg.src = u + (u.indexOf('cdn.shopify') !== -1 ? '?width=1200' : '');
+        mainImg.removeAttribute('srcset');
+      }
     }
 
     var addBtn = section.querySelector('.product-highlight__button[type="submit"]');
@@ -123,18 +188,24 @@
 
     var selections = getInitialSelections(current);
 
-    root.addEventListener('click', function (e) {
-      var btn = e.target.closest('.ph-picker__pill, .ph-picker__swatch');
-      if (!btn || !root.contains(btn)) return;
-      var pos = parseInt(btn.getAttribute('data-option-position'), 10);
-      var val = normOpt(btn.getAttribute('data-value'));
-      if (pos === 1) selections.option1 = val;
-      if (pos === 2) selections.option2 = val;
-      if (pos === 3) selections.option3 = val;
+    root.addEventListener(
+      'click',
+      function (e) {
+        var btn = e.target.closest('.ph-picker__pill, .ph-picker__swatch');
+        if (!btn || !root.contains(btn)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var pos = parseInt(btn.getAttribute('data-option-position'), 10);
+        var val = normOpt(btn.getAttribute('data-value'));
+        if (pos === 1) selections.option1 = val;
+        if (pos === 2) selections.option2 = val;
+        if (pos === 3) selections.option3 = val;
 
-      if (!findVariant(product, selections)) return;
-      updatePickerUI(root, product, selections);
-    });
+        if (!findVariant(product, selections)) return;
+        updatePickerUI(root, product, selections);
+      },
+      true
+    );
   }
 
   function run() {

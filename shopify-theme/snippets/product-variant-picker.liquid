@@ -26,6 +26,9 @@
       break
     endif
   endfor
+  if swatch_option == nil and product.options_with_values.size == 1
+    assign swatch_option = product.options_with_values.first
+  endif
 
   assign picker_id = 'ph-picker-' | append: section_id
 %}
