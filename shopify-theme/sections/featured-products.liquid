@@ -435,6 +435,18 @@
   })();
 </script>
 
+{% if template.name == 'index' %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('ProductHighlight-{{ section.id }}');
+      if (!el) return;
+      requestAnimationFrame(function () {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+{% endif %}
+
 {% schema %}
 {
   "name": "Product Highlight",
