@@ -1,15 +1,21 @@
 <div class="announcement-bar full-width">
-  <div class="announcement-bar__track">
-    {% for block in section.blocks %}
-      <span class="announcement-bar__item" {{ block.shopify_attributes }}>
-        {{ block.settings.text }}
-      </span>
-    {% endfor %}
-    {% for block in section.blocks %}
-      <span class="announcement-bar__item" aria-hidden="true">
-        {{ block.settings.text }}
-      </span>
-    {% endfor %}
+  <div class="announcement-bar__viewport">
+    <div class="announcement-bar__track">
+      <div class="announcement-bar__segment">
+        {% for block in section.blocks %}
+          <span class="announcement-bar__item" {{ block.shopify_attributes }}>
+            {{ block.settings.text }}
+          </span>
+        {% endfor %}
+      </div>
+      <div class="announcement-bar__segment" aria-hidden="true">
+        {% for block in section.blocks %}
+          <span class="announcement-bar__item">
+            {{ block.settings.text }}
+          </span>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 </div>
 
@@ -23,37 +29,69 @@
     letter-spacing: 0.5px;
   }
 
+  .announcement-bar__viewport {
+    overflow: hidden;
+    width: 100%;
+  }
+
   .announcement-bar__track {
     display: flex;
-    gap: 3rem;
-    white-space: nowrap;
-    animation: scroll-announcement 20s linear infinite;
+    flex-direction: row;
+    flex-wrap: nowrap;
     width: max-content;
+    will-change: transform;
+    animation: announcement-marquee 35s linear infinite;
+  }
+
+  .announcement-bar__segment {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 3rem;
+    padding-right: 3rem;
   }
 
   .announcement-bar__item {
     display: inline-flex;
     align-items: center;
-    gap: 3rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .announcement-bar__item::after {
     content: '\2022';
     font-size: 8px;
     opacity: 0.5;
+    margin-left: 3rem;
   }
 
-  @keyframes scroll-announcement {
+  @keyframes announcement-marquee {
     0% {
-      transform: translateX(0);
+      transform: translate3d(0, 0, 0);
     }
     100% {
-      transform: translateX(-50%);
+      transform: translate3d(-50%, 0, 0);
     }
   }
 
   .announcement-bar:hover .announcement-bar__track {
     animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .announcement-bar__track {
+      animation: none;
+      justify-content: center;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .announcement-bar__segment[aria-hidden='true'] {
+      display: none;
+    }
   }
 {% endstylesheet %}
 

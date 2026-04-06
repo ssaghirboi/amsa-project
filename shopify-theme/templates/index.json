@@ -61,6 +61,137 @@
         "description": "SleepRizer combines smart wearable technology with proven sleep solutions to help you fall asleep faster, breathe easier, and wake up refreshed. We're committed to making better mornings simple, effective, and accessible to all."
       }
     },
+    "reviews-showcase": {
+      "type": "reviews-showcase",
+      "settings": {
+        "heading": "What customers say",
+        "subheading": "Thousands of happy sleepers trust SleepRizer for quieter mornings and deeper rest."
+      },
+      "blocks": {
+        "rev-1": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "The silent alarm is incredible — I wake up without startling my partner. Five stars.",
+            "author": "Jordan T.",
+            "subtitle": "Los Angeles, CA"
+          }
+        },
+        "rev-2": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Finally sleeping through the night. The mask blocks everything and feels so light.",
+            "author": "Samira K.",
+            "subtitle": "Toronto, ON"
+          }
+        },
+        "rev-3": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Nose strips helped my breathing from night one. Ordering more for the whole family.",
+            "author": "Chris P.",
+            "subtitle": "Verified buyer"
+          }
+        },
+        "rev-4": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Quality feels premium. Shipping was fast and packaging was beautiful.",
+            "author": "Riley D.",
+            "subtitle": "Austin, TX"
+          }
+        },
+        "rev-5": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "I was skeptical but the wristband really works. Battery lasts ages.",
+            "author": "Morgan L.",
+            "subtitle": "Seattle, WA"
+          }
+        },
+        "rev-6": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Customer service answered all my questions before I ordered. Great experience.",
+            "author": "Taylor S.",
+            "subtitle": "Verified buyer"
+          }
+        },
+        "rev-7": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "My husband snores less with the strips and I sleep deeper. Win-win.",
+            "author": "Priya N.",
+            "subtitle": "Chicago, IL"
+          }
+        },
+        "rev-8": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Love the minimalist design. Looks good on the nightstand too.",
+            "author": "Alexei R.",
+            "subtitle": "Vancouver, BC"
+          }
+        },
+        "rev-9": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Best sleep purchase I made this year. Already recommended to friends.",
+            "author": "Jamie W.",
+            "subtitle": "Verified buyer"
+          }
+        },
+        "rev-10": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "The bundle saved me money and I use every item daily. Highly recommend.",
+            "author": "Casey F.",
+            "subtitle": "Denver, CO"
+          }
+        },
+        "rev-11": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Soft, comfortable, and actually stays on. No more 3 a.m. light leaks.",
+            "author": "Robin H.",
+            "subtitle": "Montreal, QC"
+          }
+        },
+        "rev-12": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Simple to set up and the reminders are a nice touch.",
+            "author": "Devon B.",
+            "subtitle": "Verified buyer"
+          }
+        }
+      },
+      "block_order": [
+        "rev-1",
+        "rev-2",
+        "rev-3",
+        "rev-4",
+        "rev-5",
+        "rev-6",
+        "rev-7",
+        "rev-8",
+        "rev-9",
+        "rev-10",
+        "rev-11",
+        "rev-12"
+      ]
+    },
     "featured-products": {
       "type": "featured-products",
       "settings": {
@@ -90,6 +221,7 @@
     "hero",
     "badge-marquee",
     "text-block",
+    "reviews-showcase",
     "featured-products"
   ]
 }

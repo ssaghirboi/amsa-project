@@ -1,0 +1,295 @@
+<section class="reviews-showcase">
+  <div class="reviews-showcase__inner">
+    {% if section.settings.heading != blank %}
+      <h2 class="reviews-showcase__heading">{{ section.settings.heading }}</h2>
+    {% endif %}
+    {% if section.settings.subheading != blank %}
+      <p class="reviews-showcase__subheading">{{ section.settings.subheading }}</p>
+    {% endif %}
+
+    <div class="reviews-showcase__grid" role="list">
+      {% for block in section.blocks %}
+        <article class="reviews-showcase__card" role="listitem" {{ block.shopify_attributes }}>
+          <div class="reviews-showcase__stars" aria-hidden="true">
+            {% assign r = block.settings.rating | default: 5 | plus: 0 %}
+            {% for i in (1..5) %}
+              <span class="reviews-showcase__star{% if i > r %} reviews-showcase__star--dim{% endif %}">★</span>
+            {% endfor %}
+          </div>
+          <blockquote class="reviews-showcase__quote">
+            <p>{{ block.settings.quote }}</p>
+          </blockquote>
+          <footer class="reviews-showcase__meta">
+            <span class="reviews-showcase__author">{{ block.settings.author }}</span>
+            {% if block.settings.subtitle != blank %}
+              <span class="reviews-showcase__subtitle">{{ block.settings.subtitle }}</span>
+            {% endif %}
+          </footer>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .reviews-showcase {
+    padding: clamp(2.5rem, 6vw, 4rem) var(--page-margin, 1rem);
+    background: color-mix(in srgb, var(--color-foreground) 4%, var(--color-background));
+  }
+
+  .reviews-showcase__inner {
+    max-width: min(var(--page-width, 1100px), 100%);
+    margin: 0 auto;
+  }
+
+  .reviews-showcase__heading {
+    font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 0.5rem;
+    color: var(--color-foreground);
+    letter-spacing: -0.02em;
+  }
+
+  .reviews-showcase__subheading {
+    text-align: center;
+    color: color-mix(in srgb, var(--color-foreground) 58%, var(--color-background));
+    font-size: 1rem;
+    margin: 0 0 2rem;
+    max-width: 36rem;
+    margin-inline: auto;
+    line-height: 1.5;
+  }
+
+  .reviews-showcase__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 1.15rem;
+  }
+
+  .reviews-showcase__card {
+    background: var(--color-background);
+    border: 1px solid color-mix(in srgb, var(--color-foreground) 12%, var(--color-background));
+    border-radius: 14px;
+    padding: 1.25rem 1.2rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0;
+  }
+
+  .reviews-showcase__stars {
+    letter-spacing: 0.12em;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: var(--color-foreground);
+  }
+
+  .reviews-showcase__star--dim {
+    opacity: 0.22;
+  }
+
+  .reviews-showcase__quote {
+    margin: 0;
+    flex: 1;
+  }
+
+  .reviews-showcase__quote p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: color-mix(in srgb, var(--color-foreground) 88%, var(--color-background));
+  }
+
+  .reviews-showcase__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-foreground) 10%, var(--color-background));
+  }
+
+  .reviews-showcase__author {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--color-foreground);
+  }
+
+  .reviews-showcase__subtitle {
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--color-foreground) 50%, var(--color-background));
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Customer reviews",
+  "tag": "section",
+  "class": "section-reviews-showcase",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "What customers say"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Thousands of happy sleepers trust SleepRizer for quieter mornings and deeper rest."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "review",
+      "name": "Review",
+      "settings": [
+        {
+          "type": "range",
+          "id": "rating",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "label": "Stars",
+          "default": 5
+        },
+        {
+          "type": "textarea",
+          "id": "quote",
+          "label": "Review text",
+          "default": "Game changer for my sleep. Wish I found this sooner."
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "label": "Name",
+          "default": "Alex M."
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle",
+          "info": "e.g. city or “Verified buyer”",
+          "default": "Verified buyer"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Customer reviews",
+      "blocks": [
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "The silent alarm is incredible — I wake up without startling my partner. Five stars.",
+            "author": "Jordan T.",
+            "subtitle": "Los Angeles, CA"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Finally sleeping through the night. The mask blocks everything and feels so light.",
+            "author": "Samira K.",
+            "subtitle": "Toronto, ON"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Nose strips helped my breathing from night one. Ordering more for the whole family.",
+            "author": "Chris P.",
+            "subtitle": "Verified buyer"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Quality feels premium. Shipping was fast and packaging was beautiful.",
+            "author": "Riley D.",
+            "subtitle": "Austin, TX"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "I was skeptical but the wristband really works. Battery lasts ages.",
+            "author": "Morgan L.",
+            "subtitle": "Seattle, WA"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Customer service answered all my questions before I ordered. Great experience.",
+            "author": "Taylor S.",
+            "subtitle": "Verified buyer"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "My husband snores less with the strips and I sleep deeper. Win-win.",
+            "author": "Priya N.",
+            "subtitle": "Chicago, IL"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Love the minimalist design. Looks good on the nightstand too.",
+            "author": "Alexei R.",
+            "subtitle": "Vancouver, BC"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Best sleep purchase I made this year. Already recommended to friends.",
+            "author": "Jamie W.",
+            "subtitle": "Verified buyer"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "The bundle saved me money and I use every item daily. Highly recommend.",
+            "author": "Casey F.",
+            "subtitle": "Denver, CO"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Soft, comfortable, and actually stays on. No more 3 a.m. light leaks.",
+            "author": "Robin H.",
+            "subtitle": "Montreal, QC"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "quote": "Simple to set up and the app reminders are a nice touch.",
+            "author": "Devon B.",
+            "subtitle": "Verified buyer"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
