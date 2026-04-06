@@ -194,7 +194,7 @@
 {% stylesheet %}
   .reviews-showcase {
     padding: clamp(2.5rem, 6vw, 4rem) var(--page-margin, 1rem);
-    background: #080808;
+    background: var(--color-background);
   }
 
   .reviews-showcase__inner {
@@ -207,13 +207,13 @@
     font-weight: 800;
     text-align: center;
     margin: 0 0 0.5rem;
-    color: #fff;
+    color: var(--color-foreground);
     letter-spacing: -0.03em;
   }
 
   .reviews-showcase__subheading {
     text-align: center;
-    color: rgba(255, 255, 255, 0.58);
+    color: color-mix(in srgb, var(--color-foreground) 52%, var(--color-background));
     font-size: clamp(1.08rem, 2vw, 1.2rem);
     margin: 0 0 2rem;
     max-width: 38rem;
@@ -229,7 +229,7 @@
     background: transparent;
     border-radius: 1.25rem;
     padding: clamp(0.75rem, 2vw, 1rem) clamp(0.25rem, 1.5vw, 0.5rem);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid color-mix(in srgb, var(--color-foreground) 10%, var(--color-background));
   }
 
   @media (min-width: 640px) {
@@ -244,10 +244,10 @@
     align-self: center;
     width: 2.5rem;
     height: 2.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid color-mix(in srgb, var(--color-foreground) 14%, var(--color-background));
     border-radius: 0.75rem;
-    background: #141414;
-    color: #fff;
+    background: var(--color-background);
+    color: var(--color-foreground);
     font-size: 1.75rem;
     line-height: 1;
     cursor: pointer;
@@ -258,7 +258,7 @@
   }
 
   .reviews-showcase__nav:hover {
-    background: #1f1f1f;
+    background: color-mix(in srgb, var(--color-foreground) 5%, var(--color-background));
   }
 
   .reviews-showcase__nav:active {
@@ -301,25 +301,21 @@
   .reviews-showcase__card {
     width: 100%;
     min-height: clamp(22rem, 52vh, 32rem);
-    background: #141414;
+    background: color-mix(in srgb, var(--color-foreground) 4%, var(--color-background));
     border-radius: 1.125rem;
     padding: clamp(1.85rem, 4vw, 2.5rem) clamp(1.55rem, 3.5vw, 2.1rem);
     display: flex;
     flex-direction: column;
     gap: 1.35rem;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.04) inset,
-      0 18px 48px rgba(0, 0, 0, 0.55);
+    border: 1px solid color-mix(in srgb, var(--color-foreground) 9%, var(--color-background));
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
     transform: translateY(0);
     transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
   }
 
   .reviews-showcase__slide:hover .reviews-showcase__card {
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.06) inset,
-      0 24px 56px rgba(0, 0, 0, 0.65);
+    border-color: color-mix(in srgb, var(--color-foreground) 14%, var(--color-background));
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1);
     transform: translateY(-4px);
   }
 
@@ -338,7 +334,7 @@
     font-weight: 800;
     font-size: clamp(1.2rem, 2.4vw, 1.4rem);
     letter-spacing: -0.02em;
-    color: #fff;
+    color: var(--color-foreground);
     line-height: 1.25;
   }
 
@@ -352,11 +348,11 @@
   .reviews-showcase__star-wrap {
     display: flex;
     line-height: 0;
-    color: #fbbf24;
+    color: #ca8a04;
   }
 
   .reviews-showcase__star-wrap--dim {
-    color: rgba(255, 255, 255, 0.22);
+    color: color-mix(in srgb, var(--color-foreground) 18%, var(--color-background));
   }
 
   .reviews-showcase__star-svg {
@@ -378,7 +374,7 @@
     font-size: clamp(1.12rem, 2.25vw, 1.32rem);
     line-height: 1.65;
     letter-spacing: -0.015em;
-    color: rgba(255, 255, 255, 0.92);
+    color: color-mix(in srgb, var(--color-foreground) 90%, var(--color-background));
     font-weight: 400;
   }
 
@@ -387,7 +383,7 @@
     margin-top: auto;
     padding-top: 0.5rem;
     font-size: clamp(0.95rem, 1.65vw, 1.05rem);
-    color: rgba(255, 255, 255, 0.48);
+    color: color-mix(in srgb, var(--color-foreground) 48%, var(--color-background));
     font-weight: 600;
     letter-spacing: 0.02em;
   }
