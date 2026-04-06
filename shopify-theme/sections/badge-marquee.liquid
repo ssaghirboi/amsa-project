@@ -124,6 +124,14 @@
   @media (prefers-reduced-motion: reduce) {
     .badge-marquee__track {
       animation: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .badge-marquee__group[aria-hidden='true'] {
+      display: none;
     }
   }
 {% endstylesheet %}
