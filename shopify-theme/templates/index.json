@@ -65,7 +65,8 @@
       "type": "reviews-showcase",
       "settings": {
         "heading": "What customers say",
-        "subheading": "Thousands of happy sleepers trust SleepRizer for quieter mornings and deeper rest."
+        "subheading": "Thousands of happy sleepers trust SleepRizer for quieter mornings and deeper rest.",
+        "autoplay_seconds": 8
       },
       "blocks": {
         "rev-1": {
@@ -221,7 +222,7 @@
     "hero",
     "badge-marquee",
     "text-block",
-    "reviews-showcase",
-    "featured-products"
+    "featured-products",
+    "reviews-showcase"
   ]
 }

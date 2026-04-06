@@ -1,4 +1,8 @@
-<section class="reviews-showcase">
+<section
+  class="reviews-showcase"
+  id="reviews-carousel-{{ section.id }}"
+  data-reviews-root
+>
   <div class="reviews-showcase__inner">
     {% if section.settings.heading != blank %}
       <h2 class="reviews-showcase__heading">{{ section.settings.heading }}</h2>
@@ -7,34 +11,190 @@
       <p class="reviews-showcase__subheading">{{ section.settings.subheading }}</p>
     {% endif %}
 
-    <div class="reviews-showcase__grid" role="list">
-      {% for block in section.blocks %}
-        <article class="reviews-showcase__card" role="listitem" {{ block.shopify_attributes }}>
-          <div class="reviews-showcase__stars" aria-hidden="true">
-            {% assign r = block.settings.rating | default: 5 | plus: 0 %}
-            {% for i in (1..5) %}
-              <span class="reviews-showcase__star{% if i > r %} reviews-showcase__star--dim{% endif %}">★</span>
-            {% endfor %}
-          </div>
-          <blockquote class="reviews-showcase__quote">
-            <p>{{ block.settings.quote }}</p>
-          </blockquote>
-          <footer class="reviews-showcase__meta">
-            <span class="reviews-showcase__author">{{ block.settings.author }}</span>
-            {% if block.settings.subtitle != blank %}
-              <span class="reviews-showcase__subtitle">{{ block.settings.subtitle }}</span>
-            {% endif %}
-          </footer>
-        </article>
-      {% endfor %}
-    </div>
+    {% if section.blocks.size > 0 %}
+      <div class="reviews-showcase__shell">
+        <button
+          type="button"
+          class="reviews-showcase__nav reviews-showcase__nav--prev"
+          aria-label="Previous review"
+          data-carousel-prev
+        >
+          <span aria-hidden="true">‹</span>
+        </button>
+
+        <div
+          class="reviews-showcase__window"
+          data-carousel-window
+          tabindex="0"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="{{ section.settings.heading | default: 'Customer reviews' | escape }}"
+        >
+          {% for block in section.blocks %}
+            <article
+              class="reviews-showcase__slide"
+              data-carousel-slide
+              role="group"
+              aria-roledescription="slide"
+              aria-label="Slide {{ forloop.index }} of {{ section.blocks.size }}"
+              {{ block.shopify_attributes }}
+            >
+              <div class="reviews-showcase__card">
+                <header class="reviews-showcase__card-head">
+                  <span class="reviews-showcase__author">{{ block.settings.author }}</span>
+                </header>
+                <div class="reviews-showcase__stars" aria-hidden="true">
+                  {% assign r = block.settings.rating | default: 5 | plus: 0 %}
+                  {% for i in (1..5) %}
+                    <span class="reviews-showcase__star-wrap{% if i > r %} reviews-showcase__star-wrap--dim{% endif %}">
+                      <svg class="reviews-showcase__star-svg" viewBox="0 0 24 24" width="32" height="32" focusable="false">
+                        <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                    </span>
+                  {% endfor %}
+                </div>
+                <blockquote class="reviews-showcase__quote">
+                  <p>{{ block.settings.quote }}</p>
+                </blockquote>
+                {% if block.settings.subtitle != blank %}
+                  <p class="reviews-showcase__subtitle">{{ block.settings.subtitle }}</p>
+                {% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        <button
+          type="button"
+          class="reviews-showcase__nav reviews-showcase__nav--next"
+          aria-label="Next review"
+          data-carousel-next
+        >
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
+    {% endif %}
   </div>
 </section>
+
+<script>
+  (function () {
+    var root = document.getElementById('reviews-carousel-{{ section.id }}');
+    if (!root) return;
+
+    var windowEl = root.querySelector('[data-carousel-window]');
+    var slides = Array.prototype.slice.call(root.querySelectorAll('[data-carousel-slide]'));
+    var prevBtn = root.querySelector('[data-carousel-prev]');
+    var nextBtn = root.querySelector('[data-carousel-next]');
+    if (!windowEl || slides.length === 0) return;
+
+    var index = 0;
+    var autoplayMs = {{ section.settings.autoplay_seconds | default: 8 | times: 1000 }};
+    var timer = null;
+    var prefersReduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function centerSlide(i) {
+      if (i < 0 || i >= slides.length) return;
+      var slide = slides[i];
+      var target =
+        slide.offsetLeft - (windowEl.clientWidth - slide.offsetWidth) / 2;
+      windowEl.scrollTo({
+        left: Math.max(0, target),
+        behavior: prefersReduced ? 'auto' : 'smooth',
+      });
+    }
+
+    function go(delta) {
+      index = (index + delta + slides.length) % slides.length;
+      centerSlide(index);
+    }
+
+    function startAutoplay() {
+      stopAutoplay();
+      if (prefersReduced || slides.length < 2) return;
+      timer = window.setInterval(function () {
+        go(1);
+      }, autoplayMs);
+    }
+
+    function stopAutoplay() {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', function () {
+      go(-1);
+      startAutoplay();
+    });
+    if (nextBtn) nextBtn.addEventListener('click', function () {
+      go(1);
+      startAutoplay();
+    });
+
+    windowEl.addEventListener('scroll', function () {
+      if (!windowEl.scrollWidth) return;
+      var mid = windowEl.scrollLeft + windowEl.clientWidth / 2;
+      var best = 0;
+      var bestDist = Infinity;
+      for (var s = 0; s < slides.length; s++) {
+        var el = slides[s];
+        var c = el.offsetLeft + el.offsetWidth / 2;
+        var d = Math.abs(c - mid);
+        if (d < bestDist) {
+          bestDist = d;
+          best = s;
+        }
+      }
+      index = best;
+    }, { passive: true });
+
+    windowEl.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        go(-1);
+        startAutoplay();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        go(1);
+        startAutoplay();
+      }
+    });
+
+    root.addEventListener('mouseenter', stopAutoplay);
+    root.addEventListener('mouseleave', startAutoplay);
+    root.addEventListener('focusin', stopAutoplay);
+    root.addEventListener('focusout', function (e) {
+      if (!root.contains(e.relatedTarget)) startAutoplay();
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopAutoplay();
+      else startAutoplay();
+    });
+
+    window.addEventListener(
+      'resize',
+      function () {
+        centerSlide(index);
+      },
+      { passive: true }
+    );
+
+    requestAnimationFrame(function () {
+      centerSlide(0);
+      startAutoplay();
+    });
+  })();
+</script>
 
 {% stylesheet %}
   .reviews-showcase {
     padding: clamp(2.5rem, 6vw, 4rem) var(--page-margin, 1rem);
-    background: color-mix(in srgb, var(--color-foreground) 4%, var(--color-background));
+    background: var(--color-background);
   }
 
   .reviews-showcase__inner {
@@ -55,38 +215,136 @@
     text-align: center;
     color: color-mix(in srgb, var(--color-foreground) 58%, var(--color-background));
     font-size: 1rem;
-    margin: 0 0 2rem;
+    margin: 0 0 1.75rem;
     max-width: 36rem;
     margin-inline: auto;
     line-height: 1.5;
   }
 
-  .reviews-showcase__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-    gap: 1.15rem;
+  .reviews-showcase__shell {
+    display: flex;
+    align-items: stretch;
+    gap: 0.35rem;
+    background: #e8e8ec;
+    border-radius: 1.5rem;
+    padding: clamp(1rem, 3vw, 1.5rem) clamp(0.35rem, 2vw, 0.75rem);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  }
+
+  @media (min-width: 640px) {
+    .reviews-showcase__shell {
+      gap: 0.5rem;
+      padding: clamp(1.25rem, 3vw, 1.75rem) clamp(0.5rem, 2vw, 1rem);
+    }
+  }
+
+  .reviews-showcase__nav {
+    flex: 0 0 auto;
+    align-self: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: none;
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--color-foreground) 18%, transparent);
+    color: var(--color-foreground);
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .reviews-showcase__nav:hover {
+    background: color-mix(in srgb, var(--color-foreground) 28%, transparent);
+  }
+
+  .reviews-showcase__nav:active {
+    transform: scale(0.96);
+  }
+
+  .reviews-showcase__nav span {
+    display: block;
+    margin-top: -0.1em;
+  }
+
+  .reviews-showcase__window {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scroll-padding-inline: 8%;
+    padding-inline: 8%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    outline: none;
+  }
+
+  .reviews-showcase__window::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reviews-showcase__slide {
+    flex: 0 0 min(82%, 420px);
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    display: flex;
+    align-items: stretch;
   }
 
   .reviews-showcase__card {
-    background: var(--color-background);
-    border: 1px solid color-mix(in srgb, var(--color-foreground) 12%, var(--color-background));
-    border-radius: 14px;
-    padding: 1.25rem 1.2rem 1.35rem;
+    width: 100%;
+    background: #7ee787;
+    border-radius: 1.25rem;
+    padding: 1.35rem 1.35rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .reviews-showcase__card-head {
     margin: 0;
   }
 
-  .reviews-showcase__stars {
-    letter-spacing: 0.12em;
-    font-size: 0.95rem;
-    line-height: 1;
-    color: var(--color-foreground);
+  .reviews-showcase__author {
+    display: block;
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    color: #0a0a0a;
+    line-height: 1.2;
   }
 
-  .reviews-showcase__star--dim {
-    opacity: 0.22;
+  .reviews-showcase__stars {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .reviews-showcase__star-wrap {
+    display: flex;
+    line-height: 0;
+    color: #ca8a04;
+    filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.85));
+  }
+
+  .reviews-showcase__star-wrap--dim {
+    color: rgba(10, 10, 10, 0.22);
+    filter: none;
+  }
+
+  .reviews-showcase__star-svg {
+    width: clamp(1.85rem, 5vw, 2.35rem);
+    height: clamp(1.85rem, 5vw, 2.35rem);
+    display: block;
   }
 
   .reviews-showcase__quote {
@@ -96,28 +354,28 @@
 
   .reviews-showcase__quote p {
     margin: 0;
-    font-size: 0.92rem;
+    font-size: 0.98rem;
     line-height: 1.55;
-    color: color-mix(in srgb, var(--color-foreground) 88%, var(--color-background));
-  }
-
-  .reviews-showcase__meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding-top: 0.25rem;
-    border-top: 1px solid color-mix(in srgb, var(--color-foreground) 10%, var(--color-background));
-  }
-
-  .reviews-showcase__author {
-    font-weight: 700;
-    font-size: 0.88rem;
-    color: var(--color-foreground);
+    color: #171717;
   }
 
   .reviews-showcase__subtitle {
-    font-size: 0.78rem;
-    color: color-mix(in srgb, var(--color-foreground) 50%, var(--color-background));
+    margin: 0;
+    font-size: 0.82rem;
+    color: rgba(10, 10, 10, 0.62);
+    font-weight: 600;
+  }
+
+  @media (max-width: 639px) {
+    .reviews-showcase__shell {
+      flex-wrap: nowrap;
+    }
+
+    .reviews-showcase__nav {
+      width: 2.15rem;
+      height: 2.15rem;
+      font-size: 1.5rem;
+    }
   }
 {% endstylesheet %}
 
@@ -138,6 +396,16 @@
       "id": "subheading",
       "label": "Subheading",
       "default": "Thousands of happy sleepers trust SleepRizer for quieter mornings and deeper rest."
+    },
+    {
+      "type": "range",
+      "id": "autoplay_seconds",
+      "min": 4,
+      "max": 20,
+      "step": 1,
+      "unit": "s",
+      "label": "Auto-advance interval",
+      "default": 8
     }
   ],
   "blocks": [
