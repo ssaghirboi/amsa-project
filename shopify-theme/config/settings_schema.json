@@ -69,6 +69,19 @@
         "label": "t:labels.foreground"
       },
       {
+        "type": "color",
+        "id": "accent_color",
+        "default": "#0f766e",
+        "label": "Accent",
+        "info": "Used for bundle buttons and highlights. Pick a color that fits your brand."
+      },
+      {
+        "type": "color",
+        "id": "accent_text_color",
+        "default": "#FFFFFF",
+        "label": "Text on accent"
+      },
+      {
         "type": "range",
         "id": "input_corner_radius",
         "min": 0,

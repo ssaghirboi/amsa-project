@@ -13,6 +13,9 @@
     --page-margin: {{ settings.min_page_margin }}px;
     --color-background: {{ settings.background_color }};
     --color-foreground: {{ settings.foreground_color }};
+    --color-accent: {{ settings.accent_color | default: '#0f766e' }};
+    --color-on-accent: {{ settings.accent_text_color | default: '#FFFFFF' }};
+    --color-accent-hover: color-mix(in srgb, {{ settings.accent_color | default: '#0f766e' }} 88%, {{ settings.foreground_color }});
     --style-border-radius-inputs: {{ settings.input_corner_radius }}px;
   }
 {% endstyle %}
