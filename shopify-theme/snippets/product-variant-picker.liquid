@@ -1,0 +1,188 @@
+{% doc %}
+  Pills for non-swatch options; image swatches for color/swatch option (last option, or name contains color/colour).
+  @param product {Object}
+  @param section_id {String}
+  @param current_variant {Object}
+{% enddoc %}
+
+{% liquid
+  assign swatch_option_index = 0
+  for option in product.options_with_values
+    assign opt_down = option.name | downcase
+    if opt_down contains 'color' or opt_down contains 'colour'
+      assign swatch_option_index = forloop.index
+    endif
+  endfor
+  if swatch_option_index == 0 and product.options_with_values.size > 1
+    assign swatch_option_index = product.options_with_values.size
+  elsif swatch_option_index == 0 and product.options_with_values.size == 1
+    assign swatch_option_index = 1
+  endif
+
+  assign swatch_option = nil
+  for option in product.options_with_values
+    if forloop.index == swatch_option_index
+      assign swatch_option = option
+      break
+    endif
+  endfor
+
+  assign picker_id = 'ph-picker-' | append: section_id
+%}
+
+<div
+  id="{{ picker_id }}"
+  class="ph-picker"
+  data-ph-picker
+  data-money-format="{{ shop.money_format | escape }}"
+>
+  <script type="application/json" data-product-json>
+    {{ product | json }}
+  </script>
+
+  {% if swatch_option != nil %}
+    {% for option in product.options_with_values %}
+      {% if option.position == swatch_option.position %}
+        {% continue %}
+      {% endif %}
+
+      <div class="ph-picker__group ph-picker__group--pills" data-option-position="{{ option.position }}">
+        <div class="ph-picker__label">{{ option.name }}</div>
+        <div class="ph-picker__pills" role="group" aria-label="{{ option.name }}">
+          {% for value in option.values %}
+            {% assign is_selected = false %}
+            {% case option.position %}
+              {% when 1 %}
+                {% if current_variant.option1 == value %}
+                  {% assign is_selected = true %}
+                {% endif %}
+              {% when 2 %}
+                {% if current_variant.option2 == value %}
+                  {% assign is_selected = true %}
+                {% endif %}
+              {% when 3 %}
+                {% if current_variant.option3 == value %}
+                  {% assign is_selected = true %}
+                {% endif %}
+            {% endcase %}
+            <button
+              type="button"
+              class="ph-picker__pill{% if is_selected %} is-active{% endif %}"
+              data-option-position="{{ option.position }}"
+              data-value="{{ value | escape }}"
+            >
+              {{ value }}
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+
+    <div class="ph-picker__group ph-picker__group--swatches" data-option-position="{{ swatch_option.position }}">
+      <div class="ph-picker__label">{{ swatch_option.name }}</div>
+      <div class="ph-picker__swatches" role="group" aria-label="{{ swatch_option.name }}">
+        {% for value in swatch_option.values %}
+          {% assign swatch_variant = nil %}
+          {% for v in product.variants %}
+            {% assign color_match = false %}
+            {% case swatch_option_index %}
+              {% when 1 %}
+                {% if v.option1 == value %}
+                  {% assign color_match = true %}
+                {% endif %}
+              {% when 2 %}
+                {% if v.option2 == value %}
+                  {% assign color_match = true %}
+                {% endif %}
+              {% when 3 %}
+                {% if v.option3 == value %}
+                  {% assign color_match = true %}
+                {% endif %}
+            {% endcase %}
+            {% unless color_match %}
+              {% continue %}
+            {% endunless %}
+
+            {% if swatch_option_index == 1 %}
+              {% assign swatch_variant = v %}
+              {% break %}
+            {% elsif swatch_option_index == 2 %}
+              {% if v.option1 == current_variant.option1 %}
+                {% assign swatch_variant = v %}
+                {% break %}
+              {% endif %}
+            {% elsif swatch_option_index == 3 %}
+              {% if v.option1 == current_variant.option1 and v.option2 == current_variant.option2 %}
+                {% assign swatch_variant = v %}
+                {% break %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+
+          {% if swatch_variant == nil %}
+            {% for v in product.variants %}
+              {% case swatch_option_index %}
+                {% when 1 %}
+                  {% if v.option1 == value %}
+                    {% assign swatch_variant = v %}
+                    {% break %}
+                  {% endif %}
+                {% when 2 %}
+                  {% if v.option2 == value %}
+                    {% assign swatch_variant = v %}
+                    {% break %}
+                  {% endif %}
+                {% when 3 %}
+                  {% if v.option3 == value %}
+                    {% assign swatch_variant = v %}
+                    {% break %}
+                  {% endif %}
+              {% endcase %}
+            {% endfor %}
+          {% endif %}
+
+          {% assign is_selected = false %}
+          {% case swatch_option_index %}
+            {% when 1 %}
+              {% if current_variant.option1 == value %}
+                {% assign is_selected = true %}
+              {% endif %}
+            {% when 2 %}
+              {% if current_variant.option2 == value %}
+                {% assign is_selected = true %}
+              {% endif %}
+            {% when 3 %}
+              {% if current_variant.option3 == value %}
+                {% assign is_selected = true %}
+              {% endif %}
+          {% endcase %}
+
+          {% assign swatch_img = swatch_variant.image | default: product.featured_image %}
+
+          <button
+            type="button"
+            class="ph-picker__swatch{% if is_selected %} is-active{% endif %}"
+            data-option-position="{{ swatch_option.position }}"
+            data-value="{{ value | escape }}"
+            aria-label="{{ value | escape }}"
+            aria-pressed="{% if is_selected %}true{% else %}false{% endif %}"
+          >
+            {% if swatch_img %}
+              <img
+                src="{{ swatch_img | image_url: width: 180 }}"
+                alt=""
+                width="180"
+                height="180"
+                loading="lazy"
+              >
+            {% else %}
+              <span class="ph-picker__swatch-fallback">{{ value }}</span>
+            {% endif %}
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <input type="hidden" name="id" value="{{ current_variant.id }}" data-variant-id-input>
+</div>

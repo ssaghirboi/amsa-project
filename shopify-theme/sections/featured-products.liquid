@@ -1,6 +1,7 @@
 {% assign product = section.settings.product %}
 
 {{ 'product-highlight.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'product-variant-picker.js' | asset_url }}" defer></script>
 
 <section
   class="product-highlight"
@@ -67,15 +68,23 @@
       </div>
 
       <div class="product-highlight__details">
+        {% if product %}
+          {% assign fh_variant = product.selected_or_first_available_variant %}
+        {% else %}
+          {% assign fh_variant = nil %}
+        {% endif %}
+
         <div class="product-highlight__title-row">
           <h2 class="product-highlight__title">
             {{ product.title | default: section.settings.fallback_title }}
           </h2>
           <div class="product-highlight__price-wrap">
             {% if product %}
-              <span class="product-highlight__price">{{ product.price | money }}</span>
-              {% if product.compare_at_price > product.price %}
-                <span class="product-highlight__compare-price">{{ product.compare_at_price | money }}</span>
+              <span class="product-highlight__price" data-ph-price>{{ fh_variant.price | money }}</span>
+              {% if fh_variant.compare_at_price > fh_variant.price %}
+                <span class="product-highlight__compare-price" data-ph-compare-price>{{ fh_variant.compare_at_price | money }}</span>
+              {% else %}
+                <span class="product-highlight__compare-price" data-ph-compare-price hidden></span>
               {% endif %}
             {% else %}
               <span class="product-highlight__price">—</span>
@@ -97,32 +106,27 @@
         {% endif %}
 
         {% if product %}
-          <form method="post" action="/cart/add">
+          <form method="post" action="{{ routes.cart_add_url }}">
             {% if product.variants.size > 1 %}
-              <div class="product-highlight__variant">
-                <label class="visually-hidden" for="Variant-{{ section.id }}">Variant</label>
-                <select name="id" id="Variant-{{ section.id }}">
-                  {% for variant in product.variants %}
-                    <option
-                      value="{{ variant.id }}"
-                      {% if variant == product.selected_or_first_available_variant %}
-                        selected
-                      {% endif %}
-                      {% unless variant.available %}
-                        disabled
-                      {% endunless %}
-                    >
-                      {{ variant.title }} — {{ variant.price | money }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
+              {% render 'product-variant-picker',
+                product: product,
+                section_id: section.id,
+                current_variant: fh_variant
+              %}
             {% else %}
-              <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+              <input type="hidden" name="id" value="{{ fh_variant.id }}">
             {% endif %}
             <input type="hidden" name="quantity" value="1">
-            <button type="submit" class="product-highlight__button"{% unless product.available %} disabled{% endunless %}>
-              {% if product.available %}
+            <button
+              type="submit"
+              class="product-highlight__button product-highlight__button--primary"
+              data-add-label="{{ section.settings.button_text | escape }}"
+              data-sold-label="Sold out"
+              {% unless fh_variant.available %}
+                disabled
+              {% endunless %}
+            >
+              {% if fh_variant.available %}
                 {{ section.settings.button_text }}
               {% else %}
                 Sold out
@@ -164,26 +168,27 @@
               {% endcase %}
 
               {% if bp != blank %}
-                <form method="post" action="/cart/add" class="bundle-pill-form">
+                <form method="post" action="{{ routes.cart_add_url }}" class="bundle-pill-form" data-bundle-form data-bundle-section="{{ section.id }}-{{ i }}">
+                  <input type="hidden" name="quantity" value="1">
+                  <input type="hidden" name="id" value="{{ bp.selected_or_first_available_variant.id }}" data-bundle-variant-id>
+                  {% if bp.variants.size > 1 %}
+                    <div class="bundle-pill__chooser" role="group" aria-label="{{ bp.title }} — options">
+                      {% for variant in bp.variants %}
+                        <button
+                          type="button"
+                          class="bundle-pill__opt{% if variant == bp.selected_or_first_available_variant %} is-active{% endif %}"
+                          data-variant-id="{{ variant.id }}"
+                          {% unless variant.available %}
+                            disabled
+                          {% endunless %}
+                        >
+                          {{ variant.title }}
+                        </button>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
                   <div class="bundle-pill">
                     <span class="bundle-pill__name">{{ bp.title }}</span>
-                    {% if bp.variants.size > 1 %}
-                      <select name="id" class="bundle-pill__select" aria-label="{{ bp.title }} — variant">
-                        {% for variant in bp.variants %}
-                          <option
-                            value="{{ variant.id }}"
-                            {% unless variant.available %}
-                              disabled
-                            {% endunless %}
-                          >
-                            {{ variant.title }}
-                          </option>
-                        {% endfor %}
-                      </select>
-                    {% else %}
-                      <input type="hidden" name="id" value="{{ bp.selected_or_first_available_variant.id }}">
-                    {% endif %}
-                    <input type="hidden" name="quantity" value="1">
                     <button type="submit" class="bundle-pill__action"{% unless bp.available %} disabled{% endunless %}>
                       {% if bp.available %}
                         {{ section.settings.bundle_button_label }}
@@ -207,18 +212,32 @@
     var root = document.getElementById('ProductHighlight-{{ section.id }}');
     if (!root) return;
     var main = root.querySelector('[data-ph-main]');
-    if (!main) return;
-    root.querySelectorAll('[data-ph-thumb]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var url = btn.getAttribute('data-full');
-        if (url) {
-          main.src = url;
-          main.removeAttribute('srcset');
-        }
-        root.querySelectorAll('[data-ph-thumb]').forEach(function (b) {
-          b.classList.remove('is-active');
+    if (main) {
+      root.querySelectorAll('[data-ph-thumb]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var url = btn.getAttribute('data-full');
+          if (url) {
+            main.src = url;
+            main.removeAttribute('srcset');
+          }
+          root.querySelectorAll('[data-ph-thumb]').forEach(function (b) {
+            b.classList.remove('is-active');
+          });
+          btn.classList.add('is-active');
         });
-        btn.classList.add('is-active');
+      });
+    }
+
+    root.querySelectorAll('[data-bundle-form]').forEach(function (form) {
+      form.querySelectorAll('.bundle-pill__opt').forEach(function (opt) {
+        opt.addEventListener('click', function () {
+          var id = opt.getAttribute('data-variant-id');
+          var hidden = form.querySelector('[data-bundle-variant-id]');
+          if (hidden && id) hidden.value = id;
+          form.querySelectorAll('.bundle-pill__opt').forEach(function (o) {
+            o.classList.toggle('is-active', o === opt);
+          });
+        });
       });
     });
   })();

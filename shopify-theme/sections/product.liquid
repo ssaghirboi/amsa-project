@@ -1,8 +1,9 @@
 {% comment %}
-  Product template — product highlight layout (gallery + title/price row + stars + buy box).
+  Product template — product highlight layout (gallery + title/price row + stars + variant picker + buy box).
 {% endcomment %}
 
 {{ 'product-highlight.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'product-variant-picker.js' | asset_url }}" defer></script>
 
 <section class="product-highlight" id="ProductHighlight-{{ section.id }}">
   <div class="product-highlight__panel">
@@ -57,12 +58,16 @@
       </div>
 
       <div class="product-highlight__details">
+        {% assign current_variant = product.selected_or_first_available_variant %}
+
         <div class="product-highlight__title-row">
           <h1 class="product-highlight__title">{{ product.title }}</h1>
           <div class="product-highlight__price-wrap">
-            <span class="product-highlight__price">{{ product.price | money }}</span>
-            {% if product.compare_at_price > product.price %}
-              <span class="product-highlight__compare-price">{{ product.compare_at_price | money }}</span>
+            <span class="product-highlight__price" data-ph-price>{{ current_variant.price | money }}</span>
+            {% if current_variant.compare_at_price > current_variant.price %}
+              <span class="product-highlight__compare-price" data-ph-compare-price>{{ current_variant.compare_at_price | money }}</span>
+            {% else %}
+              <span class="product-highlight__compare-price" data-ph-compare-price hidden></span>
             {% endif %}
           </div>
         </div>
@@ -79,34 +84,28 @@
         {% endif %}
 
         {% form 'product', product %}
-          {% assign current_variant = product.selected_or_first_available_variant %}
-
           {% if product.variants.size > 1 %}
-            <div class="product-highlight__variant">
-              <label class="visually-hidden" for="Variant-{{ section.id }}">Variant</label>
-              <select name="id" id="Variant-{{ section.id }}">
-                {% for variant in product.variants %}
-                  <option
-                    value="{{ variant.id }}"
-                    {% if variant == current_variant %}
-                      selected
-                    {% endif %}
-                    {% unless variant.available %}
-                      disabled
-                    {% endunless %}
-                  >
-                    {{ variant.title }} — {{ variant.price | money }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
+            {% render 'product-variant-picker',
+              product: product,
+              section_id: section.id,
+              current_variant: current_variant
+            %}
           {% else %}
             <input type="hidden" name="id" value="{{ current_variant.id }}">
           {% endif %}
 
           <input type="hidden" name="quantity" value="1">
 
-          <button type="submit" name="add" class="product-highlight__button"{% unless current_variant.available %} disabled{% endunless %}>
+          <button
+            type="submit"
+            name="add"
+            class="product-highlight__button product-highlight__button--primary"
+            data-add-label="{{ section.settings.button_text | escape }}"
+            data-sold-label="Sold out"
+            {% unless current_variant.available %}
+              disabled
+            {% endunless %}
+          >
             {% if current_variant.available %}
               {{ section.settings.button_text }}
             {% else %}
