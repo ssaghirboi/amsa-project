@@ -440,8 +440,10 @@
     document.addEventListener('DOMContentLoaded', function () {
       var el = document.getElementById('ProductHighlight-{{ section.id }}');
       if (!el) return;
+      var reduce =
+        window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       requestAnimationFrame(function () {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
       });
     });
   </script>
