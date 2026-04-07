@@ -1,20 +1,33 @@
 <div class="announcement-bar full-width">
   <div class="announcement-bar__viewport">
     <div class="announcement-bar__track">
-      <div class="announcement-bar__segment">
-        {% for block in section.blocks %}
-          <span class="announcement-bar__item" {{ block.shopify_attributes }}>
-            {{ block.settings.text }}
-          </span>
-        {% endfor %}
-      </div>
-      <div class="announcement-bar__segment" aria-hidden="true">
-        {% for block in section.blocks %}
-          <span class="announcement-bar__item">
-            {{ block.settings.text }}
-          </span>
-        {% endfor %}
-      </div>
+      {% if section.blocks.size > 0 %}
+        <div class="announcement-bar__segment">
+          {% for block in section.blocks %}
+            <span class="announcement-bar__item" {{ block.shopify_attributes }}>
+              {{ block.settings.text }}
+            </span>
+          {% endfor %}
+        </div>
+        <div class="announcement-bar__segment" aria-hidden="true">
+          {% for block in section.blocks %}
+            <span class="announcement-bar__item">
+              {{ block.settings.text }}
+            </span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="announcement-bar__segment announcement-bar__segment--fallback">
+          <span class="announcement-bar__item">Free shipping across the USA &amp; Canada</span>
+          <span class="announcement-bar__item">Wake up better — sleep tech that works</span>
+          <span class="announcement-bar__item">Bundle &amp; save — build your sleep kit</span>
+        </div>
+        <div class="announcement-bar__segment announcement-bar__segment--fallback" aria-hidden="true">
+          <span class="announcement-bar__item">Free shipping across the USA &amp; Canada</span>
+          <span class="announcement-bar__item">Wake up better — sleep tech that works</span>
+          <span class="announcement-bar__item">Bundle &amp; save — build your sleep kit</span>
+        </div>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -27,6 +40,9 @@
     padding: 10px 0;
     font-size: 13px;
     letter-spacing: 0.5px;
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
   }
 
   .announcement-bar__viewport {
@@ -91,6 +107,10 @@
 
     .announcement-bar__segment[aria-hidden='true'] {
       display: none;
+    }
+
+    .announcement-bar__viewport {
+      overflow: visible;
     }
   }
 {% endstylesheet %}

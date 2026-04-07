@@ -240,6 +240,63 @@
         "fp-3"
       ]
     },
+    "sleep-consultants-trust": {
+      "type": "sleep-consultants-trust",
+      "settings": {
+        "strip_1_text": "Award Winning",
+        "strip_1_icon": "trophy",
+        "strip_2_text": "Quality Assured",
+        "strip_2_icon": "shield",
+        "strip_3_text": "Thousands Sold",
+        "strip_3_icon": "bag",
+        "heading": "Sleep consultants approve",
+        "subheading": "Guidance-backed sleep tools designed for real nights—not buzzwords.",
+        "cta_heading": "Need help?",
+        "cta_text": "We're here to help you choose the right sleep setup with confidence.",
+        "cta_label": "Talk to an expert",
+        "cta_link": ""
+      },
+      "blocks": {
+        "st-1": {
+          "type": "pillar",
+          "settings": {
+            "icon": "medal",
+            "title": "Top trusted brand",
+            "text": "Chosen by sleepers who want quieter mornings without gimmicks."
+          }
+        },
+        "st-2": {
+          "type": "pillar",
+          "settings": {
+            "icon": "certificate",
+            "title": "Certified quality",
+            "text": "Materials and construction held to a standard you can feel on night one."
+          }
+        },
+        "st-3": {
+          "type": "pillar",
+          "settings": {
+            "icon": "globe",
+            "title": "Fast shipping",
+            "text": "Reliable fulfillment across the USA and Canada."
+          }
+        },
+        "st-4": {
+          "type": "pillar",
+          "settings": {
+            "icon": "chat",
+            "title": "Real results",
+            "text": "Stories from people who finally woke up on their terms."
+          }
+        }
+      },
+      "block_order": [
+        "st-1",
+        "st-2",
+        "st-3",
+        "st-4"
+      ]
+    },
     "featured-products": {
       "type": "featured-products",
       "settings": {
@@ -260,6 +317,7 @@
     "text-block",
     "featured-products",
     "reviews-showcase",
-    "feature-proof-grid"
+    "feature-proof-grid",
+    "sleep-consultants-trust"
   ]
 }
