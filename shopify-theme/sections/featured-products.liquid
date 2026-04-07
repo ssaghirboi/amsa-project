@@ -131,12 +131,26 @@
 
         {% if product and product.description != blank %}
           <details class="product-highlight__readmore">
-            <summary>{{ section.settings.read_more_label }}</summary>
+            <summary class="product-highlight__readmore-summary">
+              <span class="product-highlight__readmore-label">{{ section.settings.read_more_label }}</span>
+              <span class="product-highlight__readmore-chevron" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </span>
+            </summary>
             <div class="product-highlight__readmore-body rte">{{ product.description }}</div>
           </details>
         {% elsif section.settings.custom_description != blank %}
           <details class="product-highlight__readmore">
-            <summary>{{ section.settings.read_more_label }}</summary>
+            <summary class="product-highlight__readmore-summary">
+              <span class="product-highlight__readmore-label">{{ section.settings.read_more_label }}</span>
+              <span class="product-highlight__readmore-chevron" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </span>
+            </summary>
             <div class="product-highlight__readmore-body">{{ section.settings.custom_description | escape | newline_to_br }}</div>
           </details>
         {% endif %}
@@ -178,250 +192,6 @@
         {% if section.settings.subtext != blank %}
           <p class="product-highlight__subtext">{{ section.settings.subtext }}</p>
         {% endif %}
-
-        {% assign bundle_1 = section.settings.bundle_product_1 %}
-        {% assign bundle_2 = section.settings.bundle_product_2 %}
-        {% assign bundle_3 = section.settings.bundle_product_3 %}
-
-        {% if bundle_1 != blank or bundle_2 != blank or bundle_3 != blank %}
-          <div class="bundle-pills">
-            <h3 class="bundle-pills__heading">{{ section.settings.bundle_heading }}</h3>
-
-            {% for i in (1..3) %}
-              {% case i %}
-                {% when 1 %}
-                  {% assign bp = bundle_1 %}
-                {% when 2 %}
-                  {% assign bp = bundle_2 %}
-                {% when 3 %}
-                  {% assign bp = bundle_3 %}
-              {% endcase %}
-
-              {% if bp == blank %}
-                {% continue %}
-              {% endif %}
-
-              {% comment %} Nose strips: only Adult / 50 variant {% endcomment %}
-              {% if bp.handle == 'wakestrips' %}
-                {% assign nose_variant = nil %}
-                {% for v in bp.variants %}
-                  {% assign vt = v.title | downcase %}
-                  {% if vt contains 'adult' and vt contains '50' %}
-                    {% assign nose_variant = v %}
-                    {% break %}
-                  {% endif %}
-                {% endfor %}
-                {% if nose_variant == nil %}
-                  {% assign nose_variant = bp.selected_or_first_available_variant %}
-                {% endif %}
-                {% assign nose_save_pct = 0 %}
-                {% if nose_variant.compare_at_price and nose_variant.compare_at_price > nose_variant.price %}
-                  {% assign nose_diff = nose_variant.compare_at_price | minus: nose_variant.price %}
-                  {% assign nose_save_pct = nose_diff | times: 100 | divided_by: nose_variant.compare_at_price %}
-                {% endif %}
-                <form method="post" action="{{ routes.cart_add_url }}" class="bundle-pill-form" data-bundle-form>
-                  <input type="hidden" name="quantity" value="1">
-                  <input type="hidden" name="id" value="{{ nose_variant.id }}">
-                  <div class="bundle-pill">
-                    <span class="bundle-pill__name">{{ bp.title }}</span>
-                    <span class="bundle-pill__badge">{{ section.settings.bundle_nose_variant_label }}</span>
-                    <button
-                      type="submit"
-                      class="bundle-pill__action"
-                      {% unless nose_variant.available %}
-                        disabled
-                      {% endunless %}
-                    >
-                      {% if nose_save_pct > 0 %}
-                        <span class="bundle-pill__pct-off">{{ nose_save_pct }}% off</span>
-                      {% endif %}
-                      <span class="bundle-pill__action-label">
-                        {% if nose_variant.available %}
-                          {{ section.settings.bundle_button_label }}
-                        {% else %}
-                          Sold out
-                        {% endif %}
-                      </span>
-                    </button>
-                  </div>
-                </form>
-
-                {% comment %} Rize mask: open color modal; default Black {% endcomment %}
-              {% elsif bp.handle == 'therizemask' %}
-                {% assign mask_default = nil %}
-                {% for v in bp.variants %}
-                  {% assign vt = v.title | downcase %}
-                  {% if vt contains 'black' %}
-                    {% assign mask_default = v %}
-                    {% break %}
-                  {% endif %}
-                {% endfor %}
-                {% if mask_default == nil %}
-                  {% assign mask_default = bp.selected_or_first_available_variant %}
-                {% endif %}
-                {% assign mask_save_pct = 0 %}
-                {% if mask_default.compare_at_price and mask_default.compare_at_price > mask_default.price %}
-                  {% assign mask_diff = mask_default.compare_at_price | minus: mask_default.price %}
-                  {% assign mask_save_pct = mask_diff | times: 100 | divided_by: mask_default.compare_at_price %}
-                {% endif %}
-                <form
-                  id="bundle-mask-form-{{ section.id }}"
-                  method="post"
-                  action="{{ routes.cart_add_url }}"
-                  class="bundle-pill-form bundle-pill-form--mask"
-                >
-                  <input type="hidden" name="quantity" value="1">
-                  <input
-                    type="hidden"
-                    name="id"
-                    value="{{ mask_default.id }}"
-                    data-bundle-variant-id
-                    id="bundle-mask-variant-{{ section.id }}"
-                  >
-                  <div class="bundle-pill bundle-pill--mask-trigger">
-                    <span class="bundle-pill__name">{{ bp.title }}</span>
-                    <button
-                      type="button"
-                      class="bundle-pill__action bundle-pill__action--open-mask"
-                      data-mask-open="{{ section.id }}"
-                      aria-haspopup="dialog"
-                      aria-controls="bundle-mask-dialog-{{ section.id }}"
-                    >
-                      {% if mask_save_pct > 0 %}
-                        <span class="bundle-pill__pct-off">{{ mask_save_pct }}% off</span>
-                      {% endif %}
-                      <span class="bundle-pill__action-label">{{ section.settings.bundle_mask_button_label }}</span>
-                    </button>
-                  </div>
-                </form>
-
-                <dialog
-                  id="bundle-mask-dialog-{{ section.id }}"
-                  class="bundle-mask-dialog"
-                  aria-labelledby="bundle-mask-title-{{ section.id }}"
-                >
-                  <div class="bundle-mask-dialog__panel">
-                    <button
-                      type="button"
-                      class="bundle-mask-dialog__close"
-                      data-mask-close="{{ section.id }}"
-                      aria-label="Close"
-                    >
-                      ×
-                    </button>
-                    <h2 class="bundle-mask-dialog__title" id="bundle-mask-title-{{ section.id }}">
-                      {{ section.settings.bundle_mask_modal_title }}
-                    </h2>
-                    <p class="bundle-mask-dialog__lede">{{ section.settings.bundle_mask_modal_lede }}</p>
-                    <p class="bundle-mask-dialog__hint">{{ section.settings.bundle_mask_modal_hint }}</p>
-
-                    <div class="bundle-mask-dialog__swatches" role="group" aria-label="{{ bp.title }}">
-                      {% for variant in bp.variants %}
-                        {% assign is_mask_sel = false %}
-                        {% if variant.id == mask_default.id %}
-                          {% assign is_mask_sel = true %}
-                        {% endif %}
-                        <button
-                          type="button"
-                          class="bundle-mask-dialog__swatch ph-picker__swatch{% if is_mask_sel %} is-active{% endif %}"
-                          data-mask-swatch="{{ section.id }}"
-                          data-variant-id="{{ variant.id }}"
-                          data-available="{{ variant.available }}"
-                          aria-pressed="{% if is_mask_sel %}true{% else %}false{% endif %}"
-                          aria-label="{{ variant.title }}"
-                          {% unless variant.available %}
-                            disabled
-                          {% endunless %}
-                        >
-                          {% if variant.image %}
-                            <img
-                              src="{{ variant.image | image_url: width: 200 }}"
-                              alt=""
-                              width="200"
-                              height="200"
-                              loading="lazy"
-                            >
-                          {% else %}
-                            <span class="ph-picker__swatch-fallback">{{ variant.title }}</span>
-                          {% endif %}
-                        </button>
-                      {% endfor %}
-                    </div>
-
-                    <button
-                      type="submit"
-                      class="product-highlight__button product-highlight__button--primary bundle-mask-dialog__submit"
-                      form="bundle-mask-form-{{ section.id }}"
-                      {% unless mask_default.available %}
-                        disabled
-                      {% endunless %}
-                    >
-                      {% if mask_default.available %}
-                        {{ section.settings.bundle_mask_confirm_label }}
-                      {% else %}
-                        Sold out
-                      {% endif %}
-                    </button>
-                  </div>
-                </dialog>
-
-              {% else %}
-                {% assign bundle_line_variant = bp.selected_or_first_available_variant %}
-                {% assign bundle_line_pct = 0 %}
-                {% if bundle_line_variant.compare_at_price and bundle_line_variant.compare_at_price > bundle_line_variant.price %}
-                  {% assign bundle_line_diff = bundle_line_variant.compare_at_price | minus: bundle_line_variant.price %}
-                  {% assign bundle_line_pct = bundle_line_diff | times: 100 | divided_by: bundle_line_variant.compare_at_price %}
-                {% endif %}
-                <form
-                  method="post"
-                  action="{{ routes.cart_add_url }}"
-                  class="bundle-pill-form"
-                  data-bundle-form
-                  data-bundle-section="{{ section.id }}-{{ i }}"
-                >
-                  <input type="hidden" name="quantity" value="1">
-                  <input
-                    type="hidden"
-                    name="id"
-                    value="{{ bundle_line_variant.id }}"
-                    data-bundle-variant-id
-                  >
-                  {% if bp.variants.size > 1 %}
-                    <div class="bundle-pill__chooser" role="group" aria-label="{{ bp.title }} — options">
-                      {% for variant in bp.variants %}
-                        <button
-                          type="button"
-                          class="bundle-pill__opt{% if variant == bp.selected_or_first_available_variant %} is-active{% endif %}"
-                          data-variant-id="{{ variant.id }}"
-                          {% unless variant.available %}
-                            disabled
-                          {% endunless %}
-                        >
-                          {{ variant.title }}
-                        </button>
-                      {% endfor %}
-                    </div>
-                  {% endif %}
-                  <div class="bundle-pill">
-                    <span class="bundle-pill__name">{{ bp.title }}</span>
-                    <button type="submit" class="bundle-pill__action"{% unless bp.available %} disabled{% endunless %}>
-                      {% if bundle_line_pct > 0 %}
-                        <span class="bundle-pill__pct-off">{{ bundle_line_pct }}% off</span>
-                      {% endif %}
-                      <span class="bundle-pill__action-label">
-                        {% if bp.available %}
-                          {{ section.settings.bundle_button_label }}
-                        {% else %}
-                          Sold out
-                        {% endif %}
-                      </span>
-                    </button>
-                  </div>
-                </form>
-              {% endif %}
-            {% endfor %}
-          </div>
-        {% endif %}
       </div>
     </div>
   </div>
@@ -456,50 +226,6 @@
         });
       });
     }
-
-    root.querySelectorAll('[data-bundle-form]').forEach(function (form) {
-      form.querySelectorAll('.bundle-pill__opt').forEach(function (opt) {
-        opt.addEventListener('click', function () {
-          var id = opt.getAttribute('data-variant-id');
-          var hidden = form.querySelector('[data-bundle-variant-id]');
-          if (hidden && id) hidden.value = id;
-          form.querySelectorAll('.bundle-pill__opt').forEach(function (o) {
-            o.classList.toggle('is-active', o === opt);
-          });
-        });
-      });
-    });
-
-    var sid = '{{ section.id }}';
-    var maskDlg = document.getElementById('bundle-mask-dialog-' + sid);
-    var maskOpen = document.querySelector('[data-mask-open="' + sid + '"]');
-
-    if (maskOpen && maskDlg && maskDlg.showModal) {
-      maskOpen.addEventListener('click', function () {
-        maskDlg.showModal();
-      });
-    }
-
-    document.querySelectorAll('[data-mask-close="' + sid + '"]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (maskDlg && maskDlg.close) maskDlg.close();
-      });
-    });
-
-    document.querySelectorAll('[data-mask-swatch="' + sid + '"]').forEach(function (sw) {
-      sw.addEventListener('click', function () {
-        if (sw.disabled) return;
-        var id = sw.getAttribute('data-variant-id');
-        var hidden = document.getElementById('bundle-mask-variant-' + sid);
-        if (hidden && id) hidden.value = id;
-        document.querySelectorAll('[data-mask-swatch="' + sid + '"]').forEach(function (s) {
-          s.classList.toggle('is-active', s === sw);
-          s.setAttribute('aria-pressed', s === sw ? 'true' : 'false');
-        });
-        var sub = maskDlg && maskDlg.querySelector('.bundle-mask-dialog__submit');
-        if (sub) sub.disabled = sw.getAttribute('data-available') === 'false';
-      });
-    });
   })();
 </script>
 
@@ -572,8 +298,8 @@
     {
       "type": "text",
       "id": "read_more_label",
-      "label": "Read more — summary label",
-      "default": "Read more"
+      "label": "Expandable row — label",
+      "default": "Yes, this actually works."
     },
     {
       "type": "header",
@@ -590,86 +316,6 @@
       "id": "review_count",
       "label": "Review count (display)",
       "default": "312"
-    },
-    {
-      "type": "header",
-      "content": "Bundles"
-    },
-    {
-      "type": "text",
-      "id": "bundle_heading",
-      "label": "Bundle section heading",
-      "default": "Bundle and save"
-    },
-    {
-      "type": "text",
-      "id": "bundle_button_label",
-      "label": "Bundle row button",
-      "default": "Add"
-    },
-    {
-      "type": "text",
-      "id": "bundle_nose_variant_label",
-      "label": "Nose strips — variant note",
-      "info": "Shown next to Wake Strips when locked to Adult 50.",
-      "default": "Adult 50"
-    },
-    {
-      "type": "text",
-      "id": "bundle_mask_button_label",
-      "label": "Rize mask — open popup button",
-      "default": "Choose color"
-    },
-    {
-      "type": "text",
-      "id": "bundle_mask_modal_title",
-      "label": "Rize mask — popup title",
-      "default": "Choose your mask color"
-    },
-    {
-      "type": "textarea",
-      "id": "bundle_mask_modal_lede",
-      "label": "Rize mask — popup intro",
-      "default": "Select a color below. Black is the default."
-    },
-    {
-      "type": "text",
-      "id": "bundle_mask_modal_hint",
-      "label": "Rize mask — popup hint",
-      "default": "Tap a swatch to change color, then add to cart."
-    },
-    {
-      "type": "text",
-      "id": "bundle_mask_confirm_label",
-      "label": "Rize mask — popup add button",
-      "default": "Add to cart"
-    },
-    {
-      "type": "header",
-      "content": "Bundle product 1"
-    },
-    {
-      "type": "product",
-      "id": "bundle_product_1",
-      "label": "Product"
-    },
-    {
-      "type": "header",
-      "content": "Bundle product 2"
-    },
-    {
-      "type": "product",
-      "id": "bundle_product_2",
-      "label": "Product"
-    },
-    {
-      "type": "header",
-      "content": "Bundle product 3"
-    },
-    {
-      "type": "product",
-      "id": "bundle_product_3",
-      "label": "Product"
     }
   ],
   "presets": [

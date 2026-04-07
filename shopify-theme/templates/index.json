@@ -248,20 +248,9 @@
         "custom_description": "Wake up gently with a silent vibrating alarm that won't disturb your partner. Lightweight, comfortable, and designed for the deepest sleepers.",
         "button_text": "Add to cart",
         "subtext": "Free shipping",
-        "read_more_label": "Read more",
+        "read_more_label": "Yes, this actually works.",
         "show_rating": true,
-        "review_count": "312",
-        "bundle_heading": "Bundle and save",
-        "bundle_button_label": "Add",
-        "bundle_nose_variant_label": "Adult 50",
-        "bundle_mask_button_label": "Choose color",
-        "bundle_mask_modal_title": "Choose your mask color",
-        "bundle_mask_modal_lede": "Select a color below. Black is the default.",
-        "bundle_mask_modal_hint": "Tap a swatch to change color, then add to cart.",
-        "bundle_mask_confirm_label": "Add to cart",
-        "bundle_product_1": "wakestrips",
-        "bundle_product_2": "therizemask",
-        "bundle_product_3": ""
+        "review_count": "312"
       }
     }
   },
