@@ -17,9 +17,9 @@ const PANEL_VISUALS = [
  * agree sits on the green side and disagree on the red side.
  */
 const HEADER_LABEL_CLASS_LIGHT =
-  'text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-800 sm:text-lg sm:tracking-[0.12em]'
+  'text-lg font-semibold uppercase leading-tight tracking-[0.12em] text-slate-800 sm:text-xl md:text-2xl sm:tracking-[0.11em]'
 const HEADER_LABEL_CLASS_DARK =
-  'text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-100 sm:text-lg sm:tracking-[0.12em]'
+  'text-lg font-semibold uppercase leading-tight tracking-[0.12em] text-slate-100 sm:text-xl md:text-2xl sm:tracking-[0.11em]'
 
 const SCALE_COLUMNS = [
   {
@@ -68,16 +68,16 @@ function SliderRow({ value, rowLabel, showBorderBottom = true, theme = 'light' }
   const isDark = theme === 'dark'
 
   return (
-    <div className="group relative min-h-[6rem] w-full sm:min-h-[6.75rem]">
+    <div className="group relative min-h-[7.5rem] w-full sm:min-h-[8.25rem]">
       <div
-        className={`relative flex min-h-[6rem] w-full items-center sm:min-h-[6.75rem] ${
+        className={`relative flex min-h-[7.5rem] w-full items-center sm:min-h-[8.25rem] ${
           showBorderBottom ? (isDark ? 'border-b border-slate-600/70' : 'border-b border-slate-500/75') : ''
         }`}
       >
         {/* Mobile: centered above track (desktop labels sit in left margin beside table) */}
         <div className="pointer-events-none absolute left-0 right-0 top-1.5 z-20 flex justify-center md:hidden">
           <span
-            className={`text-base font-semibold uppercase tracking-[0.16em] sm:text-lg ${
+            className={`text-lg font-semibold uppercase tracking-[0.14em] sm:text-xl ${
               isDark ? 'text-slate-100' : 'text-slate-800'
             }`}
             style={
@@ -116,13 +116,13 @@ function SliderRow({ value, rowLabel, showBorderBottom = true, theme = 'light' }
         </div>
 
         {/* Track + ticks — full width (no horizontal padding) so % matches column boxes */}
-        <div className="relative z-10 w-full pb-1 pt-8 md:pb-2 md:pt-2">
-          <div className="relative mx-auto h-12 w-full max-w-full md:h-[3.25rem]">
+        <div className="relative z-10 w-full pb-1.5 pt-9 md:pb-2.5 md:pt-2.5">
+          <div className="relative mx-auto h-14 w-full max-w-full md:h-[4rem]">
             {/* Tick marks at column centers: (i + ½) / 5 */}
             {[0, 1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="pointer-events-none absolute top-1/2 z-[5] h-[1.125rem] w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700/90 shadow-[0_0_0_1px_rgba(255,255,255,0.35)]"
+                className="pointer-events-none absolute top-1/2 z-[5] h-5 w-[2px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700/90 shadow-[0_0_0_1px_rgba(255,255,255,0.35)]"
                 style={{ left: `${((i + 0.5) / 5) * 100}%` }}
                 aria-hidden
               />
@@ -137,7 +137,7 @@ function SliderRow({ value, rowLabel, showBorderBottom = true, theme = 'light' }
               style={{ left: `${thumbLeftPct}%` }}
               aria-label={`${rowLabel} position ${value} of 5`}
             >
-              <div className="box-border h-7 w-7 rounded-full border-[3px] border-black bg-white shadow-[0_1px_0_rgba(255,255,255,0.35)_inset] sm:h-8 sm:w-8" />
+              <div className="box-border h-9 w-9 rounded-full border-[3px] border-black bg-white shadow-[0_1px_0_rgba(255,255,255,0.35)_inset] sm:h-10 sm:w-10" />
             </div>
           </div>
         </div>
@@ -171,23 +171,24 @@ export function DebateSliderGrid({
   }, [panelists, rowLabels])
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-[min(100%,90rem)]">
       {/* Prompt — large, centered */}
       <div
-        className={`mb-8 flex w-full justify-center px-3 sm:px-4 ${
+        className={`mb-10 flex w-full justify-center px-2 sm:px-4 ${
           promptBoxHidden ? 'pointer-events-none opacity-0' : ''
         }`}
         aria-hidden={promptBoxHidden}
       >
         <PromptBox
           cardRef={promptBoxCardRef}
+          maxWidthClass="w-full max-w-[min(100%,85rem)]"
           innerClassName={prompt?.trim() ? promptInnerClassName : ''}
           bodyClassName={prompt?.trim() ? promptBodyClassName : ''}
           variant={isDark ? 'dark' : 'light'}
         >
           {prompt?.trim() ? prompt : (
             <span
-              className={`text-lg font-normal md:text-xl ${
+              className={`text-xl font-normal md:text-2xl ${
                 isDark ? 'text-slate-400' : 'text-slate-500/95'
               }`}
             >
@@ -214,19 +215,19 @@ export function DebateSliderGrid({
       ) : null}
 
       {/* Table — centered, labels outside the card */}
-      <div className="flex w-full justify-center px-3 sm:px-4">
-        <div className="relative w-full max-w-6xl">
+      <div className="flex w-full justify-center px-2 sm:px-4">
+        <div className="relative w-full max-w-[min(100%,90rem)]">
           {/* Desktop row labels in the left margin (not part of the table card) */}
-          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-3 hidden w-[15rem] flex-col items-end md:flex lg:mr-5 lg:w-[17rem]">
+          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-2 hidden w-[17rem] flex-col items-end md:flex lg:mr-6 lg:w-[19rem]">
             {/* Spacer matches the table header row height (incl. two-line “Strongly / Agree”) */}
-            <div className="min-h-[6.25rem] shrink-0 sm:min-h-[6.75rem]" aria-hidden />
+            <div className="min-h-[7.25rem] shrink-0 sm:min-h-[8rem]" aria-hidden />
             {labels.map((label, i) => (
               <div
                 key={PANEL_VISUALS[i].key}
-                className="flex min-h-[6rem] items-center justify-end sm:min-h-[6.75rem]"
+                className="flex min-h-[7.5rem] items-center justify-end sm:min-h-[8.25rem]"
               >
                 <span
-                  className={`text-right text-base font-semibold uppercase leading-tight tracking-[0.14em] sm:text-lg sm:tracking-[0.12em] ${
+                  className={`text-right text-lg font-semibold uppercase leading-tight tracking-[0.12em] sm:text-xl md:text-2xl sm:tracking-[0.11em] ${
                     isDark ? 'text-slate-100' : 'text-slate-800'
                   }`}
                 >
@@ -252,7 +253,7 @@ export function DebateSliderGrid({
               {SCALE_COLUMNS.map((col) => (
                 <div
                   key={col.id}
-                  className={`relative flex min-h-[6.25rem] flex-col items-center justify-center border-r px-1 py-3 text-center last:border-r-0 sm:min-h-[6.75rem] sm:px-2 sm:py-4 ${
+                  className={`relative flex min-h-[7.25rem] flex-col items-center justify-center border-r px-1.5 py-3.5 text-center last:border-r-0 sm:min-h-[8rem] sm:px-3 sm:py-5 ${
                     isDark ? 'border-slate-600/70' : 'border-slate-400/80'
                   }`}
                 >
