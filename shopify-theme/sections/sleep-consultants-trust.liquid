@@ -136,7 +136,7 @@
   .sleep-trust__inner {
     max-width: min(1120px, 100%);
     margin: 0 auto;
-    padding: clamp(2.5rem, 5vw, 3.5rem) var(--page-margin, 1.25rem) clamp(2.75rem, 6vw, 4rem);
+    padding: var(--section-space-y, clamp(3.5rem, 8vw, 7rem)) var(--page-margin, 1.25rem) var(--section-space-y, clamp(3.5rem, 8vw, 7rem));
   }
 
   .sleep-trust__card-svg .sleep-trust__icon-line {
@@ -192,8 +192,8 @@
   }
 
   .sleep-trust__heading {
-    margin: 0 0 0.65rem;
-    font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+    margin: 0 0 0.85rem;
+    font-size: clamp(1.75rem, 3.8vw, 2.5rem);
     font-weight: 700;
     letter-spacing: -0.02em;
     text-align: center;
@@ -202,20 +202,20 @@
   }
 
   .sleep-trust__subheading {
-    margin: 0 auto 2rem;
-    max-width: 38rem;
+    margin: 0 auto 2.5rem;
+    max-width: 40rem;
     text-align: center;
-    font-size: 1rem;
+    font-size: clamp(1.05rem, 2vw, 1.2rem);
     font-weight: 400;
-    line-height: 1.65;
+    line-height: 1.7;
     color: #525252;
   }
 
   .sleep-trust__grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: clamp(1.25rem, 2.5vw, 1.75rem);
-    margin-bottom: clamp(2rem, 5vw, 2.75rem);
+    gap: clamp(1.5rem, 3vw, 2.25rem);
+    margin-bottom: clamp(2.5rem, 6vw, 3.5rem);
   }
 
   @media (max-width: 900px) {
@@ -244,7 +244,7 @@
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 22px;
-    padding: clamp(1.85rem, 3.5vw, 2.35rem) 1.35rem 2rem;
+    padding: clamp(2.1rem, 4vw, 2.85rem) 1.5rem 2.25rem;
     text-align: center;
     box-shadow:
       0 2px 4px rgba(15, 23, 42, 0.04),
@@ -274,8 +274,8 @@
   }
 
   .sleep-trust__card-title {
-    margin: 0 0 0.65rem;
-    font-size: clamp(1rem, 1.8vw, 1.125rem);
+    margin: 0 0 0.75rem;
+    font-size: clamp(1.08rem, 2vw, 1.22rem);
     font-weight: 700;
     letter-spacing: -0.015em;
     line-height: 1.25;
@@ -284,9 +284,9 @@
 
   .sleep-trust__card-text {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 400;
-    line-height: 1.65;
+    line-height: 1.68;
     color: #525252;
   }
 

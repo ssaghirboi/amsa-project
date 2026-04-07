@@ -9,6 +9,13 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  font-size: 112.5%;
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 106.25%;
+  }
 }
 
 body {

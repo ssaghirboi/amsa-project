@@ -95,7 +95,7 @@
     background-color: #fff;
     color: #1a1a1a;
     overflow: hidden;
-    padding: 28px 0;
+    padding: clamp(2rem, 4vw, 2.75rem) 0;
     border-top: 1px solid #eee;
     border-bottom: 1px solid #eee;
   }
@@ -123,11 +123,11 @@
   .badge-marquee__item {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    font-size: 20px;
+    gap: 0.75rem;
+    font-size: clamp(1.15rem, 2.5vw, 1.45rem);
     font-weight: 500;
-    letter-spacing: 0.5px;
-    padding: 0 1.5rem;
+    letter-spacing: 0.04em;
+    padding: 0 1.85rem;
   }
 
   .badge-marquee__dot {
