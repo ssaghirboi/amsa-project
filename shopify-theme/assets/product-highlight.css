@@ -306,7 +306,7 @@
 
 .ph-picker__group--swatches {
   margin-top: 0.25rem;
-  padding-top: 1rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--ph-border);
 }
 
@@ -353,7 +353,7 @@
 }
 
 .ph-picker__selected {
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.75rem;
   font-size: 0.9375rem;
   line-height: 1.45;
   color: var(--color-foreground);

@@ -18,12 +18,15 @@
         "review_count": "312",
         "bundle_label": "Bundle and Save",
         "bundle_product_1": "therizeband",
+        "bundle_fallback_handle_1": "therizeband",
         "bundle_qty_override_1": "",
         "bundle_savings_1": "",
         "bundle_product_2": "",
+        "bundle_fallback_handle_2": "",
         "bundle_qty_override_2": "",
         "bundle_savings_2": "",
         "bundle_product_3": "",
+        "bundle_fallback_handle_3": "",
         "bundle_qty_override_3": "",
         "bundle_savings_3": ""
       }

@@ -95,9 +95,8 @@
     {% endfor %}
 
     <div class="ph-picker__group ph-picker__group--swatches" data-option-position="{{ swatch_option.position }}">
-      <div class="ph-picker__label">{{ swatch_option.name }}</div>
       <p class="ph-picker__selected" aria-live="polite">
-        <span class="ph-picker__selected-prefix">Selected {{ swatch_option.name | downcase }}:</span>
+        <span class="ph-picker__selected-prefix">Selected {{ swatch_option.name | capitalize }}:</span>
         <strong class="ph-picker__selected-value" data-ph-selected-swatch>{{ selected_swatch_value }}</strong>
       </p>
       <div class="ph-picker__swatches" role="group" aria-label="{{ swatch_option.name }}">

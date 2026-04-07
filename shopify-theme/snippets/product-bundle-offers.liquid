@@ -1,11 +1,29 @@
 {% comment %}
-  Renders nested "Bundle and Save" buttons. Expects bundle_* settings on the parent section (e.g. product).
+  Renders nested "Bundle and Save" buttons. Expects bundle_* settings on the parent section.
+  Uses product-handle fallbacks when the product pickers are empty (common after theme editor saves).
 {% endcomment %}
 
-{% assign bundle_1 = section.settings.bundle_product_1 %}
-{% assign bundle_2 = section.settings.bundle_product_2 %}
-{% assign bundle_3 = section.settings.bundle_product_3 %}
-{% assign scope_id = section.id %}
+{% liquid
+  assign bundle_1 = section.settings.bundle_product_1
+  assign fh1 = section.settings.bundle_fallback_handle_1 | strip
+  if bundle_1 == blank and fh1 != blank
+    assign bundle_1 = all_products[fh1]
+  endif
+
+  assign bundle_2 = section.settings.bundle_product_2
+  assign fh2 = section.settings.bundle_fallback_handle_2 | strip
+  if bundle_2 == blank and fh2 != blank
+    assign bundle_2 = all_products[fh2]
+  endif
+
+  assign bundle_3 = section.settings.bundle_product_3
+  assign fh3 = section.settings.bundle_fallback_handle_3 | strip
+  if bundle_3 == blank and fh3 != blank
+    assign bundle_3 = all_products[fh3]
+  endif
+
+  assign scope_id = section.id
+%}
 
 {% if bundle_1 != blank or bundle_2 != blank or bundle_3 != blank %}
   <div class="product-bundles" id="product-bundles-{{ scope_id }}">
@@ -116,7 +134,7 @@
   <div class="product-bundles product-bundles--placeholder" id="product-bundles-{{ scope_id }}">
     <p class="product-bundles__placeholder-title">Bundle and Save</p>
     <p class="product-bundles__placeholder-hint">
-      In the Product section settings, set <strong>Bundle product 1</strong> (and 2–3 if you like) to show add-to-cart buttons under this form.
+      Pick a product in <strong>Bundle product 1–3</strong>, or set a <strong>fallback handle</strong> (e.g. <code>therizeband</code>) so bundles show even if the picker resets.
     </p>
   </div>
 {% endif %}
