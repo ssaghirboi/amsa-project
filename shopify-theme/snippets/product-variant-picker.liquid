@@ -30,6 +30,18 @@
     assign swatch_option = product.options_with_values.first
   endif
 
+  assign selected_swatch_value = ''
+  if swatch_option != nil
+    case swatch_option_index
+      when 1
+        assign selected_swatch_value = current_variant.option1
+      when 2
+        assign selected_swatch_value = current_variant.option2
+      when 3
+        assign selected_swatch_value = current_variant.option3
+    endcase
+  endif
+
   assign picker_id = 'ph-picker-' | append: section_id
 %}
 
@@ -38,6 +50,7 @@
   class="ph-picker"
   data-ph-picker
   data-money-format="{{ shop.money_format | escape }}"
+  {% if swatch_option != nil %}data-swatch-option-position="{{ swatch_option.position }}"{% endif %}
 >
   <script type="application/json" data-product-json>
     {{ product | json }}
@@ -83,6 +96,10 @@
 
     <div class="ph-picker__group ph-picker__group--swatches" data-option-position="{{ swatch_option.position }}">
       <div class="ph-picker__label">{{ swatch_option.name }}</div>
+      <p class="ph-picker__selected" aria-live="polite">
+        <span class="ph-picker__selected-prefix">Selected {{ swatch_option.name | downcase }}:</span>
+        <strong class="ph-picker__selected-value" data-ph-selected-swatch>{{ selected_swatch_value }}</strong>
+      </p>
       <div class="ph-picker__swatches" role="group" aria-label="{{ swatch_option.name }}">
         {% for value in swatch_option.values %}
           {% assign swatch_variant = nil %}
@@ -172,10 +189,10 @@
           >
             {% if swatch_img %}
               <img
-                src="{{ swatch_img | image_url: width: 180 }}"
+                src="{{ swatch_img | image_url: width: 400 }}"
                 alt=""
-                width="180"
-                height="180"
+                width="400"
+                height="400"
                 loading="lazy"
               >
             {% else %}

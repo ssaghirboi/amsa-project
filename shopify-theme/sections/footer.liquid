@@ -112,13 +112,6 @@
 
   <div class="site-footer__bar">
     <div class="site-footer__bar-inner">
-      {% if section.settings.show_payment_icons %}
-        <div class="site-footer__payments" role="list">
-          {% for type in shop.enabled_payment_types %}
-            <span class="site-footer__payment-badge" role="listitem">{{ type | payment_type_svg_tag }}</span>
-          {% endfor %}
-        </div>
-      {% endif %}
       <p class="site-footer__copyright">
         &copy; {{ 'now' | date: '%Y' }}, {{ shop.name }}. {{ section.settings.copyright_suffix }}
         {% if section.settings.show_powered_by %}
@@ -355,33 +348,6 @@
     text-align: center;
   }
 
-  .site-footer__payments {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 0.65rem 1rem;
-    margin-bottom: 1.35rem;
-  }
-
-  .site-footer__payment-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 2.5rem;
-    padding: 0.35rem 0.85rem;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.12);
-  }
-
-  .site-footer__payment-badge svg {
-    height: 28px;
-    width: auto;
-    max-width: 52px;
-    display: block;
-  }
-
   .site-footer__copyright {
     margin: 0;
     font-size: 0.8rem;
@@ -553,12 +519,6 @@
     {
       "type": "header",
       "content": "Bottom bar"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_payment_icons",
-      "label": "t:labels.show_payment_icons",
-      "default": true
     },
     {
       "type": "text",

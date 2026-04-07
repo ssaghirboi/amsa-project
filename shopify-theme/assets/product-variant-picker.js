@@ -119,6 +119,14 @@
       }
     });
 
+    var swatchPos = parseInt(root.getAttribute('data-swatch-option-position'), 10);
+    if (!Number.isNaN(swatchPos) && swatchPos > 0) {
+      var swatchLabel = root.querySelector('[data-ph-selected-swatch]');
+      if (swatchLabel) {
+        swatchLabel.textContent = selectionValue(selections, swatchPos);
+      }
+    }
+
     var hidden = root.querySelector('[data-variant-id-input]');
     if (hidden) hidden.value = String(variant.id);
 

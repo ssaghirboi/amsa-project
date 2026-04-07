@@ -32,7 +32,6 @@
         "newsletter_placeholder": "Email",
         "newsletter_button": "Sign up",
         "newsletter_success": "Thanks for subscribing.",
-        "show_payment_icons": true,
         "copyright_suffix": "All rights reserved.",
         "show_powered_by": true,
         "scroll_top_label": "Back to top"
