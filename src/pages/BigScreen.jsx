@@ -53,7 +53,7 @@ function RevealPromptChars({ text, visibleCount, className = '' }) {
       {chars.map((ch, i) => (
         <span
           key={`${i}-${ch}`}
-          className={i < visibleCount ? 'text-slate-900' : 'text-transparent'}
+          className={i < visibleCount ? 'text-slate-100' : 'text-transparent'}
           aria-hidden={i >= visibleCount}
         >
           {ch}
@@ -536,7 +536,7 @@ export default function BigScreen() {
   )
 
   const qaSlideshowContent = (
-    <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-800">
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-200">
       {qaSlideshowIndex !== QA_SLIDE_COUNT - 1 ? (
         <div className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-20 -translate-x-1/2 drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]">
           <EventBranding variant="presentationCorner" className="shrink-0" />
@@ -549,7 +549,7 @@ export default function BigScreen() {
       {qaSlideshowIndex === 0 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-6 pt-[clamp(6.5rem,18vh,11rem)]">
           <div className="flex flex-col items-center gap-10 sm:gap-12">
-            <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
+            <h1 className="max-w-4xl text-balance text-center text-4xl font-semibold tracking-tight text-slate-100 sm:text-5xl md:text-6xl lg:text-7xl">
               {qaSlideshowSlides[0]?.title ?? ''}
             </h1>
             <img
@@ -562,17 +562,17 @@ export default function BigScreen() {
         </div>
       ) : qaSlideshowIndex === 1 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-8 pt-[clamp(6.5rem,18vh,11rem)] text-center">
-          <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="max-w-4xl text-balance text-4xl font-semibold tracking-tight text-slate-100 sm:text-5xl md:text-6xl lg:text-7xl">
             {qaSlideshowSlides[1]?.title ?? ''}
           </h1>
-          <p className="mt-5 max-w-2xl text-xl text-slate-600 sm:mt-7 sm:text-2xl md:text-3xl lg:text-4xl">
+          <p className="mt-5 max-w-2xl text-xl text-slate-400 sm:mt-7 sm:text-2xl md:text-3xl lg:text-4xl">
             {qaSlideshowSlides[1]?.subtitle ?? ''}
           </p>
         </div>
       ) : qaSlideshowIndex === 2 ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-8 pt-[clamp(6.5rem,18vh,11rem)]">
           <div className="flex flex-col items-center gap-8 sm:gap-10">
-            <h1 className="max-w-4xl text-balance text-center text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl md:text-5xl lg:text-6xl">
+            <h1 className="max-w-4xl text-balance text-center text-3xl font-semibold tracking-tight text-slate-100 sm:text-4xl md:text-5xl lg:text-6xl">
               {qaSlideshowSlides[2]?.title ?? ''}
             </h1>
             <img
@@ -587,7 +587,7 @@ export default function BigScreen() {
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))] sm:pb-12">
           <div className="flex max-w-[min(96vw,48rem)] flex-col items-center">
             <EventBranding variant="presentationHero" centered className="w-full shrink-0" />
-            <p className="mt-6 max-w-2xl text-balance text-center text-xl font-medium tracking-wide text-slate-600 sm:mt-8 sm:text-2xl md:text-3xl lg:text-4xl">
+            <p className="mt-6 max-w-2xl text-balance text-center text-xl font-medium tracking-wide text-slate-400 sm:mt-8 sm:text-2xl md:text-3xl lg:text-4xl">
               {qaSlideshowSlides[3]?.title ?? ''}
             </p>
           </div>
@@ -598,7 +598,7 @@ export default function BigScreen() {
   )
 
   const slideshowContent = (
-    <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-800">
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-200">
       <div
         key={slideshowIndex}
         className="presentation-slide-enter relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8"
@@ -609,7 +609,7 @@ export default function BigScreen() {
             aria-hidden={!logoSlide.tagline}
           >
             {logoSlide.tagline ? (
-              <p className="text-2xl font-medium tracking-wide text-slate-600 sm:text-3xl md:text-4xl lg:text-5xl">
+              <p className="text-2xl font-medium tracking-wide text-slate-400 sm:text-3xl md:text-4xl lg:text-5xl">
                 {logoSlide.tagline}
               </p>
             ) : null}
@@ -619,11 +619,11 @@ export default function BigScreen() {
             key={`segment-${logoSlide.id ?? slideshowIndex}`}
             className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(6rem,16vh,10rem)] text-center sm:pt-[clamp(6rem,14vh,9rem)]"
           >
-            <h1 className="max-w-[min(100%,96vw)] text-balance text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-900">
+            <h1 className="max-w-[min(100%,96vw)] text-balance text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-100">
               {logoSlide.title}
             </h1>
             {String(logoSlide.subtitle ?? '').trim() !== '' ? (
-              <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-600 sm:mt-6 md:mt-7">
+              <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-400 sm:mt-6 md:mt-7">
                 {logoSlide.subtitle}
               </p>
             ) : null}
@@ -635,7 +635,7 @@ export default function BigScreen() {
 
   const debateContent = (
     <>
-      <div className="relative min-h-screen text-slate-800">
+      <div className="relative min-h-screen text-slate-200">
         {/* Invisible twin for hero→strip transition; matches on-screen top-centre logo slot */}
         <div
           ref={eventHeaderLogoMeasureRef}
@@ -652,6 +652,7 @@ export default function BigScreen() {
           }}
         >
           <DebateSliderGrid
+            theme="dark"
             prompt={prompt}
             panelists={panelists}
             error={error}
@@ -666,7 +667,7 @@ export default function BigScreen() {
       {showOverlay ? (
         <>
           <div
-            className="fixed inset-0 z-50 bg-slate-100/90 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-slate-950/88 backdrop-blur-sm"
             aria-hidden
           />
           <div
@@ -677,6 +678,7 @@ export default function BigScreen() {
             <div className="flex min-h-0 w-full flex-1 flex-col justify-center min-h-[min(88dvh,920px)]">
             <PromptBox
               key={prompt}
+              variant="dark"
               cardRef={introCardRef}
               maxWidthClass="max-w-none"
               innerClassName={FULLSCREEN_PROMPT_INNER}
@@ -720,13 +722,13 @@ export default function BigScreen() {
 
   return (
     <div
-      className="relative min-h-screen text-slate-800"
+      className="relative min-h-screen text-slate-200"
       style={{
-        backgroundColor: '#f8fafc',
+        backgroundColor: '#0f172a',
         backgroundImage: `
-          radial-gradient(ellipse 110% 55% at 50% 105%, rgba(148, 163, 184, 0.22) 0%, transparent 52%),
-          radial-gradient(ellipse 70% 40% at 50% -5%, rgba(203, 213, 225, 0.35) 0%, transparent 48%),
-          linear-gradient(180deg, #f8fafc 0%, #f1f5f9 38%, #e8eef5 72%, #f8fafc 100%)
+          radial-gradient(ellipse 110% 55% at 50% 105%, rgba(59, 130, 246, 0.12) 0%, transparent 52%),
+          radial-gradient(ellipse 70% 40% at 50% -5%, rgba(99, 102, 241, 0.14) 0%, transparent 48%),
+          linear-gradient(180deg, #020617 0%, #0f172a 38%, #1e293b 72%, #0f172a 100%)
         `,
         backgroundAttachment: 'fixed',
       }}
@@ -742,14 +744,14 @@ export default function BigScreen() {
           className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] pointer-events-none"
           aria-hidden
         >
-          <div className="rounded-2xl bg-white/95 shadow-[0_10px_28px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 p-4">
-            <div className="text-center text-sm font-semibold tracking-tight text-slate-900">
+          <div className="rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20">
+            <div className="text-center text-sm font-semibold tracking-tight text-slate-100">
               Share your thoughts
             </div>
             <img
               src={qrDoesGodExist}
               alt=""
-              className="mt-2.5 h-48 w-48 rounded-xl bg-white sm:h-52 sm:w-52"
+              className="mt-2.5 h-48 w-48 rounded-xl bg-slate-800 sm:h-52 sm:w-52"
               draggable={false}
             />
           </div>

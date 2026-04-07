@@ -16,8 +16,10 @@ const PANEL_VISUALS = [
  * Stored values stay 1 = Strongly Agree … 5 = Strongly Disagree; thumb position is mirrored so
  * agree sits on the green side and disagree on the red side.
  */
-const HEADER_LABEL_CLASS =
+const HEADER_LABEL_CLASS_LIGHT =
   'text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-800 sm:text-lg sm:tracking-[0.12em]'
+const HEADER_LABEL_CLASS_DARK =
+  'text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-100 sm:text-lg sm:tracking-[0.12em]'
 
 const SCALE_COLUMNS = [
   {
@@ -61,23 +63,28 @@ function valueToThumbPercent(value) {
   return ((colFromLeft + 0.5) / 5) * 100
 }
 
-function SliderRow({ value, rowLabel, showBorderBottom = true }) {
+function SliderRow({ value, rowLabel, showBorderBottom = true, theme = 'light' }) {
   const thumbLeftPct = valueToThumbPercent(value)
+  const isDark = theme === 'dark'
 
   return (
     <div className="group relative min-h-[6rem] w-full sm:min-h-[6.75rem]">
       <div
         className={`relative flex min-h-[6rem] w-full items-center sm:min-h-[6.75rem] ${
-          showBorderBottom ? 'border-b border-slate-500/75' : ''
+          showBorderBottom ? (isDark ? 'border-b border-slate-600/70' : 'border-b border-slate-500/75') : ''
         }`}
       >
         {/* Mobile: centered above track (desktop labels sit in left margin beside table) */}
         <div className="pointer-events-none absolute left-0 right-0 top-1.5 z-20 flex justify-center md:hidden">
           <span
-            className="text-base font-semibold uppercase tracking-[0.16em] text-slate-800 sm:text-lg"
-            style={{
-              textShadow: '0 1px 0 rgba(255,255,255,0.8)',
-            }}
+            className={`text-base font-semibold uppercase tracking-[0.16em] sm:text-lg ${
+              isDark ? 'text-slate-100' : 'text-slate-800'
+            }`}
+            style={
+              isDark
+                ? { textShadow: '0 1px 3px rgba(0,0,0,0.85)' }
+                : { textShadow: '0 1px 0 rgba(255,255,255,0.8)' }
+            }
           >
             {rowLabel}
           </span>
@@ -88,7 +95,9 @@ function SliderRow({ value, rowLabel, showBorderBottom = true }) {
           {SCALE_COLUMNS.map((col) => (
             <div
               key={col.id}
-              className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r border-slate-500/65 last:border-r-0`}
+              className={`relative flex-1 bg-gradient-to-b ${col.bar} ${col.edge} border-r last:border-r-0 ${
+                isDark ? 'border-slate-700/75' : 'border-slate-500/65'
+              }`}
             >
               {/* Fine mesh */}
               <div
@@ -151,7 +160,12 @@ export function DebateSliderGrid({
   /** Match BigScreen intro PromptBox sizing for FLIP alignment (e.g. fullscreen clamp classes) */
   promptInnerClassName = '',
   promptBodyClassName = '',
+  /** BigScreen auditorium display */
+  theme = 'light',
 }) {
+  const isDark = theme === 'dark'
+  const headerLabelClass = isDark ? HEADER_LABEL_CLASS_DARK : HEADER_LABEL_CLASS_LIGHT
+
   const labels = useMemo(() => {
     return panelists.map((_, i) => rowLabels[i] ?? `Panel ${i + 1}`)
   }, [panelists, rowLabels])
@@ -169,9 +183,14 @@ export function DebateSliderGrid({
           cardRef={promptBoxCardRef}
           innerClassName={prompt?.trim() ? promptInnerClassName : ''}
           bodyClassName={prompt?.trim() ? promptBodyClassName : ''}
+          variant={isDark ? 'dark' : 'light'}
         >
           {prompt?.trim() ? prompt : (
-            <span className="text-lg font-normal text-slate-500/95 md:text-xl">
+            <span
+              className={`text-lg font-normal md:text-xl ${
+                isDark ? 'text-slate-400' : 'text-slate-500/95'
+              }`}
+            >
               Waiting for the next prompt…
             </span>
           )}
@@ -183,7 +202,13 @@ export function DebateSliderGrid({
         style={{ opacity: tableOpacity }}
       >
       {error ? (
-        <div className="mb-6 rounded-xl border border-red-300/60 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div
+          className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
+            isDark
+              ? 'border-red-500/45 bg-red-950/55 text-red-200'
+              : 'border-red-300/60 bg-red-50 text-red-800'
+          }`}
+        >
           {error}
         </div>
       ) : null}
@@ -200,7 +225,11 @@ export function DebateSliderGrid({
                 key={PANEL_VISUALS[i].key}
                 className="flex min-h-[6rem] items-center justify-end sm:min-h-[6.75rem]"
               >
-                <span className="text-right text-base font-semibold uppercase leading-tight tracking-[0.14em] text-slate-800 sm:text-lg sm:tracking-[0.12em]">
+                <span
+                  className={`text-right text-base font-semibold uppercase leading-tight tracking-[0.14em] sm:text-lg sm:tracking-[0.12em] ${
+                    isDark ? 'text-slate-100' : 'text-slate-800'
+                  }`}
+                >
                   {label}
                 </span>
               </div>
@@ -208,21 +237,33 @@ export function DebateSliderGrid({
           </div>
 
           {/* Rounded table card only (no labels inside) */}
-          <div className="w-full overflow-hidden rounded-2xl border border-slate-400/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]">
-            <div className="relative grid grid-cols-5 gap-0 border-b border-slate-500/70 bg-slate-100/95">
+          <div
+            className={`w-full overflow-hidden rounded-2xl border shadow-[0_24px_80px_rgba(0,0,0,0.35)] ${
+              isDark
+                ? 'border-slate-600/75 bg-slate-950/90 [box-shadow:0_24px_80px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.05)]'
+                : 'border-slate-400/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)]'
+            }`}
+          >
+            <div
+              className={`relative grid grid-cols-5 gap-0 border-b ${
+                isDark ? 'border-slate-600/70 bg-slate-800/95' : 'border-slate-500/70 bg-slate-100/95'
+              }`}
+            >
               {SCALE_COLUMNS.map((col) => (
                 <div
                   key={col.id}
-                  className="relative flex min-h-[6.25rem] flex-col items-center justify-center border-r border-slate-400/80 px-1 py-3 text-center last:border-r-0 sm:min-h-[6.75rem] sm:px-2 sm:py-4"
+                  className={`relative flex min-h-[6.25rem] flex-col items-center justify-center border-r px-1 py-3 text-center last:border-r-0 sm:min-h-[6.75rem] sm:px-2 sm:py-4 ${
+                    isDark ? 'border-slate-600/70' : 'border-slate-400/80'
+                  }`}
                 >
                   {col.headerLines ? (
-                    <span className={`block w-full text-balance ${HEADER_LABEL_CLASS}`}>
+                    <span className={`block w-full text-balance ${headerLabelClass}`}>
                       {col.headerLines[0]}
                       <br />
                       {col.headerLines[1]}
                     </span>
                   ) : (
-                    <span className={`block w-full max-w-[min(100%,11rem)] text-balance ${HEADER_LABEL_CLASS}`}>
+                    <span className={`block w-full max-w-[min(100%,11rem)] text-balance ${headerLabelClass}`}>
                       {col.label}
                     </span>
                   )}
@@ -245,6 +286,7 @@ export function DebateSliderGrid({
                   value={value}
                   rowLabel={labels[i]}
                   showBorderBottom={i < panelists.length - 1}
+                  theme={theme}
                 />
               ))}
             </div>
