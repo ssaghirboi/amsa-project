@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { DebateSliderGrid } from '../components/DebateSliderGrid'
 import { PromptBox } from '../components/PromptBox'
 import { EventBranding } from '../components/EventBranding'
+import { PresentationJubileeOpener } from '../components/PresentationJubileeOpener'
 import qrDoesGodExist from '../assets/qr-doesgodexist.png'
 import qrHumanityFirstUcalgary from '../assets/qr-humanity-first-ucalgary.png'
 import {
@@ -494,6 +495,7 @@ export default function BigScreen() {
         presentationSlides.length || PRESENTATION_SLIDE_COUNT,
       )
     ] ?? presentationSlides[0]
+  const isJubileeOpener = logoSlide.kind === 'jubileeSigns'
   const cornerLayout =
     logoSlide.kind === 'segment' ||
     (logoSlide.title != null && logoSlide.subtitle != null)
@@ -601,9 +603,15 @@ export default function BigScreen() {
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-200">
       <div
         key={slideshowIndex}
-        className="presentation-slide-enter relative flex min-h-0 flex-1 flex-col px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8"
+        className={`presentation-slide-enter relative flex min-h-0 flex-1 flex-col ${
+          isJubileeOpener
+            ? 'px-0 pb-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-3 sm:pb-6'
+            : 'px-4 pb-8 pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8'
+        }`}
       >
-        {!cornerLayout ? (
+        {isJubileeOpener ? (
+          <PresentationJubileeOpener slide={logoSlide} />
+        ) : !cornerLayout ? (
           <div
             className="presentation-hero-text absolute left-1/2 top-[calc(38vh+min(10rem,18vh))] z-10 w-full max-w-3xl -translate-x-1/2 px-4 text-center sm:top-[calc(38vh+min(11rem,20vh))]"
             aria-hidden={!logoSlide.tagline}
@@ -733,7 +741,7 @@ export default function BigScreen() {
         backgroundAttachment: 'fixed',
       }}
     >
-      {!qaSlideshowActive ? fixedLogo : null}
+      {!qaSlideshowActive && !(slideshowActive && isJubileeOpener) ? fixedLogo : null}
       {qaSlideshowActive
         ? qaSlideshowContent
         : slideshowActive
