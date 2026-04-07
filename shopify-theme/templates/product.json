@@ -11,14 +11,13 @@
   "sections": {
     "main": {
       "type": "product",
-      "settings": {}
-    },
-    "bundle-offers": {
-      "type": "bundle-offers",
       "settings": {
-        "section_heading": "",
+        "button_text": "Add to cart",
+        "subtext": "Free shipping",
+        "show_rating": true,
+        "review_count": "312",
         "bundle_label": "Bundle and Save",
-        "bundle_product_1": "",
+        "bundle_product_1": "therizeband",
         "bundle_qty_override_1": "",
         "bundle_savings_1": "",
         "bundle_product_2": "",
@@ -31,7 +30,6 @@
     }
   },
   "order": [
-    "main",
-    "bundle-offers"
+    "main"
   ]
 }

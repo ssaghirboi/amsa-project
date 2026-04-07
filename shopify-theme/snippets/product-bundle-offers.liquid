@@ -1,0 +1,122 @@
+{% comment %}
+  Renders nested "Bundle and Save" buttons. Expects bundle_* settings on the parent section (e.g. product).
+{% endcomment %}
+
+{% assign bundle_1 = section.settings.bundle_product_1 %}
+{% assign bundle_2 = section.settings.bundle_product_2 %}
+{% assign bundle_3 = section.settings.bundle_product_3 %}
+{% assign scope_id = section.id %}
+
+{% if bundle_1 != blank or bundle_2 != blank or bundle_3 != blank %}
+  <div class="product-bundles" id="product-bundles-{{ scope_id }}">
+    {% for i in (1..3) %}
+      {% case i %}
+        {% when 1 %}
+          {% assign bp = bundle_1 %}
+          {% assign savings = section.settings.bundle_savings_1 %}
+          {% assign qty_override = section.settings.bundle_qty_override_1 %}
+        {% when 2 %}
+          {% assign bp = bundle_2 %}
+          {% assign savings = section.settings.bundle_savings_2 %}
+          {% assign qty_override = section.settings.bundle_qty_override_2 %}
+        {% when 3 %}
+          {% assign bp = bundle_3 %}
+          {% assign savings = section.settings.bundle_savings_3 %}
+          {% assign qty_override = section.settings.bundle_qty_override_3 %}
+      {% endcase %}
+
+      {% if bp != blank %}
+        {% assign v0 = bp.selected_or_first_available_variant %}
+        <div class="bundle-offer">
+          <p class="bundle-offer__eyebrow">{{ section.settings.bundle_label }}</p>
+
+          {% if bp.variants.size > 1 %}
+            <label class="visually-hidden" for="bundle-variant-{{ scope_id }}-{{ i }}">{{ bp.title }} — option</label>
+            <select
+              id="bundle-variant-{{ scope_id }}-{{ i }}"
+              class="bundle-offer__variant-select"
+              data-bundle="{{ i }}"
+            >
+              {% for variant in bp.variants %}
+                <option
+                  value="{{ variant.id }}"
+                  {% if variant.id == v0.id %}selected{% endif %}
+                  {% unless variant.available %}disabled{% endunless %}
+                >
+                  {{ variant.title }}{% unless variant.available %} — Sold out{% endunless %}
+                </option>
+              {% endfor %}
+            </select>
+          {% endif %}
+
+          <div class="bundle-offer__frame">
+            <form method="post" action="{{ routes.cart_add_url }}" class="bundle-offer__form">
+              <input type="hidden" name="id" value="{{ v0.id }}" data-bundle-variant-input="{{ i }}">
+              <input type="hidden" name="quantity" value="1">
+              <button
+                type="submit"
+                class="bundle-offer__submit"
+                {% unless bp.available %}disabled{% endunless %}
+              >
+                <span class="bundle-offer__inner">
+                  <span class="bundle-offer__name">{{ bp.title }}</span>
+                  <span class="bundle-offer__qty" aria-hidden="true">
+                    <span class="bundle-offer__qty-label">Quantity:</span>
+                    <span
+                      class="bundle-offer__qty-value"
+                      data-bundle-qty-display="{{ i }}"
+                      {% if qty_override != blank %}data-qty-locked="1"{% endif %}
+                    >
+                      {% if qty_override != blank %}
+                        {{ qty_override }}
+                      {% elsif v0.title != blank and v0.title != 'Default Title' %}
+                        {{ v0.title }}
+                      {% else %}
+                        1
+                      {% endif %}
+                    </span>
+                  </span>
+                </span>
+              </button>
+            </form>
+          </div>
+
+          {% if savings != blank %}
+            <p class="bundle-offer__save-tag">{{ savings }}</p>
+          {% elsif bp.compare_at_price > bp.price %}
+            <p class="bundle-offer__save-tag">
+              Save {{ bp.compare_at_price | minus: bp.price | money }}
+            </p>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <script>
+    (function () {
+      var root = document.getElementById('product-bundles-{{ scope_id }}');
+      if (!root) return;
+      root.querySelectorAll('.bundle-offer__variant-select').forEach(function (sel) {
+        var n = sel.dataset.bundle;
+        var input = root.querySelector('[data-bundle-variant-input="' + n + '"]');
+        var qtyEl = root.querySelector('[data-bundle-qty-display="' + n + '"]');
+        sel.addEventListener('change', function () {
+          if (input) input.value = sel.value;
+          var opt = sel.options[sel.selectedIndex];
+          if (qtyEl && opt && !qtyEl.hasAttribute('data-qty-locked')) {
+            var t = (opt.textContent || '').split('—')[0].trim();
+            if (t) qtyEl.textContent = t;
+          }
+        });
+      });
+    })();
+  </script>
+{% elsif request.design_mode %}
+  <div class="product-bundles product-bundles--placeholder" id="product-bundles-{{ scope_id }}">
+    <p class="product-bundles__placeholder-title">Bundle and Save</p>
+    <p class="product-bundles__placeholder-hint">
+      In the Product section settings, set <strong>Bundle product 1</strong> (and 2–3 if you like) to show add-to-cart buttons under this form.
+    </p>
+  </div>
+{% endif %}
