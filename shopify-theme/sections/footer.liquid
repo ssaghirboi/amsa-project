@@ -1,4 +1,4 @@
-<footer class="site-footer">
+<footer class="site-footer full-width">
   <div class="site-footer__main">
     <div class="site-footer__grid">
       <div class="site-footer__col site-footer__col--brand">
@@ -151,7 +151,8 @@
     background: var(--footer-bg);
     color: var(--footer-fg);
     margin-top: 0;
-    font-family: var(--font-primary--family, system-ui, sans-serif);
+    width: 100%;
+    font-family: var(--font-brand, var(--font-primary--family), system-ui, sans-serif);
   }
 
   .site-footer a {
@@ -193,9 +194,9 @@
     margin: 0 0 1rem;
     font-size: clamp(1.35rem, 2.5vw, 1.65rem);
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: var(--font-brand, var(--font-primary--family), sans-serif);
   }
 
   .site-footer__tagline {

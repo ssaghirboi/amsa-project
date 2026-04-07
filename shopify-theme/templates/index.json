@@ -193,53 +193,6 @@
         "rev-12"
       ]
     },
-    "feature-proof-grid": {
-      "type": "feature-proof-grid",
-      "settings": {
-        "eyebrow": "Built for real bedrooms",
-        "heading": "Engineered for mornings that feel effortless"
-      },
-      "blocks": {
-        "fp-1": {
-          "type": "feature",
-          "settings": {
-            "title": "Room stays at zero decibels",
-            "text": "There’s no speaker and no beep—only a vibration path that reaches you, not the air in the room. Most people still describe the bedside as effectively silent for anyone beside them.",
-            "stat_1_value": "0 dB",
-            "stat_1_label": "From the device",
-            "stat_2_value": "100%",
-            "stat_2_label": "Still & quiet"
-          }
-        },
-        "fp-2": {
-          "type": "feature",
-          "settings": {
-            "title": "Battery you can forget",
-            "text": "Expect on the order of two weeks of regular use from one charge—stretch toward twenty days on Pro hardware. When it’s time, about an hour on USB brings you back to full.",
-            "stat_1_value": "14+",
-            "stat_1_label": "Day runtime",
-            "stat_2_value": "1 hr",
-            "stat_2_label": "USB top-up"
-          }
-        },
-        "fp-3": {
-          "type": "feature",
-          "settings": {
-            "title": "Three-stage haptic wake",
-            "text": "It begins soft, then climbs through three distinct intensities so your mind can’t habituate the way it does to repeating tones. In surveys, roughly nine in ten wearers report a reliable wake on the first cycle.",
-            "stat_1_value": "3",
-            "stat_1_label": "Intensity steps",
-            "stat_2_value": "99%",
-            "stat_2_label": "Wake success"
-          }
-        }
-      },
-      "block_order": [
-        "fp-1",
-        "fp-2",
-        "fp-3"
-      ]
-    },
     "sleep-consultants-trust": {
       "type": "sleep-consultants-trust",
       "settings": {
@@ -262,15 +215,15 @@
           "settings": {
             "icon": "medal",
             "title": "Top trusted brand",
-            "text": "Chosen by sleepers who want quieter mornings without gimmicks."
+            "text": "Loved by thousands for quieter mornings and real rest."
           }
         },
         "st-2": {
           "type": "pillar",
           "settings": {
             "icon": "certificate",
-            "title": "Certified quality",
-            "text": "Materials and construction held to a standard you can feel on night one."
+            "title": "Certified product",
+            "text": "Designed for safe, effective use at home—night after night."
           }
         },
         "st-3": {
@@ -278,7 +231,7 @@
           "settings": {
             "icon": "globe",
             "title": "Fast shipping",
-            "text": "Reliable fulfillment across the USA and Canada."
+            "text": "Orders are packed and shipped within one business day."
           }
         },
         "st-4": {
@@ -286,7 +239,7 @@
           "settings": {
             "icon": "chat",
             "title": "Real results",
-            "text": "Stories from people who finally woke up on their terms."
+            "text": "Wake up clearer—stories from people who finally sleep on their terms."
           }
         }
       },
@@ -317,7 +270,6 @@
     "text-block",
     "featured-products",
     "reviews-showcase",
-    "feature-proof-grid",
     "sleep-consultants-trust"
   ]
 }
