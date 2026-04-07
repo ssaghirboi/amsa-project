@@ -25,7 +25,7 @@ export function PresentationJubileeOpener({ slide }) {
         </p>
       </header>
 
-      <div className="relative mt-2 min-h-[min(48vh,380px)] flex-1 overflow-hidden sm:mt-4 md:min-h-[min(52vh,440px)]">
+      <div className="relative mt-2 min-h-[min(48vh,380px)] flex-1 overflow-hidden px-2 sm:mt-4 sm:px-5 md:min-h-[min(52vh,440px)] md:px-8">
         {JUBILEE_OPENER_SIGNS.map((s) => (
           <img
             key={s.key}
