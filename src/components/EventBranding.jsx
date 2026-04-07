@@ -1,5 +1,12 @@
 import eventLogoSvg from '../assets/IS GOD REAL (A4).svg?url'
 
+/** Duplicate max-h-* with matching h-* so a crop wrapper can use a definite height. */
+function sizeClassWithFixedHeight(sizeClass) {
+  return sizeClass
+    .replace(/\b(sm:|md:|lg:)max-h-(\[[^\]]+\])/g, '$1max-h-$2 $1h-$2')
+    .replace(/\bmax-h-(\[[^\]]+\])/g, 'max-h-$1 h-$1')
+}
+
 /**
  * Official event logo (SVG). Height-capped so it never dominates the viewport.
  * - default: admin, audience, debate screen (compact header strip)
@@ -7,11 +14,14 @@ import eventLogoSvg from '../assets/IS GOD REAL (A4).svg?url'
  * - presentationHero: slideshow — large centered logo
  * - presentationCorner: slideshow — top-left mark (large)
  * - mc: MC dashboard — top-left logo sized to clear control row (no overlap)
+ *
+ * @param {number} [trimTop=0] — fraction of the logo height to hide from the top (e.g. 0.2 crops ~20% off the top, bottom-anchored so the rest fits the same box)
  */
 export function EventBranding({
   className = '',
   centered = false,
   variant = 'default',
+  trimTop = 0,
 }) {
   const sizeClass =
     variant === 'presentationHero'
@@ -37,6 +47,28 @@ export function EventBranding({
     ? 'mx-auto object-contain object-center'
     : 'object-contain object-top'
 
+  const trim = typeof trimTop === 'number' && trimTop > 0 && trimTop < 0.5 ? trimTop : 0
+  const trimScale = trim > 0 ? 1 / (1 - trim) : 1
+
+  const imgCropped = trim > 0 && (
+    <div
+      className={`relative shrink-0 overflow-hidden ${sizeClassWithFixedHeight(sizeClass)} ${
+        isCentered ? 'mx-auto w-full' : ''
+      }`}
+    >
+      <img
+        src={eventLogoSvg}
+        alt="Event logo"
+        className="absolute bottom-0 left-1/2 block w-full max-w-full -translate-x-1/2 object-cover object-bottom"
+        style={{ height: `${trimScale * 100}%` }}
+        decoding="async"
+        fetchPriority="high"
+        width={746}
+        height={447}
+      />
+    </div>
+  )
+
   return (
     <div
       className={`select-none leading-none ${
@@ -45,15 +77,19 @@ export function EventBranding({
           : 'flex w-fit max-w-full flex-col'
       } ${className}`}
     >
-      <img
-        src={eventLogoSvg}
-        alt="Event logo"
-        className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
-        decoding="async"
-        fetchPriority="high"
-        width={746}
-        height={447}
-      />
+      {trim > 0 ? (
+        imgCropped
+      ) : (
+        <img
+          src={eventLogoSvg}
+          alt="Event logo"
+          className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
+          decoding="async"
+          fetchPriority="high"
+          width={746}
+          height={447}
+        />
+      )}
     </div>
   )
 }
