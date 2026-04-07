@@ -12,9 +12,26 @@
     "main": {
       "type": "product",
       "settings": {}
+    },
+    "bundle-offers": {
+      "type": "bundle-offers",
+      "settings": {
+        "section_heading": "",
+        "bundle_label": "Bundle and Save",
+        "bundle_product_1": "",
+        "bundle_qty_override_1": "",
+        "bundle_savings_1": "",
+        "bundle_product_2": "",
+        "bundle_qty_override_2": "",
+        "bundle_savings_2": "",
+        "bundle_product_3": "",
+        "bundle_qty_override_3": "",
+        "bundle_savings_3": ""
+      }
     }
   },
   "order": [
-    "main"
+    "main",
+    "bundle-offers"
   ]
 }
