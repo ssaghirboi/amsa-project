@@ -9,40 +9,41 @@ import signNeutral from '../assets/IS GOD REAL (Business Card US Portrait) (2).s
 import signAgree from '../assets/IS GOD REAL (Business Card US Portrait) (3).svg?url'
 import signStronglyDisagree from '../assets/IS GOD REAL (Business Card US Portrait) (4).svg?url'
 
+/** Larger signs, anchored past the viewport edge so arms/paddles “hang off” the screen. */
 export const JUBILEE_OPENER_SIGNS = [
   {
     key: 'strongly-agree',
     label: 'Strongly Agree',
     src: signStronglyAgree,
     className:
-      'left-[2%] top-[4%] w-[min(52vw,20rem)] sm:left-[4%] sm:w-[min(46vw,22rem)] md:left-[5%] md:w-[min(42vw,24rem)] rotate-[13deg]',
+      'z-10 left-[-18%] top-[1%] w-[min(78vw,32rem)] sm:left-[-14%] sm:w-[min(72vw,36rem)] md:left-[-10%] md:w-[min(68vw,40rem)] rotate-[13deg]',
   },
   {
     key: 'disagree',
     label: 'Disagree',
     src: signDisagree,
     className:
-      'left-[0%] top-[30%] w-[min(48vw,18.5rem)] sm:left-[3%] sm:w-[min(42vw,20rem)] md:left-[4%] md:w-[min(38vw,22rem)] -rotate-[7deg]',
+      'z-10 left-[-26%] top-[28%] w-[min(74vw,30rem)] sm:left-[-20%] sm:w-[min(70vw,34rem)] md:left-[-14%] md:w-[min(66vw,38rem)] -rotate-[7deg]',
   },
   {
     key: 'neutral',
     label: 'Neutral',
     src: signNeutral,
     className:
-      'left-[3%] top-[56%] w-[min(50vw,19.5rem)] sm:left-[5%] sm:w-[min(44vw,21rem)] md:left-[6%] md:w-[min(40vw,23rem)] rotate-[5deg]',
+      'z-10 left-[-20%] top-[54%] w-[min(76vw,31rem)] sm:left-[-16%] sm:w-[min(72vw,35rem)] md:left-[-11%] md:w-[min(68vw,39rem)] rotate-[5deg]',
   },
   {
     key: 'agree',
     label: 'Agree',
     src: signAgree,
     className:
-      'right-[2%] top-[8%] w-[min(46vw,18rem)] sm:right-[4%] sm:w-[min(40vw,19rem)] md:right-[5%] md:w-[min(36vw,21rem)] -rotate-[11deg]',
+      'z-10 right-[-18%] top-[6%] w-[min(74vw,30rem)] sm:right-[-14%] sm:w-[min(70vw,34rem)] md:right-[-10%] md:w-[min(66vw,38rem)] -rotate-[11deg]',
   },
   {
     key: 'strongly-disagree',
     label: 'Strongly Disagree',
     src: signStronglyDisagree,
     className:
-      'right-[0%] top-[46%] w-[min(50vw,20rem)] sm:right-[3%] sm:w-[min(44vw,22rem)] md:right-[4%] md:w-[min(40vw,24rem)] rotate-[11deg]',
+      'z-10 right-[-24%] top-[44%] w-[min(78vw,32rem)] sm:right-[-18%] sm:w-[min(74vw,36rem)] md:right-[-12%] md:w-[min(70vw,40rem)] rotate-[11deg]',
   },
 ]
