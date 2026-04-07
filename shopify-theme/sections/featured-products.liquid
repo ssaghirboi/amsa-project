@@ -189,6 +189,8 @@
           </span>
         {% endif %}
 
+        {% render 'product-bundle-offers', section: section %}
+
         {% if section.settings.subtext != blank %}
           <p class="product-highlight__subtext">{{ section.settings.subtext }}</p>
         {% endif %}
@@ -316,6 +318,95 @@
       "id": "review_count",
       "label": "Review count (display)",
       "default": "312"
+    },
+    {
+      "type": "header",
+      "content": "Bundle and Save"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add up to three related products as quick add-to-cart bundle buttons below the main buy button."
+    },
+    {
+      "type": "text",
+      "id": "bundle_label",
+      "label": "Label above each bundle",
+      "default": "Bundle and Save"
+    },
+    {
+      "type": "header",
+      "content": "Bundle 1"
+    },
+    {
+      "type": "product",
+      "id": "bundle_product_1",
+      "label": "Product"
+    },
+    {
+      "type": "text",
+      "id": "bundle_fallback_handle_1",
+      "label": "Or use product handle (fallback)",
+      "default": "therizeband",
+      "info": "If the picker is empty after saving, this handle loads the product (from the product URL)."
+    },
+    {
+      "type": "text",
+      "id": "bundle_qty_override_1",
+      "label": "Quantity text (right side)",
+      "info": "e.g. 50. If empty, uses the variant name."
+    },
+    {
+      "type": "text",
+      "id": "bundle_savings_1",
+      "label": "Savings line (optional)"
+    },
+    {
+      "type": "header",
+      "content": "Bundle 2"
+    },
+    {
+      "type": "product",
+      "id": "bundle_product_2",
+      "label": "Product"
+    },
+    {
+      "type": "text",
+      "id": "bundle_fallback_handle_2",
+      "label": "Or use product handle (fallback)"
+    },
+    {
+      "type": "text",
+      "id": "bundle_qty_override_2",
+      "label": "Quantity text (right side)"
+    },
+    {
+      "type": "text",
+      "id": "bundle_savings_2",
+      "label": "Savings line (optional)"
+    },
+    {
+      "type": "header",
+      "content": "Bundle 3"
+    },
+    {
+      "type": "product",
+      "id": "bundle_product_3",
+      "label": "Product"
+    },
+    {
+      "type": "text",
+      "id": "bundle_fallback_handle_3",
+      "label": "Or use product handle (fallback)"
+    },
+    {
+      "type": "text",
+      "id": "bundle_qty_override_3",
+      "label": "Quantity text (right side)"
+    },
+    {
+      "type": "text",
+      "id": "bundle_savings_3",
+      "label": "Savings line (optional)"
     }
   ],
   "presets": [
