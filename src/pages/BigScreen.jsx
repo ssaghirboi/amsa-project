@@ -45,9 +45,6 @@ const TYPE_MS = 58
 /** Matches `bigscreen-prompt-handoff` duration in index.css */
 const HANDOFF_MS = 1150
 
-/** Crop top of event logo (e.g. “GOD” line) so header + content fit on screen. */
-const BIG_SCREEN_LOGO_TRIM_TOP = 0.22
-
 /** Full prompt layout with characters revealed in place (stable wrapping while typing). */
 function RevealPromptChars({ text, visibleCount, className = '' }) {
   const chars = useMemo(() => Array.from(text), [text])
@@ -528,7 +525,6 @@ export default function BigScreen() {
     >
       <EventBranding
         centered={!logoUsesCornerSlot}
-        trimTop={BIG_SCREEN_LOGO_TRIM_TOP}
         variant={
           slideshowActive && presentationOffLogoLayout === 'hero'
             ? 'presentationHero'
@@ -543,11 +539,7 @@ export default function BigScreen() {
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col pb-[max(1rem,env(safe-area-inset-bottom))] text-slate-200">
       {qaSlideshowIndex !== QA_SLIDE_COUNT - 1 ? (
         <div className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-20 -translate-x-1/2 drop-shadow-[0_2px_14px_rgba(15,23,42,0.08)]">
-          <EventBranding
-            variant="presentationCorner"
-            trimTop={BIG_SCREEN_LOGO_TRIM_TOP}
-            className="shrink-0"
-          />
+          <EventBranding variant="presentationCorner" className="shrink-0" />
         </div>
       ) : null}
       <div
@@ -594,12 +586,7 @@ export default function BigScreen() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))] sm:pb-12">
           <div className="flex max-w-[min(96vw,48rem)] flex-col items-center">
-            <EventBranding
-              variant="presentationHero"
-              centered
-              trimTop={BIG_SCREEN_LOGO_TRIM_TOP}
-              className="w-full shrink-0"
-            />
+            <EventBranding variant="presentationHero" centered className="w-full shrink-0" />
             <p className="mt-6 max-w-2xl text-balance text-center text-xl font-medium tracking-wide text-slate-400 sm:mt-8 sm:text-2xl md:text-3xl lg:text-4xl">
               {qaSlideshowSlides[3]?.title ?? ''}
             </p>
@@ -655,14 +642,10 @@ export default function BigScreen() {
           className="pointer-events-none fixed z-[15] left-1/2 top-[max(1rem,env(safe-area-inset-top))] -translate-x-1/2 opacity-0"
           aria-hidden
         >
-          <EventBranding
-            variant="presentationCorner"
-            trimTop={BIG_SCREEN_LOGO_TRIM_TOP}
-            className="shrink-0"
-          />
+          <EventBranding variant="presentationCorner" className="shrink-0" />
         </div>
         <div
-          className="mx-auto flex min-h-screen w-full max-w-[min(96vw,90rem)] flex-col px-2 pb-10 pt-[clamp(7rem,19vh,12rem)] transition-opacity duration-400 ease-in-out sm:px-5 lg:px-8"
+          className="mx-auto flex min-h-screen w-full max-w-[min(96vw,90rem)] flex-col px-2 pb-10 pt-[clamp(8rem,22vh,13rem)] transition-opacity duration-400 ease-in-out sm:px-5 lg:px-8"
           style={{
             opacity: presentationOffFade,
             pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
