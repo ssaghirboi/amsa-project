@@ -14,8 +14,28 @@
     "footer": {
       "type": "footer",
       "settings": {
-        "menu": "",
-        "show_payment_icons": true
+        "brand_heading": "SleepRizer",
+        "tagline": "Science-minded sleep tools for quieter mornings and deeper rest—at home.",
+        "business_hours_label": "Business hours",
+        "business_hours": "Mon–Fri 9:00–17:00",
+        "contact_email": "",
+        "social_facebook": "",
+        "social_instagram": "",
+        "social_youtube": "",
+        "social_tiktok": "",
+        "support_heading": "Support",
+        "menu_support": "",
+        "policy_heading": "Policy",
+        "menu_policy": "",
+        "newsletter_heading": "Subscribe to our emails",
+        "newsletter_text": "Be the first to know about new arrivals and exclusive offers.",
+        "newsletter_placeholder": "Email",
+        "newsletter_button": "Sign up",
+        "newsletter_success": "Thanks for subscribing.",
+        "show_payment_icons": true,
+        "copyright_suffix": "All rights reserved.",
+        "show_powered_by": true,
+        "scroll_top_label": "Back to top"
       }
     }
   },
