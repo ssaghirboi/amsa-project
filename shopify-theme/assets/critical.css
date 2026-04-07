@@ -127,6 +127,8 @@ body {
 /* Child elements, by default, are constrained to the central column of the grid. */
 .shopify-section > * {
   grid-column: 2;
+  /* Avoid flex/grid descendants forcing horizontal overflow on narrow viewports */
+  min-width: 0;
 }
 
 /* Child elements that use the full-width utility class span the entire viewport. */
