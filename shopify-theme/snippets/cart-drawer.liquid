@@ -1,0 +1,58 @@
+{% comment %}
+  Slide-out cart drawer. Controlled by assets/cart-drawer.js
+{% endcomment %}
+
+<div
+  id="cart-drawer"
+  class="cart-drawer"
+  aria-hidden="true"
+  data-money-format="{{ shop.money_format | escape }}"
+  data-free-shipping-cents="7500"
+>
+  <div class="cart-drawer__backdrop" data-cart-drawer-backdrop data-cart-drawer-close tabindex="-1"></div>
+
+  <div
+    class="cart-drawer__panel"
+    data-cart-drawer-panel
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cart-drawer-heading"
+  >
+    <header class="cart-drawer__header">
+      <h2 id="cart-drawer-heading" class="cart-drawer__title">
+        {{ 'cart.title' | t }}
+        <span class="cart-drawer__count" data-cart-drawer-count-wrap {% if cart.item_count == 0 %}hidden{% endif %}><span data-cart-drawer-title-count>{% if cart.item_count > 0 %}{{ cart.item_count }}{% endif %}</span></span>
+      </h2>
+      <button type="button" class="cart-drawer__close" data-cart-drawer-close aria-label="Close">×</button>
+    </header>
+
+    <div class="cart-drawer__progress" data-cart-progress-wrap {% if cart.item_count == 0 %}hidden{% endif %}>
+      <p class="cart-drawer__progress-msg" data-cart-progress-msg></p>
+      <div class="cart-drawer__progress-track">
+        <div class="cart-drawer__progress-fill" data-cart-progress-fill style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <div class="cart-drawer__body">
+      <div class="cart-drawer__items" data-cart-items></div>
+      <div class="cart-drawer__empty" data-cart-empty {% if cart.item_count > 0 %}hidden{% endif %}>
+        {{ 'cart.drawer_empty' | t }}
+      </div>
+    </div>
+
+    <footer class="cart-drawer__footer">
+      <div class="cart-drawer__subtotal-row">
+        <span>{{ 'cart.subtotal' | t }}</span>
+        <strong data-cart-subtotal>{{ cart.total_price | money }}</strong>
+      </div>
+
+      <form method="post" action="{{ routes.cart_url }}">
+        <button type="submit" name="checkout" class="cart-drawer__checkout" {% if cart.item_count == 0 %}disabled{% endif %} data-cart-checkout-btn>
+          {{ 'cart.checkout' | t }}
+        </button>
+      </form>
+
+      <a href="{{ routes.cart_url }}" class="cart-drawer__view-cart">{{ 'cart.view_cart' | t }}</a>
+    </footer>
+  </div>
+</div>

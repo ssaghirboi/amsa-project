@@ -32,5 +32,9 @@
     {{ content_for_layout }}
 
     {% sections 'footer-group' %}
+
+    {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
+    {% render 'cart-drawer' %}
+    <script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
   </body>
 </html>
