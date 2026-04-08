@@ -26,9 +26,30 @@ import {
   shouldSyncQaSlidesFromRemote,
   shouldDebateRevealAckMigrate,
   shouldMcSlideNotesMigrate,
+  shouldScreenTimerMigrate,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
+import { SCREEN_TIMER_DURATION_MS, formatScreenTimer } from '../constants/screenTimer'
+
+function AdminScreenTimerReadout({ endMs }) {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    if (endMs == null) return undefined
+    const id = window.setInterval(() => setTick((n) => n + 1), 500)
+    return () => window.clearInterval(id)
+  }, [endMs])
+  if (endMs == null) {
+    return <span className="text-slate-500">Not running</span>
+  }
+  const rem = Math.max(0, endMs - Date.now())
+  return (
+    <span className="font-mono text-base tabular-nums text-slate-800">
+      {formatScreenTimer(rem)}
+      {rem <= 0 ? <span className="ml-2 text-sm text-amber-800">(ended — reset to clear)</span> : null}
+    </span>
+  )
+}
 
 function normPromptKey(s) {
   return String(s ?? '').trim().toLowerCase()
@@ -79,6 +100,9 @@ export default function Admin() {
   const [showQaSlidesCopyMigrateBanner, setShowQaSlidesCopyMigrateBanner] = useState(false)
   const [showDebateRevealMigrateBanner, setShowDebateRevealMigrateBanner] = useState(false)
   const [showMcSlideNotesMigrateBanner, setShowMcSlideNotesMigrateBanner] = useState(false)
+  const [showScreenTimerMigrateBanner, setShowScreenTimerMigrateBanner] = useState(false)
+  /** Epoch ms when the big-screen countdown ends; persisted in `event_state.screen_timer_end_ms`. */
+  const [screenTimerEndMs, setScreenTimerEndMs] = useState(null)
   const [debateRevealAck, setDebateRevealAck] = useState(false)
 
   const presentationSlidesSaveTimerRef = useRef(null)
@@ -96,6 +120,7 @@ export default function Admin() {
     slideshowIndex: 0,
     qaSlideshowActive: false,
     qaSlideshowIndex: 0,
+    screenTimerEndMs: null,
   })
 
   const PANELIST_ICON_BUCKET = 'panelist-icons'
@@ -137,8 +162,21 @@ export default function Admin() {
       slideshowIndex,
       qaSlideshowActive,
       qaSlideshowIndex,
+      screenTimerEndMs,
     }
-  })
+  }, [
+    prompt,
+    panelists,
+    panelistIcons,
+    promptSequence,
+    presentationSlides,
+    qaSlideshowSlides,
+    slideshowActive,
+    slideshowIndex,
+    qaSlideshowActive,
+    qaSlideshowIndex,
+    screenTimerEndMs,
+  ])
 
   const uploadPanelistIcon = async (panelIndex, file) => {
     if (!file) return
@@ -181,6 +219,7 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive,
         qaSlideshowIndex,
+        screenTimerEndMs,
       })
       setStatus('Live')
     } catch (e) {
@@ -221,6 +260,7 @@ export default function Admin() {
           setPresentationSlides(mergedPresentation)
           setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
           setDebateRevealAck(Boolean(current.debateRevealAck))
+          setScreenTimerEndMs(current.screenTimerEndMs ?? null)
           if (current.promptSequence?.length) {
             setPromptSequence(current.promptSequence)
             setPromptSequenceDraft([...current.promptSequence])
@@ -238,6 +278,7 @@ export default function Admin() {
         setShowQaSlidesCopyMigrateBanner(shouldQaSlideshowSlidesMigrate())
         setShowDebateRevealMigrateBanner(shouldDebateRevealAckMigrate())
         setShowMcSlideNotesMigrateBanner(shouldMcSlideNotesMigrate())
+        setShowScreenTimerMigrateBanner(shouldScreenTimerMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
@@ -249,6 +290,7 @@ export default function Admin() {
         setShowQaSlidesCopyMigrateBanner(false)
         setShowDebateRevealMigrateBanner(false)
         setShowMcSlideNotesMigrateBanner(false)
+        setShowScreenTimerMigrateBanner(false)
       }
     })()
 
@@ -293,6 +335,7 @@ export default function Admin() {
         setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       }
       setDebateRevealAck(Boolean(next.debateRevealAck))
+      setScreenTimerEndMs(next.screenTimerEndMs ?? null)
       if (!next.promptSequence?.length) return
       const remote = next.promptSequence.map((s) => String(s))
       setPromptSequence((prev) => {
@@ -338,6 +381,7 @@ export default function Admin() {
           if (!qaSlideNavInFlightRef.current) {
             setQaSlideshowIndex(clampQaSlideIndex(next.qaSlideshowIndex ?? 0))
           }
+          setScreenTimerEndMs(next.screenTimerEndMs ?? null)
         })
         .catch(() => {})
     }
@@ -360,6 +404,7 @@ export default function Admin() {
         slideshowIndex: ctx.slideshowIndex,
         qaSlideshowActive: ctx.qaSlideshowActive,
         qaSlideshowIndex: ctx.qaSlideshowIndex,
+        screenTimerEndMs: ctx.screenTimerEndMs,
         debateRevealAck: undefined,
       })
       panelistsProtectUntilRef.current = Date.now() + 800
@@ -406,6 +451,7 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive,
         qaSlideshowIndex,
+        screenTimerEndMs,
         debateRevealAck: promptChanged ? false : undefined,
       })
       panelistsProtectUntilRef.current = Date.now() + 800
@@ -442,6 +488,7 @@ export default function Admin() {
       const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
       const slideshowIndexLive = refreshed?.slideshowIndex ?? ctx.slideshowIndex
       const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? ctx.qaSlideshowIndex
+      const screenTimerEndMsLive = refreshed?.screenTimerEndMs ?? ctx.screenTimerEndMs
       await writeEventState(supabase, {
         prompt: ctx.prompt,
         panelists: ctx.panelists,
@@ -453,6 +500,7 @@ export default function Admin() {
         slideshowIndex: slideshowIndexLive,
         qaSlideshowActive: ctx.qaSlideshowActive,
         qaSlideshowIndex: qaSlideshowIndexLive,
+        screenTimerEndMs: screenTimerEndMsLive,
       })
     } catch (e) {
       setError(e?.message || String(e))
@@ -469,6 +517,7 @@ export default function Admin() {
       const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
       const slideshowIndexLive = refreshed?.slideshowIndex ?? ctx.slideshowIndex
       const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? ctx.qaSlideshowIndex
+      const screenTimerEndMsLive = refreshed?.screenTimerEndMs ?? ctx.screenTimerEndMs
       await writeEventState(supabase, {
         prompt: ctx.prompt,
         panelists: ctx.panelists,
@@ -480,6 +529,7 @@ export default function Admin() {
         slideshowIndex: slideshowIndexLive,
         qaSlideshowActive: ctx.qaSlideshowActive,
         qaSlideshowIndex: qaSlideshowIndexLive,
+        screenTimerEndMs: screenTimerEndMsLive,
       })
     } catch (e) {
       setError(e?.message || String(e))
@@ -595,6 +645,7 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive,
         qaSlideshowIndex,
+        screenTimerEndMs,
       })
       setStatus('Live')
     } catch (e) {
@@ -625,6 +676,7 @@ export default function Admin() {
         slideshowIndex: idx,
         qaSlideshowActive: next ? false : qaSlideshowActive,
         qaSlideshowIndex,
+        screenTimerEndMs,
       })
       setStatus('Live')
       setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
@@ -663,6 +715,7 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive: next,
         qaSlideshowIndex: nextQaIdx,
+        screenTimerEndMs,
       })
       setStatus('Live')
       setShowQaSlideshowMigrateBanner(
@@ -704,6 +757,7 @@ export default function Admin() {
         slideshowIndex: next,
         qaSlideshowActive,
         qaSlideshowIndex,
+        screenTimerEndMs,
       })
       setStatus('Live')
     } catch (e) {
@@ -735,6 +789,7 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive: true,
         qaSlideshowIndex: next,
+        screenTimerEndMs,
       })
       setStatus('Live')
     } catch (e) {
@@ -742,6 +797,59 @@ export default function Admin() {
       setStatus('Live (write failed)')
     } finally {
       qaSlideNavInFlightRef.current = false
+    }
+  }
+
+  const handleScreenTimerStart = async () => {
+    await cancelPendingPresentationSlideSave()
+    const end = Date.now() + SCREEN_TIMER_DURATION_MS
+    setScreenTimerEndMs(end)
+    setStatus('Updating...')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive,
+        qaSlideshowIndex,
+        screenTimerEndMs: end,
+      })
+      setStatus('Live')
+      setShowScreenTimerMigrateBanner(shouldScreenTimerMigrate())
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
+  }
+
+  const handleScreenTimerReset = async () => {
+    await cancelPendingPresentationSlideSave()
+    setScreenTimerEndMs(null)
+    setStatus('Updating...')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive,
+        qaSlideshowIndex,
+        screenTimerEndMs: null,
+      })
+      setStatus('Live')
+      setShowScreenTimerMigrateBanner(shouldScreenTimerMigrate())
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
     }
   }
 
@@ -770,6 +878,7 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive,
         qaSlideshowIndex,
+        screenTimerEndMs,
         debateRevealAck: true,
       })
       setStatus('Live')
@@ -853,6 +962,52 @@ export default function Admin() {
               </p>
             </div>
           ) : null}
+          {showScreenTimerMigrateBanner ? (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
+              <p className="font-medium text-amber-950">Screen countdown is not saved to the database yet</p>
+              <p className="mt-1 text-amber-900/90">
+                In Supabase → SQL Editor, run:{' '}
+                <code className="rounded bg-black/15 px-1.5 py-0.5 text-xs">
+                  alter table public.event_state add column if not exists screen_timer_end_ms bigint;
+                </code>{' '}
+                Then refresh. The timer on <code className="text-slate-600">/screen</code> syncs from this column.
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-medium text-slate-900">Big screen — countdown</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                2:00 countdown above the QR on <code className="text-slate-600">/screen</code> (bottom-right). Last 10
+                seconds glows gold.
+              </p>
+              <p className="mt-3 text-sm text-slate-700">
+                Status:{' '}
+                <AdminScreenTimerReadout endMs={screenTimerEndMs} />
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleScreenTimerStart}
+                disabled={status === 'Updating...'}
+                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
+              >
+                Start 2:00
+              </button>
+              <button
+                type="button"
+                onClick={handleScreenTimerReset}
+                disabled={status === 'Updating...'}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm sm:p-6">

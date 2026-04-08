@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { DebateSliderGrid } from '../components/DebateSliderGrid'
 import { PromptBox } from '../components/PromptBox'
 import { EventBranding } from '../components/EventBranding'
+import { ScreenTimerDisplay } from '../components/ScreenTimerDisplay'
 import screenEventLogo from '../assets/IS GOD REAL (Print Flyer).svg?url'
 import qrDoesGodExist from '../assets/qr-doesgodexist.png'
 import qrHumanityFirstUcalgary from '../assets/qr-humanity-first-ucalgary.png'
@@ -97,6 +98,8 @@ export default function BigScreen() {
   const [eventHeaderLogoPos, setEventHeaderLogoPos] = useState(null)
   const eventHeaderLogoMeasureRef = useRef(null)
   const [error, setError] = useState('')
+  /** Epoch ms when countdown reaches zero; synced from Admin via `event_state.screen_timer_end_ms`. */
+  const [screenTimerEndMs, setScreenTimerEndMs] = useState(null)
 
   /** Intro: typewriter → await admin Reveal → shrink to anchor; idle = normal layout */
   const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'awaitingReveal' | 'shrinking'
@@ -169,6 +172,7 @@ export default function BigScreen() {
     setQaSlideshowIndex(qaIdx)
     setPresentationSlides(presentationSlidesMerged)
     setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
+    setScreenTimerEndMs(next.screenTimerEndMs ?? null)
   }
 
   useEffect(() => {
@@ -731,12 +735,15 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      {!slideshowActive && !qaSlideshowActive ? (
-        <div
-          className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] pointer-events-none"
-          aria-hidden
-        >
-          <div className="rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20">
+      <div className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] flex flex-col items-end gap-3 pointer-events-none">
+        {screenTimerEndMs != null ? (
+          <ScreenTimerDisplay endMs={screenTimerEndMs} />
+        ) : null}
+        {!slideshowActive && !qaSlideshowActive ? (
+          <div
+            className="rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20"
+            aria-hidden
+          >
             <div className="text-center text-sm font-semibold tracking-tight text-slate-100">
               Share your thoughts
             </div>
@@ -747,8 +754,8 @@ export default function BigScreen() {
               draggable={false}
             />
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   )
 }
