@@ -9,7 +9,6 @@ import {
 } from '../supabase/eventState'
 import {
   PRESENTATION_SLIDE_COUNT,
-  PRESENTATION_SLIDE_STALE_ECHO_MS,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -112,10 +111,7 @@ export default function McPage() {
   const qaSlideshowIndexRef = useRef(0)
   const presentationSlideNavRef = useRef(false)
   const qaSlideNavRef = useRef(false)
-  /** Ignore stale `slideshow_index` / `qa_slideshow_index` reads briefly after a local step. */
-  const presentationSlideEchoIgnoreUntilRef = useRef(0)
   const presentationSlideLastStepAtRef = useRef(0)
-  const qaSlideEchoIgnoreUntilRef = useRef(0)
   /** Expected `current_prompt` after MC uses Next/Previous/Reset; ignore stale realtime rows until this matches. */
   const mcPromptPendingRef = useRef(null)
   const applyLatestRef = useRef(null)
@@ -233,17 +229,20 @@ export default function McPage() {
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       if (!qaSlideNavRef.current) {
         const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
-        const ignoreStaleQa =
-          Boolean(next.qaSlideshowActive) &&
-          Date.now() < qaSlideEchoIgnoreUntilRef.current &&
-          qi !== qaSlideshowIndexRef.current
-        if (!ignoreStaleQa) {
-          setQaSlideshowIndex(qi)
-          qaSlideshowIndexRef.current = qi
-        }
+        setQaSlideshowIndex(qi)
+        qaSlideshowIndexRef.current = qi
       }
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
-      setPresentationSlides(mergePresentationSlidesFromRemote(next.presentationSlides ?? null))
+      const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
+      setPresentationSlides(mergedDeck)
+      if (!presentationSlideNavRef.current) {
+        const si = clampPresentationSlideIndex(
+          next.slideshowIndex ?? 0,
+          mergedDeck.length || PRESENTATION_SLIDE_COUNT,
+        )
+        setSlideshowIndex(si)
+        slideshowIndexRef.current = si
+      }
       setDebateRevealAck(Boolean(next.debateRevealAck))
       setNotesRemoteEnabled(next.meta?.mcSlideNotesColumnAvailable === true)
       mergeNotesFromRemote(staleCore)
@@ -483,7 +482,6 @@ export default function McPage() {
     presentationSlideNavRef.current = true
     setSlideshowIndex(nextIdx)
     slideshowIndexRef.current = nextIdx
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
     setError('')
     try {
       await writeEventState(supabase, {
@@ -529,7 +527,6 @@ export default function McPage() {
     qaSlideNavRef.current = true
     setQaSlideshowIndex(nextIdx)
     qaSlideshowIndexRef.current = nextIdx
-    qaSlideEchoIgnoreUntilRef.current = Date.now() + 720
     setError('')
     try {
       await writeEventState(supabase, {

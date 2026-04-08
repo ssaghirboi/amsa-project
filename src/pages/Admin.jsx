@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
 import {
   PRESENTATION_SLIDE_COUNT,
-  PRESENTATION_SLIDE_STALE_ECHO_MS,
   clampPresentationSlideIndex,
   mergePresentationSlidesFromRemote,
 } from '../constants/presentationSlides'
@@ -50,9 +49,10 @@ export default function Admin() {
   const panelistsProtectUntilRef = useRef(0)
   const slideshowIndexRef = useRef(0)
   const qaSlideshowIndexRef = useRef(0)
-  const presentationSlideEchoIgnoreUntilRef = useRef(0)
   const presentationSlideLastStepAtRef = useRef(0)
-  const qaSlideEchoIgnoreUntilRef = useRef(0)
+  /** True while Admin is writing a presentation / Q&A slide step — ignore remote index echo for that beat only. */
+  const presentationSlideNavInFlightRef = useRef(false)
+  const qaSlideNavInFlightRef = useRef(false)
   const [panelistIcons, setPanelistIcons] = useState([null, null, null, null])
   const [promptSequence, setPromptSequence] = useState(DEFAULT_PROMPT_SEQUENCE)
   const [promptSequenceDraft, setPromptSequenceDraft] = useState(
@@ -217,7 +217,7 @@ export default function Admin() {
             ),
           )
           setQaSlideshowActive(Boolean(current.qaSlideshowActive))
-          setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
+          setQaSlideshowIndex(clampQaSlideIndex(current.qaSlideshowIndex ?? 0))
           setPresentationSlides(mergedPresentation)
           setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
           setDebateRevealAck(Boolean(current.debateRevealAck))
@@ -272,20 +272,22 @@ export default function Admin() {
       setPanelistIcons(next.panelistIcons ?? [null, null, null, null])
       setSlideshowActive(Boolean(next.slideshowActive))
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
-      {
-        const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
-        const ignoreStaleQa =
-          Boolean(next.qaSlideshowActive) &&
-          Date.now() < qaSlideEchoIgnoreUntilRef.current &&
-          qi !== qaSlideshowIndexRef.current
-        if (!ignoreStaleQa) {
-          setQaSlideshowIndex(qi)
-        }
-      }
-      if (shouldSyncPresentationSlidesFromRemote()) {
-        setPresentationSlides(
-          mergePresentationSlidesFromRemote(next.presentationSlides ?? null),
+
+      const mergedPres = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
+      if (!presentationSlideNavInFlightRef.current) {
+        const si = clampPresentationSlideIndex(
+          next.slideshowIndex ?? 0,
+          mergedPres.length || PRESENTATION_SLIDE_COUNT,
         )
+        setSlideshowIndex(si)
+        slideshowIndexRef.current = si
+      }
+      if (!qaSlideNavInFlightRef.current) {
+        setQaSlideshowIndex(clampQaSlideIndex(next.qaSlideshowIndex ?? 0))
+      }
+
+      if (shouldSyncPresentationSlidesFromRemote()) {
+        setPresentationSlides(mergedPres)
       }
       if (shouldSyncQaSlidesFromRemote()) {
         setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
@@ -314,6 +316,33 @@ export default function Admin() {
         qaSlidesSaveTimerRef.current = null
       }
     }
+  }, [])
+
+  // Backup sync if realtime misses a row (keeps slide indices aligned with MC / DB).
+  useEffect(() => {
+    const tick = () => {
+      fetchCurrentEventState(supabase)
+        .then((next) => {
+          if (!next) return
+          setSlideshowActive(Boolean(next.slideshowActive))
+          setQaSlideshowActive(Boolean(next.qaSlideshowActive))
+          const mergedPres = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
+          if (!presentationSlideNavInFlightRef.current) {
+            const si = clampPresentationSlideIndex(
+              next.slideshowIndex ?? 0,
+              mergedPres.length || PRESENTATION_SLIDE_COUNT,
+            )
+            setSlideshowIndex(si)
+            slideshowIndexRef.current = si
+          }
+          if (!qaSlideNavInFlightRef.current) {
+            setQaSlideshowIndex(clampQaSlideIndex(next.qaSlideshowIndex ?? 0))
+          }
+        })
+        .catch(() => {})
+    }
+    const id = setInterval(tick, 4000)
+    return () => clearInterval(id)
   }, [])
 
   const persistPanelistsFromRefsQuiet = async () => {
@@ -579,11 +608,11 @@ export default function Admin() {
     const idx = next ? 0 : slideshowIndex
     await cancelPendingPresentationSlideSave()
     slideshowIndexRef.current = idx
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
     setSlideshowActive(next)
     setSlideshowIndex(idx)
     if (next) setQaSlideshowActive(false)
     setStatus('Updating...')
+    presentationSlideNavInFlightRef.current = true
     try {
       await writeEventState(supabase, {
         prompt,
@@ -607,6 +636,8 @@ export default function Admin() {
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+    } finally {
+      presentationSlideNavInFlightRef.current = false
     }
   }
 
@@ -615,11 +646,11 @@ export default function Admin() {
     await cancelPendingPresentationSlideSave()
     const nextQaIdx = next ? 0 : qaSlideshowIndex
     qaSlideshowIndexRef.current = nextQaIdx
-    qaSlideEchoIgnoreUntilRef.current = Date.now() + 720
     if (next) setSlideshowActive(false)
     setQaSlideshowActive(next)
     setQaSlideshowIndex(nextQaIdx)
     setStatus('Updating...')
+    qaSlideNavInFlightRef.current = true
     try {
       await writeEventState(supabase, {
         prompt,
@@ -641,6 +672,8 @@ export default function Admin() {
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+    } finally {
+      qaSlideNavInFlightRef.current = false
     }
   }
 
@@ -656,9 +689,9 @@ export default function Admin() {
     if (next === slideshowIndex) return
     await cancelPendingPresentationSlideSave()
     slideshowIndexRef.current = next
-    presentationSlideEchoIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
     setSlideshowIndex(next)
     setStatus('Updating...')
+    presentationSlideNavInFlightRef.current = true
     try {
       await writeEventState(supabase, {
         prompt,
@@ -676,6 +709,8 @@ export default function Admin() {
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+    } finally {
+      presentationSlideNavInFlightRef.current = false
     }
   }
 
@@ -685,9 +720,9 @@ export default function Admin() {
     if (next === qaSlideshowIndex) return
     await cancelPendingPresentationSlideSave()
     qaSlideshowIndexRef.current = next
-    qaSlideEchoIgnoreUntilRef.current = Date.now() + 720
     setQaSlideshowIndex(next)
     setStatus('Updating...')
+    qaSlideNavInFlightRef.current = true
     try {
       await writeEventState(supabase, {
         prompt,
@@ -705,6 +740,8 @@ export default function Admin() {
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+    } finally {
+      qaSlideNavInFlightRef.current = false
     }
   }
 
