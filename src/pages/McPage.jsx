@@ -51,15 +51,6 @@ function getNextPrompt(current, sequence) {
   return { next: String(seq[nextIndex] ?? ''), nextIndex, total: seq.length, seq }
 }
 
-function getPrevPrompt(current, sequence) {
-  const seq = Array.isArray(sequence) && sequence.length > 0 ? sequence : DEFAULT_PROMPT_SEQUENCE
-  if (seq.length === 0) return { prev: '', prevIndex: -1, total: 0, seq }
-  const cur = normalizePrompt(current)
-  const idx = seq.findIndex((p) => normalizePrompt(p) === cur)
-  const prevIndex = idx >= 0 ? (idx - 1 + seq.length) % seq.length : seq.length - 1
-  return { prev: String(seq[prevIndex] ?? ''), prevIndex, total: seq.length, seq }
-}
-
 const MC_NOTES_BY_SLIDE_KEY = 'amsa-mc-notes-by-slide'
 const MC_NOTES_LEGACY_KEY = 'amsa-mc-page-notes'
 
@@ -109,10 +100,7 @@ export default function McPage() {
   /** Latest indices for step handlers (avoids stale state if realtime lags). */
   const slideshowIndexRef = useRef(0)
   const qaSlideshowIndexRef = useRef(0)
-  const presentationSlideNavRef = useRef(false)
-  const qaSlideNavRef = useRef(false)
-  const presentationSlideLastStepAtRef = useRef(0)
-  /** Expected `current_prompt` after MC uses Next/Previous/Reset; ignore stale realtime rows until this matches. */
+  /** Expected `current_prompt` after a prompt write; ignore stale realtime rows until this matches. */
   const mcPromptPendingRef = useRef(null)
   const applyLatestRef = useRef(null)
 
@@ -227,22 +215,18 @@ export default function McPage() {
       setPromptSequence(next.promptSequence ?? DEFAULT_PROMPT_SEQUENCE)
       setSlideshowActive(Boolean(next.slideshowActive))
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
-      if (!qaSlideNavRef.current) {
-        const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
-        setQaSlideshowIndex(qi)
-        qaSlideshowIndexRef.current = qi
-      }
+      const qi = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
+      setQaSlideshowIndex(qi)
+      qaSlideshowIndexRef.current = qi
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
       const mergedDeck = mergePresentationSlidesFromRemote(next.presentationSlides ?? null)
       setPresentationSlides(mergedDeck)
-      if (!presentationSlideNavRef.current) {
-        const si = clampPresentationSlideIndex(
-          next.slideshowIndex ?? 0,
-          mergedDeck.length || PRESENTATION_SLIDE_COUNT,
-        )
-        setSlideshowIndex(si)
-        slideshowIndexRef.current = si
-      }
+      const si = clampPresentationSlideIndex(
+        next.slideshowIndex ?? 0,
+        mergedDeck.length || PRESENTATION_SLIDE_COUNT,
+      )
+      setSlideshowIndex(si)
+      slideshowIndexRef.current = si
       setDebateRevealAck(Boolean(next.debateRevealAck))
       setNotesRemoteEnabled(next.meta?.mcSlideNotesColumnAvailable === true)
       mergeNotesFromRemote(staleCore)
@@ -328,7 +312,6 @@ export default function McPage() {
   }, [])
 
   const nextInfo = useMemo(() => getNextPrompt(prompt, promptSequence), [prompt, promptSequence])
-  const prevInfo = useMemo(() => getPrevPrompt(prompt, promptSequence), [prompt, promptSequence])
   const currentSlide = useMemo(() => {
     if (!Array.isArray(presentationSlides) || presentationSlides.length === 0) return null
     const idx = clampPresentationSlideIndex(
@@ -348,221 +331,6 @@ export default function McPage() {
   const qaAudienceSorted = useMemo(() => {
     return normalizeQaAudienceQueue(mcQuestions?.qaAudienceQueue)
   }, [mcQuestions?.qaAudienceQueue])
-
-  const goNextPrompt = async () => {
-    if (slideshowActive || qaSlideshowActive) return
-    const nextPrompt = nextInfo.next
-    if (!nextPrompt) return
-
-    const resetPanelists = [3, 3, 3, 3]
-    mcPromptPendingRef.current = nextPrompt
-    setPrompt(nextPrompt)
-    setPanelists(resetPanelists)
-    setMcQuestions(emptyMcQuestions(nextPrompt))
-    setDebateRevealAck(false)
-
-    setStatus('Updating…')
-    setError('')
-    try {
-      await writeEventState(supabase, {
-        prompt: nextPrompt,
-        panelists: resetPanelists,
-        panelistIcons,
-        promptSequence: nextInfo.seq,
-        presentationSlides,
-        qaSlideshowSlides,
-        slideshowActive: false,
-        slideshowIndex,
-        qaSlideshowActive: false,
-        qaSlideshowIndex: 0,
-        mcQuestions: emptyMcQuestions(nextPrompt),
-        debateRevealAck: false,
-        screenTimerEndMs: null,
-      })
-      setStatus('Live')
-    } catch (e) {
-      mcPromptPendingRef.current = null
-      setError(e?.message || String(e))
-      setStatus('Live (write failed)')
-      const fix = await fetchCurrentEventState(supabase).catch(() => null)
-      if (fix) applyLatestRef.current?.(fix)
-    }
-  }
-
-  const goFirstPrompt = async () => {
-    if (slideshowActive || qaSlideshowActive) return
-    if (!promptSequence?.[0]) return
-
-    const resetPanelists = [3, 3, 3, 3]
-    const nextMc = emptyMcQuestions('')
-    mcPromptPendingRef.current = ''
-    setPrompt('')
-    setPanelists(resetPanelists)
-    setMcQuestions(nextMc)
-    setDebateRevealAck(false)
-
-    setStatus('Updating…')
-    setError('')
-    try {
-      await writeEventState(supabase, {
-        prompt: '',
-        panelists: resetPanelists,
-        panelistIcons,
-        promptSequence,
-        presentationSlides,
-        qaSlideshowSlides,
-        slideshowActive: false,
-        slideshowIndex,
-        qaSlideshowActive: false,
-        qaSlideshowIndex: 0,
-        mcQuestions: nextMc,
-        debateRevealAck: false,
-        screenTimerEndMs: null,
-      })
-      setStatus('Live')
-    } catch (e) {
-      mcPromptPendingRef.current = null
-      setError(e?.message || String(e))
-      setStatus('Live (write failed)')
-      const fix = await fetchCurrentEventState(supabase).catch(() => null)
-      if (fix) applyLatestRef.current?.(fix)
-    }
-  }
-
-  const goPrevPrompt = async () => {
-    if (slideshowActive || qaSlideshowActive) return
-    const prevPromptText = prevInfo.prev
-    if (!prevPromptText) return
-
-    const resetPanelists = [3, 3, 3, 3]
-    mcPromptPendingRef.current = prevPromptText
-    setPrompt(prevPromptText)
-    setPanelists(resetPanelists)
-    setMcQuestions(emptyMcQuestions(prevPromptText, { skipDebateIntro: true }))
-    setDebateRevealAck(false)
-
-    setStatus('Updating…')
-    setError('')
-    try {
-      await writeEventState(supabase, {
-        prompt: prevPromptText,
-        panelists: resetPanelists,
-        panelistIcons,
-        promptSequence: prevInfo.seq,
-        presentationSlides,
-        qaSlideshowSlides,
-        slideshowActive: false,
-        slideshowIndex,
-        qaSlideshowActive: false,
-        qaSlideshowIndex: 0,
-        mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
-        debateRevealAck: false,
-        screenTimerEndMs: null,
-      })
-      setStatus('Live')
-    } catch (e) {
-      mcPromptPendingRef.current = null
-      setError(e?.message || String(e))
-      setStatus('Live (write failed)')
-      const fix = await fetchCurrentEventState(supabase).catch(() => null)
-      if (fix) applyLatestRef.current?.(fix)
-    }
-  }
-
-  const mcSlideBusy = status === 'Updating…'
-
-  const stepPresentationSlide = async (delta) => {
-    if (!slideshowActive || qaSlideshowActive || presentationSlideNavRef.current) return
-    const now = Date.now()
-    if (now - presentationSlideLastStepAtRef.current < 320) return
-    presentationSlideLastStepAtRef.current = now
-    const current = slideshowIndexRef.current
-    const nextIdx = clampPresentationSlideIndex(
-      current + delta,
-      presentationSlides.length || PRESENTATION_SLIDE_COUNT,
-    )
-    if (nextIdx === current) return
-    presentationSlideNavRef.current = true
-    setSlideshowIndex(nextIdx)
-    slideshowIndexRef.current = nextIdx
-    setError('')
-    try {
-      await writeEventState(supabase, {
-        prompt,
-        panelists,
-        panelistIcons,
-        promptSequence,
-        presentationSlides,
-        qaSlideshowSlides,
-        slideshowActive: true,
-        slideshowIndex: nextIdx,
-        qaSlideshowActive,
-        qaSlideshowIndex: qaSlideshowIndexRef.current,
-        mcQuestions,
-        debateRevealAck,
-        mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
-      })
-    } catch (e) {
-      setError(e?.message || String(e))
-      try {
-        const fix = await fetchCurrentEventState(supabase).catch(() => null)
-        if (fix) {
-          const v = clampPresentationSlideIndex(
-            fix.slideshowIndex ?? 0,
-            fix.presentationSlides?.length ?? PRESENTATION_SLIDE_COUNT,
-          )
-          setSlideshowIndex(v)
-          slideshowIndexRef.current = v
-        }
-      } catch {
-        /* ignore */
-      }
-    } finally {
-      presentationSlideNavRef.current = false
-    }
-  }
-
-  const stepQaSlide = async (delta) => {
-    if (!qaSlideshowActive || qaSlideNavRef.current) return
-    const current = qaSlideshowIndexRef.current
-    const nextIdx = clampQaSlideIndex(current + delta)
-    if (nextIdx === current) return
-    qaSlideNavRef.current = true
-    setQaSlideshowIndex(nextIdx)
-    qaSlideshowIndexRef.current = nextIdx
-    setError('')
-    try {
-      await writeEventState(supabase, {
-        prompt,
-        panelists,
-        panelistIcons,
-        promptSequence,
-        presentationSlides,
-        qaSlideshowSlides,
-        slideshowActive,
-        slideshowIndex: slideshowIndexRef.current,
-        qaSlideshowActive: true,
-        qaSlideshowIndex: nextIdx,
-        mcQuestions,
-        debateRevealAck,
-        mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
-      })
-    } catch (e) {
-      setError(e?.message || String(e))
-      try {
-        const fix = await fetchCurrentEventState(supabase).catch(() => null)
-        if (fix) {
-          const v = clampQaSlideIndex(fix.qaSlideshowIndex ?? 0)
-          setQaSlideshowIndex(v)
-          qaSlideshowIndexRef.current = v
-        }
-      } catch {
-        /* ignore */
-      }
-    } finally {
-      qaSlideNavRef.current = false
-    }
-  }
 
   const removeQaAudienceItem = async (item) => {
     if (!qaSlideshowActive || !mcQuestions || !item) return
@@ -608,10 +376,6 @@ export default function McPage() {
     }
   }
 
-  const nextPromptDisabled = status === 'Updating…' || !nextInfo.next
-  const prevPromptDisabled = status === 'Updating…' || !prevInfo.prev
-  const firstPromptDisabled = status === 'Updating…' || !promptSequence?.[0]
-
   return (
     <div className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#010101] text-slate-100">
       <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-3 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:pb-5 lg:px-8 lg:pb-6">
@@ -637,86 +401,19 @@ export default function McPage() {
               </div>
             </div>
 
-            {!slideshowActive && !qaSlideshowActive ? (
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={goFirstPrompt}
-                  disabled={firstPromptDisabled}
-                  className="min-h-[3.25rem] min-w-[8.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-6 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-8 sm:text-lg"
-                >
-                  Reset to first
-                </button>
-                <button
-                  type="button"
-                  onClick={goPrevPrompt}
-                  disabled={prevPromptDisabled}
-                  className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl border border-white/15 bg-white/5 px-8 py-3.5 text-base font-semibold text-slate-100 shadow-sm transition hover:bg-white/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
-                >
-                  Previous prompt
-                </button>
-                <button
-                  type="button"
-                  onClick={goNextPrompt}
-                  disabled={nextPromptDisabled}
-                  className="min-h-[3.25rem] min-w-[10.5rem] touch-manipulation rounded-2xl bg-indigo-500 px-8 py-3.5 text-base font-semibold text-slate-950 shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:px-10 sm:text-lg"
-                >
-                  Next prompt
-                </button>
-              </div>
-            ) : null}
-
             {qaSlideshowActive ? (
-              <div className="flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-                <span className="text-xs text-slate-400 sm:mr-auto">
-                  Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT}
-                </span>
-                <div className="flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => stepQaSlide(-1)}
-                    disabled={mcSlideBusy || qaSlideshowIndex <= 0}
-                    className="min-h-[2.75rem] rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Previous slide
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => stepQaSlide(1)}
-                    disabled={mcSlideBusy || qaSlideshowIndex >= QA_SLIDE_COUNT - 1}
-                    className="min-h-[2.75rem] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next slide
-                  </button>
-                </div>
+              <div className="w-full border-t border-white/10 pt-3 text-xs text-slate-400">
+                Q&amp;A slide {qaSlideshowIndex + 1} of {QA_SLIDE_COUNT} · slides controlled from Admin
               </div>
             ) : slideshowActive ? (
-              <div className="flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-                <span className="text-xs text-slate-400 sm:mr-auto">
-                  Presentation slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT}
-                </span>
-                <div className="flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => stepPresentationSlide(-1)}
-                    disabled={mcSlideBusy || slideshowIndex <= 0}
-                    className="min-h-[2.75rem] rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Previous slide
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => stepPresentationSlide(1)}
-                    disabled={
-                      mcSlideBusy || slideshowIndex >= PRESENTATION_SLIDE_COUNT - 1
-                    }
-                    className="min-h-[2.75rem] rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-md transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next slide
-                  </button>
-                </div>
+              <div className="w-full border-t border-white/10 pt-3 text-xs text-slate-400">
+                Presentation slide {slideshowIndex + 1} of {PRESENTATION_SLIDE_COUNT} · slides controlled from Admin
               </div>
-            ) : null}
+            ) : (
+              <p className="max-w-md text-right text-xs text-slate-500">
+                Prompt changes: Admin only
+              </p>
+            )}
           </div>
         </div>
 
@@ -848,24 +545,18 @@ export default function McPage() {
               </div>
             ) : (
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur sm:p-10 lg:p-12">
-                <div className="flex shrink-0 flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-start">
+                <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400 sm:pt-1">
                     Current prompt
                   </div>
-                  <button
-                    type="button"
-                    onClick={goNextPrompt}
-                    disabled={nextPromptDisabled}
-                    title={nextPromptDisabled ? 'Cannot advance right now' : 'Go to next prompt'}
-                    className="w-full max-w-none touch-manipulation rounded-2xl border border-white/15 bg-black/30 px-5 py-4 text-left transition hover:border-white/25 hover:bg-black/40 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:max-w-[min(100%,44rem)] sm:px-6 sm:py-5 lg:ml-auto"
-                  >
-                    <div className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-slate-400 sm:text-[0.75rem]">
-                      Next prompt
+                  <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-left sm:max-w-[min(100%,44rem)] lg:ml-auto">
+                    <div className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-slate-500 sm:text-[0.75rem]">
+                      Next in sequence
                     </div>
-                    <div className="mt-2 text-pretty break-words text-base font-medium leading-snug text-slate-100 sm:mt-2.5 sm:text-lg md:text-xl">
-                      {nextInfo.next || 'None'}
+                    <div className="mt-1.5 text-pretty break-words text-sm font-medium leading-snug text-slate-300 sm:text-base">
+                      {nextInfo.next || '—'}
                     </div>
-                  </button>
+                  </div>
                 </div>
 
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-1 py-6 text-center sm:px-3 sm:py-8 lg:py-10">
