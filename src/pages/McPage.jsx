@@ -347,11 +347,7 @@ export default function McPage() {
   const mcNotesForSlide = notesBySlide[mcSlideNotesKey] ?? ''
 
   const qaAudienceSorted = useMemo(() => {
-    const raw = normalizeQaAudienceQueue(mcQuestions?.qaAudienceQueue)
-    return [...raw].sort(
-      (a, b) =>
-        (Date.parse(b.created_at ?? '') || 0) - (Date.parse(a.created_at ?? '') || 0),
-    )
+    return normalizeQaAudienceQueue(mcQuestions?.qaAudienceQueue)
   }, [mcQuestions?.qaAudienceQueue])
 
   const goNextPrompt = async () => {
@@ -740,7 +736,7 @@ export default function McPage() {
                       Audience Q&amp;A — pushed questions
                     </p>
                     <p className="mt-1 text-sm text-slate-500 sm:text-[0.9375rem]">
-                      Newest first · {qaAudienceSorted.length} total
+                      Queue order · {qaAudienceSorted.length} total
                     </p>
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto pr-1">

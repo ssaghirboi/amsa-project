@@ -3,6 +3,7 @@ import {
   GENERAL_TARGET_KEY,
   PANELIST_DISPLAY_NAMES,
   audienceQueueItemsMatch,
+  displayNameForMcTarget,
   getEmptyMcQuestionSlots,
   normalizeQaAudienceQueue,
 } from '../constants/panelists'
@@ -88,7 +89,7 @@ export default function QuestionsPage() {
   const [eventPrompt, setEventPrompt] = useState('')
   const [eventState, setEventState] = useState(null)
   const [pushError, setPushError] = useState('')
-  const [pushStatus, setPushStatus] = useState('')
+  const [queueWriteBusy, setQueueWriteBusy] = useState(false)
   const [clearStatus, setClearStatus] = useState('')
   const [lastPromptSeen, setLastPromptSeen] = useState('')
 
@@ -192,6 +193,59 @@ export default function QuestionsPage() {
 
   const activePromptKey = normalizePrompt(eventPrompt)
 
+  const mcQuestionsPayloadWithQueue = (nextQueueRaw) => {
+    if (!eventState || !pushed) return null
+    const nextQueue = normalizeQaAudienceQueue(nextQueueRaw)
+    return {
+      prompt: String(eventState.prompt ?? ''),
+      panelists: {
+        [GENERAL_TARGET_KEY]: pushed.panelists?.[GENERAL_TARGET_KEY] ?? null,
+        'Panelist 1': pushed.panelists?.['Panelist 1'] ?? null,
+        'Panelist 2': pushed.panelists?.['Panelist 2'] ?? null,
+        'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
+        'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
+      },
+      qaAudienceQueue: nextQueue,
+    }
+  }
+
+  const persistQaQueue = async (nextQueueRaw) => {
+    if (!eventState || !pushed || !qaMode) return
+    const payload = mcQuestionsPayloadWithQueue(nextQueueRaw)
+    if (!payload) return
+    setPushError('')
+    setQueueWriteBusy(true)
+    try {
+      await writeEventState(supabase, {
+        prompt: eventState.prompt ?? '',
+        panelists: eventState.panelists ?? [3, 3, 3, 3],
+        panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
+        promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
+        presentationSlides: mergePresentationSlidesFromRemote(
+          eventState.presentationSlides ?? null,
+        ),
+        qaSlideshowSlides: eventState.qaSlideshowSlides ?? null,
+        slideshowActive: Boolean(eventState.slideshowActive),
+        slideshowIndex: eventState.slideshowIndex ?? 0,
+        qaSlideshowActive: Boolean(eventState.qaSlideshowActive),
+        qaSlideshowIndex: eventState.qaSlideshowIndex ?? 0,
+        mcQuestions: payload,
+      })
+    } catch (e) {
+      setPushError(e?.message || String(e))
+    } finally {
+      setQueueWriteBusy(false)
+    }
+  }
+
+  const moveQueueSlot = (index, delta) => {
+    const list = [...qaQueue]
+    const j = index + delta
+    if (j < 0 || j >= list.length) return
+    ;[list[index], list[j]] = [list[j], list[index]]
+    persistQaQueue(list)
+  }
+
   const clearAllQuestions = async () => {
     setClearStatus('Clearing…')
     setError('')
@@ -271,7 +325,6 @@ export default function QuestionsPage() {
     if (!eventState) return
     if (!qaMode) return
     setPushError('')
-    setPushStatus('Pushing…')
     try {
       const basePanelists =
         pushed && typeof pushed === 'object'
@@ -307,8 +360,6 @@ export default function QuestionsPage() {
             (isSameId(x.id, q.id) || audienceQueueItemsMatch(x, entry)),
         )
       ) {
-        setPushStatus('Already on MC')
-        setTimeout(() => setPushStatus(''), 900)
         return
       }
       nextMc.qaAudienceQueue = [...nextMc.qaAudienceQueue, entry]
@@ -330,76 +381,26 @@ export default function QuestionsPage() {
       })
 
       const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
-      if (qaMode) {
-        const ok = normalizeQaAudienceQueue(refreshed?.mcQuestions?.qaAudienceQueue).some((x) =>
-          audienceQueueItemsMatch(x, entry),
+      const ok = normalizeQaAudienceQueue(refreshed?.mcQuestions?.qaAudienceQueue).some((x) =>
+        audienceQueueItemsMatch(x, entry),
+      )
+      if (!ok) {
+        throw new Error(
+          "Couldn't persist the MC push. In Supabase, add `mc_questions` to `event_state`:\n\n" +
+            "alter table public.event_state add column if not exists mc_questions jsonb default null;\n",
         )
-        if (!ok) {
-          throw new Error(
-            "Couldn't persist the MC push. In Supabase, add `mc_questions` to `event_state`:\n\n" +
-              "alter table public.event_state add column if not exists mc_questions jsonb default null;\n",
-          )
-        }
-      } else {
-        const persistedId = refreshed?.mcQuestions?.panelists?.[panelKey]?.id ?? null
-        if (!isSameId(persistedId, q.id ?? null)) {
-          throw new Error(
-            "Couldn't persist the MC push. In Supabase, add `mc_questions` to `event_state`:\n\n" +
-              "alter table public.event_state add column if not exists mc_questions jsonb default null;\n",
-          )
-        }
       }
-
-      setPushStatus('Pushed')
-      setTimeout(() => setPushStatus(''), 900)
     } catch (e) {
       setPushError(e?.message || String(e))
-      setPushStatus('')
     }
   }
 
   const removeQaAudienceFromMc = async (item) => {
     if (!eventState || !pushed || !qaMode) return
-    setPushError('')
-    setPushStatus('Updating…')
-    try {
-      const queue = normalizeQaAudienceQueue(pushed.qaAudienceQueue).filter(
-        (x) => !audienceQueueItemsMatch(x, item),
-      )
-      const nextMc = {
-        prompt: String(eventState.prompt ?? ''),
-        panelists: {
-          [GENERAL_TARGET_KEY]: pushed.panelists?.[GENERAL_TARGET_KEY] ?? null,
-          'Panelist 1': pushed.panelists?.['Panelist 1'] ?? null,
-          'Panelist 2': pushed.panelists?.['Panelist 2'] ?? null,
-          'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
-          'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
-        },
-        qaAudienceQueue: queue,
-      }
-
-      await writeEventState(supabase, {
-        prompt: eventState.prompt ?? '',
-        panelists: eventState.panelists ?? [3, 3, 3, 3],
-        panelistIcons: eventState.panelistIcons ?? [null, null, null, null],
-        promptSequence: eventState.promptSequence ?? DEFAULT_PROMPT_SEQUENCE,
-        presentationSlides: mergePresentationSlidesFromRemote(
-          eventState.presentationSlides ?? null,
-        ),
-        qaSlideshowSlides: eventState.qaSlideshowSlides ?? null,
-        slideshowActive: Boolean(eventState.slideshowActive),
-        slideshowIndex: eventState.slideshowIndex ?? 0,
-        qaSlideshowActive: Boolean(eventState.qaSlideshowActive),
-        qaSlideshowIndex: eventState.qaSlideshowIndex ?? 0,
-        mcQuestions: nextMc,
-      })
-
-      setPushStatus('Updated')
-      setTimeout(() => setPushStatus(''), 900)
-    } catch (e) {
-      setPushError(e?.message || String(e))
-      setPushStatus('')
-    }
+    const queue = normalizeQaAudienceQueue(pushed.qaAudienceQueue).filter(
+      (x) => !audienceQueueItemsMatch(x, item),
+    )
+    await persistQaQueue(queue)
   }
 
   const grouped = useMemo(() => {
@@ -467,44 +468,114 @@ export default function QuestionsPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
-      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-5 sm:py-8 lg:px-10">
-        <EventBranding centered className="mx-auto mb-4 w-full max-w-[18rem] sm:mb-5 sm:max-w-[20rem]" />
-        <div className="sticky top-[max(0,env(safe-area-inset-top))] z-20 pb-4">
-          <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.18)] sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h1 className="text-balance text-xl font-semibold leading-snug tracking-tight text-slate-900 sm:text-2xl md:text-[1.75rem]">
-                  {qaMode
-                    ? QA_SLIDESHOW_TITLE
-                    : eventPrompt?.trim()
-                      ? eventPrompt.trim()
-                      : 'Waiting for the current prompt…'}
-                </h1>
-                {!qaMode ? (
-                  <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                    Question bank: newest first, grouped by General and each speaker. During debate,
-                    questions stay here; when Q&amp;A starts on the MC page, use &quot;Push to MC&quot;
-                    to send them to the screen.
-                  </p>
-                ) : null}
-              </div>
-              <div className="shrink-0 text-right">
-                <button
-                  type="button"
-                  onClick={clearAllQuestions}
-                  className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-700 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={clearStatus === 'Clearing…'}
-                  title="Clear all questions"
-                >
-                  {clearStatus ? clearStatus : 'Clear'}
-                </button>
-                {pushStatus ? (
-                  <div className="mt-2 text-xs font-medium text-indigo-600">• {pushStatus}</div>
-                ) : null}
+      <div className="flex min-h-screen flex-col lg:flex-row">
+        {qaMode ? (
+          <aside className="order-first w-full shrink-0 border-b border-slate-200 bg-white lg:order-none lg:w-[min(22rem,92vw)] lg:border-b-0 lg:border-r lg:border-slate-200">
+            <div className="sticky top-0 z-10 max-h-[min(50vh,28rem)] overflow-y-auto px-4 py-5 lg:max-h-[100dvh]">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-600">
+                MC queue
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                {qaQueue.length === 0
+                  ? 'Nothing pushed yet'
+                  : `${qaQueue.length} ${qaQueue.length === 1 ? 'question' : 'questions'} · order matches the MC screen`}
+              </p>
+              <ul className="mt-4 space-y-2">
+                {qaQueue.length === 0 ? (
+                  <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-8 text-center text-sm text-slate-500">
+                    Push questions from the bank to add them here.
+                  </li>
+                ) : (
+                  qaQueue.map((item, index) => (
+                    <li
+                      key={
+                        item.id != null
+                          ? `mcq-${String(item.id)}-${index}`
+                          : `mcq-${index}-${item.created_at}-${String(item.question_text).slice(0, 40)}`
+                      }
+                      className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex min-w-0 rounded-lg bg-indigo-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-indigo-900">
+                          {displayNameForMcTarget(item.target_key)}
+                        </span>
+                        <span className="text-[0.65rem] font-medium text-slate-400">#{index + 1}</span>
+                      </div>
+                      <p className="mt-2 line-clamp-4 text-sm leading-snug text-slate-800">
+                        {item.question_text}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={queueWriteBusy || index === 0}
+                          onClick={() => moveQueueSlot(index, -1)}
+                          className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          aria-label="Move up in queue"
+                        >
+                          Up
+                        </button>
+                        <button
+                          type="button"
+                          disabled={queueWriteBusy || index >= qaQueue.length - 1}
+                          onClick={() => moveQueueSlot(index, 1)}
+                          className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          aria-label="Move down in queue"
+                        >
+                          Down
+                        </button>
+                        <button
+                          type="button"
+                          disabled={queueWriteBusy}
+                          onClick={() => removeQaAudienceFromMc(item)}
+                          className="touch-manipulation rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </aside>
+        ) : null}
+
+        <div className="min-w-0 flex-1">
+          <div className="mx-auto max-w-6xl px-3 py-6 sm:px-5 sm:py-8 lg:px-10">
+            <EventBranding centered className="mx-auto mb-4 w-full max-w-[18rem] sm:mb-5 sm:max-w-[20rem]" />
+            <div className="sticky top-[max(0,env(safe-area-inset-top))] z-20 pb-4">
+              <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.18)] sm:p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h1 className="text-balance text-xl font-semibold leading-snug tracking-tight text-slate-900 sm:text-2xl md:text-[1.75rem]">
+                      {qaMode
+                        ? QA_SLIDESHOW_TITLE
+                        : eventPrompt?.trim()
+                          ? eventPrompt.trim()
+                          : 'Waiting for the current prompt…'}
+                    </h1>
+                    {!qaMode ? (
+                      <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                        Question bank: newest first, grouped by General and each speaker. During debate,
+                        questions stay here; when Q&amp;A starts on the MC page, use &quot;Push to MC&quot;
+                        to send them to the screen.
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <button
+                      type="button"
+                      onClick={clearAllQuestions}
+                      className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-slate-700 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={clearStatus === 'Clearing…'}
+                      title="Clear all questions"
+                    >
+                      {clearStatus ? clearStatus : 'Clear'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
         {error ? (
           <div className="mt-4 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm text-red-900">
@@ -565,11 +636,12 @@ export default function QuestionsPage() {
                               {qaMode && isQuestionInQaQueue(p.key, q) ? (
                                 <button
                                   type="button"
+                                  disabled={queueWriteBusy}
                                   onClick={() => {
                                     const item = qaQueueItemForQuestion(p.key, q)
                                     if (item) removeQaAudienceFromMc(item)
                                   }}
-                                  className="rounded-lg border border-slate-400 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                                  className="rounded-lg border border-slate-400 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   Remove from MC
                                 </button>
@@ -578,6 +650,7 @@ export default function QuestionsPage() {
                                   type="button"
                                   onClick={() => pushToMc(p.key, q)}
                                   disabled={
+                                    queueWriteBusy ||
                                     !eventState ||
                                     (hasPromptColumn &&
                                       activePromptKey &&
@@ -618,6 +691,8 @@ export default function QuestionsPage() {
               </section>
             )
           })}
+        </div>
+          </div>
         </div>
       </div>
     </div>
