@@ -1,9 +1,16 @@
 /** Big-screen countdown started from Admin (synced via `event_state.screen_timer_end_ms`). */
 export const SCREEN_TIMER_DURATION_MS = 120_000
 
-/** Tailwind width classes: compact right rail on `/screen` so it does not cover the debate table. */
+/**
+ * Timer + QR rail on `/screen` (debate mode). Capped so the fixed column stays beside the table, not over it.
+ * Keep in sync with `BIG_SCREEN_DEBATE_RAIL_PADDING_CLASS` in BigScreen.
+ */
 export const BIG_SCREEN_TIMER_QR_WIDTH_CLASS =
-  'w-[min(14rem,22vw)] max-w-[min(14rem,calc(100vw-2rem))]'
+  'w-[min(24rem,min(36vw,calc(100vw-2rem)))] max-w-full'
+
+/** Debate main column `padding-right` on md+ — must clear the fixed rail width + a comfortable gap. */
+export const BIG_SCREEN_DEBATE_RAIL_PADDING_CLASS =
+  'md:pr-[min(27rem,calc(38vw+2rem))]'
 
 /** Last 10s: text transitions from white to gold glow. */
 export const SCREEN_TIMER_GLOW_LAST_MS = 10_000

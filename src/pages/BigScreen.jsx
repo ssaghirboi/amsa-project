@@ -18,7 +18,10 @@ import {
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
-import { BIG_SCREEN_TIMER_QR_WIDTH_CLASS } from '../constants/screenTimer'
+import {
+  BIG_SCREEN_DEBATE_RAIL_PADDING_CLASS,
+  BIG_SCREEN_TIMER_QR_WIDTH_CLASS,
+} from '../constants/screenTimer'
 import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
 
 /** FLIP handoff: fullscreen intro card → in-flow prompt anchor (shared with admin Reveal step). */
@@ -653,7 +656,7 @@ export default function BigScreen() {
         </div>
         <div
           className={`mx-auto flex min-h-screen w-full max-w-[min(96vw,90rem)] flex-col px-2 pb-10 pt-[clamp(8rem,22vh,13rem)] transition-opacity duration-400 ease-in-out sm:px-5 lg:px-8 ${
-            debateShowsFixedQrRail ? 'md:pr-60' : ''
+            debateShowsFixedQrRail ? BIG_SCREEN_DEBATE_RAIL_PADDING_CLASS : ''
           }`}
           style={{
             opacity: presentationOffFade,
@@ -748,20 +751,20 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] max-w-[min(14rem,calc(100vw-2rem))] -translate-y-1/2 flex-col items-end justify-center gap-2 sm:gap-3">
+      <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] max-w-[min(24rem,calc(100vw-2rem))] -translate-y-1/2 flex-col items-end justify-center gap-2 sm:gap-3">
         {showScreenTimerWithQr ? <ScreenTimerDisplay endMs={screenTimerEndMs} /> : null}
         {!slideshowActive && !qaSlideshowActive ? (
           <div
-            className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} w-full shrink-0 rounded-2xl border border-slate-600/60 bg-slate-900/95 p-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:p-3`}
+            className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} w-full shrink-0 rounded-2xl border border-slate-600/60 bg-slate-900/95 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:p-4`}
             aria-hidden
           >
-            <div className="text-center text-xs font-semibold tracking-tight text-slate-100 sm:text-sm">
+            <div className="text-center text-sm font-semibold tracking-tight text-slate-100 sm:text-base">
               Share your thoughts
             </div>
             <img
               src={qrDoesGodExist}
               alt=""
-              className="mt-1.5 w-full max-w-full rounded-lg bg-slate-800 object-contain aspect-square sm:mt-2"
+              className="mt-2 w-full max-w-full rounded-xl bg-slate-800 object-contain aspect-square sm:mt-2.5"
               draggable={false}
             />
           </div>
