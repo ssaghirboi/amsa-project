@@ -7,12 +7,16 @@ import eventLogoSvg from '../assets/IS GOD REAL (A4).svg?url'
  * - presentationHero: slideshow — large centered logo
  * - presentationCorner: slideshow — top-left mark (large)
  * - mc: MC dashboard — top-left logo sized to clear control row (no overlap)
+ *
+ * @param {string} [logoSrc] — optional asset URL; defaults to IS GOD REAL (A4). BigScreen passes Print Flyer.
  */
 export function EventBranding({
   className = '',
   centered = false,
   variant = 'default',
+  logoSrc,
 }) {
+  const src = logoSrc ?? eventLogoSvg
   const sizeClass =
     variant === 'presentationHero'
       ? // Slideshow: dominant center logo
@@ -46,13 +50,11 @@ export function EventBranding({
       } ${className}`}
     >
       <img
-        src={eventLogoSvg}
+        src={src}
         alt="Event logo"
         className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
         decoding="async"
         fetchPriority="high"
-        width={746}
-        height={447}
       />
     </div>
   )
