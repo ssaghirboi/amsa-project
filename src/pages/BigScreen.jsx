@@ -741,11 +741,11 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      <div className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] flex flex-col items-end gap-4 pointer-events-none">
+      <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] -translate-y-1/2 flex-col items-end justify-center gap-4">
         {showScreenTimerWithQr ? <ScreenTimerDisplay endMs={screenTimerEndMs} /> : null}
         {!slideshowActive && !qaSlideshowActive ? (
           <div
-            className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20`}
+            className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-[calc(100vw-2rem)] shrink-0 rounded-2xl border border-slate-600/60 bg-slate-900/95 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:p-4`}
             aria-hidden
           >
             <div className="text-center text-sm font-semibold tracking-tight text-slate-100 sm:text-base">
@@ -754,7 +754,7 @@ export default function BigScreen() {
             <img
               src={qrDoesGodExist}
               alt=""
-              className="mt-3 h-56 w-56 rounded-xl bg-slate-800 sm:h-64 sm:w-64"
+              className="mt-2 w-full max-w-full rounded-xl bg-slate-800 object-contain aspect-square sm:mt-3"
               draggable={false}
             />
           </div>

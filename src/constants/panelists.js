@@ -5,16 +5,16 @@
 /** MC console only — shorter legacy labels. */
 export const PANELIST_DISPLAY_NAMES_MC = [
   'Paul Verhoef (Christian)',
-  'Imam Musawar Bajwa (Islamic)',
-  'Dr. Tinu Ruparell (Hindu)',
+  'Musawar Bajwa (Islamic)',
+  'Tinu Ruparell (Hindu)',
   'Roy Alexander (Atheist)',
 ]
 
 /** Admin, Big Screen, Ask, Audience, etc. */
 export const PANELIST_DISPLAY_NAMES = [
   'Paul Verhoef (Christian Perspective)',
-  'Imam Musawar Bajwa (Islamic Perspective)',
-  'Dr. Tinu Ruparell (Hindu Perspective)',
+  'Musawar Bajwa (Islamic Perspective)',
+  'Tinu Ruparell (Hindu Perspective)',
   'Roy Alexander (Atheist / Agnostic Perspective)',
 ]
 

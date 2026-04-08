@@ -1,8 +1,9 @@
 /** Big-screen countdown started from Admin (synced via `event_state.screen_timer_end_ms`). */
 export const SCREEN_TIMER_DURATION_MS = 120_000
 
-/** Tailwind width classes: timer card matches QR image width on `/screen`. */
-export const BIG_SCREEN_TIMER_QR_WIDTH_CLASS = 'w-56 sm:w-64'
+/** Tailwind width classes: timer card matches QR column on `/screen` (wide rail to use right-side space). */
+export const BIG_SCREEN_TIMER_QR_WIDTH_CLASS =
+  'w-[min(42vw,28rem)] sm:w-[min(38vw,30rem)] lg:w-[min(34vw,36rem)]'
 
 /** Last 10s: text transitions from grey to gold glow. */
 export const SCREEN_TIMER_GLOW_LAST_MS = 10_000

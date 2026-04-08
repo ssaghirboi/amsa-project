@@ -20,7 +20,7 @@ export const PRESENTATION_SLIDES = [
   {
     kind: 'segment',
     id: 'speaker-2',
-    title: 'Imam Musawar Bajwa',
+    title: 'Musawar Bajwa',
     subtitle: 'Islamic Perspective',
   },
   /** Slide 5 — Christian perspective */
@@ -34,7 +34,7 @@ export const PRESENTATION_SLIDES = [
   {
     kind: 'segment',
     id: 'speaker-4',
-    title: 'Dr. Tinu Ruparell',
+    title: 'Tinu Ruparell',
     subtitle: 'Hindu Perspective',
   },
   /** Slide 7 — Atheist / agnostic perspective */
