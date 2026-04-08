@@ -20,14 +20,11 @@ import {
 } from '../constants/qaSlideshow'
 import {
   GENERAL_TARGET_KEY,
-  PANELIST_DISPLAY_NAMES_MC,
   audienceQueueItemsMatch,
   displayNameForMcTarget,
   getEmptyMcQuestionSlots,
   normalizeQaAudienceQueue,
 } from '../constants/panelists'
-import { getSliderPositionStep } from '../constants/debateSliderScale'
-
 function normalizePrompt(s) {
   return String(s ?? '').trim().toLowerCase()
 }
@@ -63,13 +60,6 @@ function getPrevPrompt(current, sequence) {
   const prevIndex = idx >= 0 ? (idx - 1 + seq.length) % seq.length : seq.length - 1
   return { prev: String(seq[prevIndex] ?? ''), prevIndex, total: seq.length, seq }
 }
-
-const GENERAL_SLOT = { key: GENERAL_TARGET_KEY, title: 'General' }
-
-const PANELIST_ONLY = [1, 2, 3, 4].map((n, i) => ({
-  key: `Panelist ${n}`,
-  title: PANELIST_DISPLAY_NAMES_MC[i],
-}))
 
 const MC_NOTES_BY_SLIDE_KEY = 'amsa-mc-notes-by-slide'
 const MC_NOTES_LEGACY_KEY = 'amsa-mc-page-notes'
@@ -109,7 +99,6 @@ export default function McPage() {
   const [status, setStatus] = useState('Connecting…')
   const [error, setError] = useState('')
   const [mcQuestions, setMcQuestions] = useState(null)
-  const [mcQuestionsStatus, setMcQuestionsStatus] = useState('—')
   const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
     mergeQaSlidesFromRemote(null),
   )
@@ -281,13 +270,6 @@ export default function McPage() {
       setPanelists(next.panelists ?? [3, 3, 3, 3])
 
       setMcQuestions(incomingMc)
-      setMcQuestionsStatus(
-        incomingMc
-          ? promptMismatch
-            ? 'Resetting…'
-            : 'Pushed'
-          : '—',
-      )
 
       if (promptMismatch) {
         writeEventState(supabase, {
@@ -586,51 +568,6 @@ export default function McPage() {
     }
   }
 
-  const clearPushedSlot = async (panelKey) => {
-    const pushed = mcQuestions
-    if (!pushed?.panelists) return
-    if (!pushed.panelists[panelKey]?.question_text) return
-
-    setStatus('Updating…')
-    setError('')
-    try {
-      const nextMc = {
-        prompt: String(prompt ?? ''),
-        panelists: {
-          [GENERAL_TARGET_KEY]: pushed.panelists?.[GENERAL_TARGET_KEY] ?? null,
-          'Panelist 1': pushed.panelists?.['Panelist 1'] ?? null,
-          'Panelist 2': pushed.panelists?.['Panelist 2'] ?? null,
-          'Panelist 3': pushed.panelists?.['Panelist 3'] ?? null,
-          'Panelist 4': pushed.panelists?.['Panelist 4'] ?? null,
-        },
-        qaAudienceQueue: normalizeQaAudienceQueue(pushed.qaAudienceQueue),
-      }
-      nextMc.panelists[panelKey] = null
-      if (pushed.skipDebateIntro === true) nextMc.skipDebateIntro = true
-
-      await writeEventState(supabase, {
-        prompt: prompt ?? '',
-        panelists,
-        panelistIcons,
-        promptSequence,
-        presentationSlides,
-        qaSlideshowSlides,
-        slideshowActive,
-        slideshowIndex,
-        qaSlideshowActive,
-        qaSlideshowIndex,
-        mcQuestions: nextMc,
-        mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
-      })
-      setStatus('Live')
-      setMcQuestionsStatus('Cleared')
-      setTimeout(() => setMcQuestionsStatus('—'), 1500)
-    } catch (e) {
-      setError(e?.message || String(e))
-      setStatus('Live (write failed)')
-    }
-  }
-
   const removeQaAudienceItem = async (item) => {
     if (!qaSlideshowActive || !mcQuestions || !item) return
 
@@ -669,8 +606,6 @@ export default function McPage() {
         mcSlideNotes: notesRemoteEnabled ? notesBySlide : undefined,
       })
       setStatus('Live')
-      setMcQuestionsStatus('Removed')
-      setTimeout(() => setMcQuestionsStatus('—'), 1500)
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
@@ -795,91 +730,7 @@ export default function McPage() {
           </div>
         ) : null}
 
-        <div
-          className={`mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:mt-5 lg:grid lg:min-h-0 lg:items-stretch lg:gap-6 ${
-            qaSlideshowActive ? 'lg:grid-cols-1' : 'lg:grid-cols-[minmax(14rem,26vw)_1fr]'
-          }`}
-        >
-          {!qaSlideshowActive ? (
-          <aside className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 p-4 backdrop-blur sm:p-5 lg:min-h-0">
-            <div className="flex shrink-0 items-baseline justify-between gap-3">
-              <h2 className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-300/90 sm:text-xs">
-                Panelist questions
-              </h2>
-              <span className="text-[0.65rem] text-slate-500 sm:text-xs">{mcQuestionsStatus}</span>
-            </div>
-
-            <div className="mt-3 grid min-h-0 flex-1 grid-rows-5 gap-1.5 overflow-hidden pt-0.5 sm:mt-4 sm:gap-2">
-              {[GENERAL_SLOT, ...PANELIST_ONLY].map((slot) => {
-                const q = mcQuestions?.panelists?.[slot.key] ?? null
-                const panelistIdx =
-                  slot.key === GENERAL_TARGET_KEY
-                    ? -1
-                    : Math.max(0, Number(slot.key.replace('Panelist ', '')) - 1)
-                const sliderValue =
-                  panelistIdx >= 0 ? panelists[panelistIdx] ?? 3 : null
-                const step =
-                  sliderValue != null ? getSliderPositionStep(sliderValue) : null
-                return (
-                  <div
-                    key={slot.key}
-                    className="flex min-h-0 gap-2 overflow-hidden"
-                  >
-                    {debateRevealAck ? (
-                      panelistIdx < 0 ? (
-                        <div
-                          className="flex min-h-[3rem] w-[5.5rem] shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/25 px-1 text-[0.6rem] text-slate-500 sm:min-h-[3.35rem] sm:w-[6.5rem]"
-                          title="No panel slider (General)"
-                        >
-                          —
-                        </div>
-                      ) : (
-                        <div
-                          className={`flex min-h-[3rem] w-[5.5rem] shrink-0 flex-col items-center justify-center rounded-xl px-1.5 py-1.5 text-center sm:min-h-[3.35rem] sm:w-[6.5rem] ${step.boxClass}`}
-                          title={step.label}
-                        >
-                          <span className="line-clamp-3 max-w-full text-[0.55rem] font-extrabold leading-snug sm:text-[0.68rem] md:text-[0.78rem]">
-                            {step.label}
-                          </span>
-                        </div>
-                      )
-                    ) : null}
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start overflow-hidden rounded-2xl border border-white/10 bg-black/20 px-3 py-2 sm:px-3.5 sm:py-2.5">
-                      <div className="shrink-0 text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-slate-400 sm:text-[0.65rem]">
-                        {slot.title}
-                      </div>
-                      <div
-                        className={`mt-1 min-h-[2.25rem] w-full min-w-0 flex-1 overflow-y-auto leading-snug [overflow-wrap:anywhere] ${
-                          q?.question_text
-                            ? 'text-[clamp(0.8125rem,1.65vw,1rem)] font-medium text-slate-100'
-                            : 'text-[clamp(0.75rem,1.4vw,0.875rem)] font-normal text-slate-500'
-                        }`}
-                      >
-                        {q?.question_text ? q.question_text : 'No question yet.'}
-                      </div>
-                      {q?.created_at ? (
-                        <div className="mt-1 shrink-0 text-[0.55rem] font-medium uppercase tracking-[0.18em] text-slate-600">
-                          {new Date(q.created_at).toLocaleTimeString()}
-                        </div>
-                      ) : null}
-                      {q?.question_text ? (
-                        <button
-                          type="button"
-                          onClick={() => clearPushedSlot(slot.key)}
-                          disabled={status === 'Updating…'}
-                          className="mt-1.5 w-full shrink-0 touch-manipulation rounded-md border border-white/15 bg-white/5 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Clear
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </aside>
-          ) : null}
-
+        <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden lg:mt-5 lg:min-h-0">
           <section className="relative flex min-h-0 flex-1 flex-col lg:min-h-0">
             {qaSlideshowActive ? (
               <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/25 backdrop-blur">
