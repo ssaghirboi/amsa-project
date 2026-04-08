@@ -635,10 +635,8 @@ export default function BigScreen() {
     </div>
   );
 
-  /** Countdown only when a QR is shown: debate (fixed QR) or Q&A deck slide 0 (center QR). Hidden during intro presentation slideshow. */
-  const showScreenTimerWithQr =
-    (!slideshowActive && !qaSlideshowActive) ||
-    (qaSlideshowActive && qaSlideshowIndex === 0)
+  /** Countdown only on the debate screen (fixed QR rail). Hidden during presentation slideshow and Q&A end deck. */
+  const showScreenTimerWithQr = !slideshowActive && !qaSlideshowActive
 
   const debateShowsFixedQrRail = !slideshowActive && !qaSlideshowActive
 

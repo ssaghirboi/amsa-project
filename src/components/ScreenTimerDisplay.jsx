@@ -7,8 +7,8 @@ import {
 } from '../constants/screenTimer'
 
 /**
- * Live countdown from `endMs` (epoch ms). Grey by default; in the last 10s ramps to a gold glow.
- * When `endMs` is null (reset), shows an idle state so the block stays visible above the QR.
+ * Live countdown from `endMs` (epoch ms). White when idle or while running outside the last 10s;
+ * in the last 10s ramps to gold (color + glow). When `endMs` is null, shows idle time above the QR.
  */
 export function ScreenTimerDisplay({ endMs }) {
   const [, setTick] = useState(0)
@@ -26,11 +26,11 @@ export function ScreenTimerDisplay({ endMs }) {
         role="status"
         aria-label={`Timer idle — ${idleLabel}`}
       >
-        <div className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-500 sm:text-[0.7rem]">
+        <div className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-white/75 sm:text-[0.7rem]">
           Time
         </div>
         <div
-          className="mt-1 text-3xl font-bold tabular-nums text-slate-500 sm:text-4xl"
+          className="mt-1 text-3xl font-bold tabular-nums text-white sm:text-4xl"
           style={{ fontVariantNumeric: 'tabular-nums' }}
         >
           {idleLabel}
@@ -42,11 +42,11 @@ export function ScreenTimerDisplay({ endMs }) {
   const remaining = Math.max(0, endMs - Date.now())
   const label = formatScreenTimer(remaining)
   const glow = screenTimerGlowT(remaining)
-  const grey = [148, 163, 184] // slate-400
+  const white = [255, 255, 255]
   const gold = [251, 191, 36] // amber-400
-  const r = Math.round(grey[0] + (gold[0] - grey[0]) * glow)
-  const g = Math.round(grey[1] + (gold[1] - grey[1]) * glow)
-  const b = Math.round(grey[2] + (gold[2] - grey[2]) * glow)
+  const r = Math.round(white[0] + (gold[0] - white[0]) * glow)
+  const g = Math.round(white[1] + (gold[1] - white[1]) * glow)
+  const b = Math.round(white[2] + (gold[2] - white[2]) * glow)
   const color = `rgb(${r},${g},${b})`
   const shadowBlur = 6 + glow * 22
   const shadowAlpha = 0.15 + glow * 0.55
@@ -69,7 +69,7 @@ export function ScreenTimerDisplay({ endMs }) {
       aria-live="polite"
       aria-label={`Time remaining ${label}`}
     >
-      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-500 sm:text-[0.7rem]">
+      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] opacity-[0.85] sm:text-[0.7rem]">
         Time
       </div>
       <div
