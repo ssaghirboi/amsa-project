@@ -86,8 +86,15 @@ export default function Admin() {
   const [presentationSlides, setPresentationSlides] = useState(() =>
     mergePresentationSlidesFromRemote(null),
   )
+  /** Edited in UI; click Update to persist (saved state is `presentationSlides`). */
+  const [presentationSlidesDraft, setPresentationSlidesDraft] = useState(() =>
+    mergePresentationSlidesFromRemote(null).map((s) => ({ ...s })),
+  )
   const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
     mergeQaSlidesFromRemote(null),
+  )
+  const [qaSlideshowSlidesDraft, setQaSlideshowSlidesDraft] = useState(() =>
+    mergeQaSlidesFromRemote(null).map((s) => ({ ...s })),
   )
   const [status, setStatus] = useState('Connecting...')
   const [error, setError] = useState('')
@@ -105,10 +112,6 @@ export default function Admin() {
   const [screenTimerEndMs, setScreenTimerEndMs] = useState(null)
   const [debateRevealAck, setDebateRevealAck] = useState(false)
 
-  const presentationSlidesSaveTimerRef = useRef(null)
-  const presentationSlidesLatestRef = useRef(null)
-  const qaSlidesSaveTimerRef = useRef(null)
-  const qaSlidesLatestRef = useRef(null)
   const writeContextRef = useRef({
     prompt: '',
     panelists: [1, 1, 1, 1],
@@ -235,6 +238,18 @@ export default function Admin() {
     [promptSequence, promptSequenceDraft],
   )
 
+  const presentationSlidesDirty = useMemo(() => {
+    const draft = mergePresentationSlidesFromRemote(presentationSlidesDraft)
+    const saved = mergePresentationSlidesFromRemote(presentationSlides)
+    return JSON.stringify(draft) !== JSON.stringify(saved)
+  }, [presentationSlidesDraft, presentationSlides])
+
+  const qaSlidesDirty = useMemo(() => {
+    const draft = mergeQaSlidesFromRemote(qaSlideshowSlidesDraft)
+    const saved = mergeQaSlidesFromRemote(qaSlideshowSlides)
+    return JSON.stringify(draft) !== JSON.stringify(saved)
+  }, [qaSlideshowSlidesDraft, qaSlideshowSlides])
+
   useEffect(() => {
     let unsubscribe = null
 
@@ -258,7 +273,10 @@ export default function Admin() {
           setQaSlideshowActive(Boolean(current.qaSlideshowActive))
           setQaSlideshowIndex(clampQaSlideIndex(current.qaSlideshowIndex ?? 0))
           setPresentationSlides(mergedPresentation)
-          setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
+          setPresentationSlidesDraft(mergedPresentation.map((s) => ({ ...s })))
+          const mergedQa = mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null)
+          setQaSlideshowSlides(mergedQa)
+          setQaSlideshowSlidesDraft(mergedQa.map((s) => ({ ...s })))
           setDebateRevealAck(Boolean(current.debateRevealAck))
           setScreenTimerEndMs(current.screenTimerEndMs ?? null)
           if (current.promptSequence?.length) {
@@ -330,9 +348,12 @@ export default function Admin() {
 
       if (shouldSyncPresentationSlidesFromRemote()) {
         setPresentationSlides(mergedPres)
+        setPresentationSlidesDraft(mergedPres.map((s) => ({ ...s })))
       }
       if (shouldSyncQaSlidesFromRemote()) {
-        setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
+        const mq = mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null)
+        setQaSlideshowSlides(mq)
+        setQaSlideshowSlidesDraft(mq.map((s) => ({ ...s })))
       }
       setDebateRevealAck(Boolean(next.debateRevealAck))
       setScreenTimerEndMs(next.screenTimerEndMs ?? null)
@@ -350,14 +371,6 @@ export default function Admin() {
 
     return () => {
       if (unsubscribe) unsubscribe()
-      if (presentationSlidesSaveTimerRef.current) {
-        clearTimeout(presentationSlidesSaveTimerRef.current)
-        presentationSlidesSaveTimerRef.current = null
-      }
-      if (qaSlidesSaveTimerRef.current) {
-        clearTimeout(qaSlidesSaveTimerRef.current)
-        qaSlidesSaveTimerRef.current = null
-      }
     }
   }, [])
 
@@ -468,107 +481,88 @@ export default function Admin() {
 
   const cancelPendingPresentationSlideSave = async () => {
     await flushPendingPanelistDebouncedWrite()
-    if (presentationSlidesSaveTimerRef.current) {
-      clearTimeout(presentationSlidesSaveTimerRef.current)
-      presentationSlidesSaveTimerRef.current = null
-    }
-    presentationSlidesLatestRef.current = null
-    if (qaSlidesSaveTimerRef.current) {
-      clearTimeout(qaSlidesSaveTimerRef.current)
-      qaSlidesSaveTimerRef.current = null
-    }
-    qaSlidesLatestRef.current = null
   }
 
-  const flushPresentationSlidesSave = async () => {
-    const slides = presentationSlidesLatestRef.current
-    presentationSlidesLatestRef.current = null
-    if (!slides) return
-    const ctx = writeContextRef.current
-    setError('')
-    try {
-      // Debounced text saves must not revert slide indices another tab (e.g. MC) advanced.
-      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
-      const slideshowIndexLive = refreshed?.slideshowIndex ?? ctx.slideshowIndex
-      const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? ctx.qaSlideshowIndex
-      const screenTimerEndMsLive = refreshed?.screenTimerEndMs ?? ctx.screenTimerEndMs
-      await writeEventState(supabase, {
-        prompt: ctx.prompt,
-        panelists: ctx.panelists,
-        panelistIcons: ctx.panelistIcons,
-        promptSequence: ctx.promptSequence,
-        presentationSlides: slides,
-        qaSlideshowSlides: ctx.qaSlideshowSlides,
-        slideshowActive: ctx.slideshowActive,
-        slideshowIndex: slideshowIndexLive,
-        qaSlideshowActive: ctx.qaSlideshowActive,
-        qaSlideshowIndex: qaSlideshowIndexLive,
-        screenTimerEndMs: screenTimerEndMsLive,
-      })
-    } catch (e) {
-      setError(e?.message || String(e))
-    }
+  const patchPresentationSlideDraft = (index, partial) => {
+    const next = presentationSlidesDraft.map((s, i) =>
+      i === index ? { ...s, ...partial } : s,
+    )
+    setPresentationSlidesDraft(mergePresentationSlidesFromRemote(next))
   }
 
-  const flushQaSlidesSave = async () => {
-    const slides = qaSlidesLatestRef.current
-    qaSlidesLatestRef.current = null
-    if (!slides) return
-    const ctx = writeContextRef.current
+  const patchQaSlideDraft = (index, partial) => {
+    const next = qaSlideshowSlidesDraft.map((s, i) =>
+      i === index ? { ...s, ...partial } : s,
+    )
+    setQaSlideshowSlidesDraft(mergeQaSlidesFromRemote(next))
+  }
+
+  const handleUpdatePresentationSlides = async () => {
+    if (!presentationSlidesDirty) return
+    await flushPendingPanelistDebouncedWrite()
+    const normalized = mergePresentationSlidesFromRemote(presentationSlidesDraft)
+    setStatus('Updating...')
     setError('')
     try {
       const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
-      const slideshowIndexLive = refreshed?.slideshowIndex ?? ctx.slideshowIndex
-      const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? ctx.qaSlideshowIndex
-      const screenTimerEndMsLive = refreshed?.screenTimerEndMs ?? ctx.screenTimerEndMs
+      const slideshowIndexLive = refreshed?.slideshowIndex ?? slideshowIndex
+      const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? qaSlideshowIndex
+      const screenTimerEndMsLive = refreshed?.screenTimerEndMs ?? screenTimerEndMs
       await writeEventState(supabase, {
-        prompt: ctx.prompt,
-        panelists: ctx.panelists,
-        panelistIcons: ctx.panelistIcons,
-        promptSequence: ctx.promptSequence,
-        presentationSlides: ctx.presentationSlides,
-        qaSlideshowSlides: slides,
-        slideshowActive: ctx.slideshowActive,
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides: normalized,
+        qaSlideshowSlides,
+        slideshowActive,
         slideshowIndex: slideshowIndexLive,
-        qaSlideshowActive: ctx.qaSlideshowActive,
+        qaSlideshowActive,
         qaSlideshowIndex: qaSlideshowIndexLive,
         screenTimerEndMs: screenTimerEndMsLive,
       })
+      setPresentationSlides(normalized)
+      setPresentationSlidesDraft(normalized.map((s) => ({ ...s })))
+      setStatus('Live')
+      setShowPresentationSlidesMigrateBanner(shouldPresentationSlidesMigrate())
     } catch (e) {
       setError(e?.message || String(e))
+      setStatus('Live (write failed)')
     }
   }
 
-  const patchPresentationSlide = (index, partial) => {
-    const next = presentationSlides.map((s, i) =>
-      i === index ? { ...s, ...partial } : s,
-    )
-    const normalized = mergePresentationSlidesFromRemote(next)
-    setPresentationSlides(normalized)
-    presentationSlidesLatestRef.current = normalized
-    if (presentationSlidesSaveTimerRef.current) {
-      clearTimeout(presentationSlidesSaveTimerRef.current)
+  const handleUpdateQaSlides = async () => {
+    if (!qaSlidesDirty) return
+    await flushPendingPanelistDebouncedWrite()
+    const normalized = mergeQaSlidesFromRemote(qaSlideshowSlidesDraft)
+    setStatus('Updating...')
+    setError('')
+    try {
+      const refreshed = await fetchCurrentEventState(supabase).catch(() => null)
+      const slideshowIndexLive = refreshed?.slideshowIndex ?? slideshowIndex
+      const qaSlideshowIndexLive = refreshed?.qaSlideshowIndex ?? qaSlideshowIndex
+      const screenTimerEndMsLive = refreshed?.screenTimerEndMs ?? screenTimerEndMs
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides: normalized,
+        slideshowActive,
+        slideshowIndex: slideshowIndexLive,
+        qaSlideshowActive,
+        qaSlideshowIndex: qaSlideshowIndexLive,
+        screenTimerEndMs: screenTimerEndMsLive,
+      })
+      setQaSlideshowSlides(normalized)
+      setQaSlideshowSlidesDraft(normalized.map((s) => ({ ...s })))
+      setStatus('Live')
+      setShowQaSlidesCopyMigrateBanner(shouldQaSlideshowSlidesMigrate())
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
     }
-    presentationSlidesSaveTimerRef.current = setTimeout(() => {
-      presentationSlidesSaveTimerRef.current = null
-      flushPresentationSlidesSave()
-    }, 350)
-  }
-
-  const patchQaSlide = (index, partial) => {
-    const next = qaSlideshowSlides.map((s, i) =>
-      i === index ? { ...s, ...partial } : s,
-    )
-    const normalized = mergeQaSlidesFromRemote(next)
-    setQaSlideshowSlides(normalized)
-    qaSlidesLatestRef.current = normalized
-    if (qaSlidesSaveTimerRef.current) {
-      clearTimeout(qaSlidesSaveTimerRef.current)
-    }
-    qaSlidesSaveTimerRef.current = setTimeout(() => {
-      qaSlidesSaveTimerRef.current = null
-      flushQaSlidesSave()
-    }, 350)
   }
 
   const handleNextPrompt = () => {
@@ -1063,15 +1057,37 @@ export default function Admin() {
           ) : null}
 
           <div className="mt-6 space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div>
-              <h3 className="text-sm font-medium text-slate-900">Slideshow text</h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Edit what appears on each presentation slide on{' '}
-                <code className="text-slate-300">/screen</code>. Changes save immediately.
-              </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-slate-900">Slideshow text</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Edit what appears on each presentation slide on{' '}
+                  <code className="text-slate-300">/screen</code>. Click Update to save to the database.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {presentationSlidesDirty ? (
+                  <span className="text-xs font-medium text-amber-800">Unsaved edits</span>
+                ) : (
+                  <span className="text-xs text-slate-500">Saved</span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleUpdatePresentationSlides}
+                  disabled={!presentationSlidesDirty || status === 'Updating...'}
+                  title={
+                    presentationSlidesDirty
+                      ? 'Save presentation slide copy'
+                      : 'Edit a field above to enable'
+                  }
+                  className="whitespace-nowrap rounded-lg border border-indigo-400/50 bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500"
+                >
+                  Update
+                </button>
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {presentationSlides.map((slide, i) => (
+              {presentationSlidesDraft.map((slide, i) => (
                 <div
                   key={`${slide.kind}-${slide.id ?? i}`}
                   className="rounded-lg border border-slate-200 bg-white p-3"
@@ -1087,7 +1103,7 @@ export default function Admin() {
                         type="text"
                         value={slide.tagline ?? ''}
                         onChange={(e) =>
-                          patchPresentationSlide(i, { tagline: e.target.value })
+                          patchPresentationSlideDraft(i, { tagline: e.target.value })
                         }
                         className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                         placeholder="Leave empty for no line"
@@ -1101,7 +1117,7 @@ export default function Admin() {
                           type="text"
                           value={slide.title ?? ''}
                           onChange={(e) =>
-                            patchPresentationSlide(i, { title: e.target.value })
+                            patchPresentationSlideDraft(i, { title: e.target.value })
                           }
                           className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                         />
@@ -1112,7 +1128,7 @@ export default function Admin() {
                           type="text"
                           value={slide.subtitle ?? ''}
                           onChange={(e) =>
-                            patchPresentationSlide(i, { subtitle: e.target.value })
+                            patchPresentationSlideDraft(i, { subtitle: e.target.value })
                           }
                           className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
                         />
@@ -1485,12 +1501,34 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
             ) : null}
 
             <div className="mt-6 space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div>
-                <h3 className="text-sm font-medium text-slate-900">Q&amp;A slideshow text</h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  Edit what appears on each Q&amp;A end slide on <code className="text-slate-600">/screen</code>. Changes
-                  save after a short pause.
-                </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-slate-900">Q&amp;A slideshow text</h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Edit what appears on each Q&amp;A end slide on <code className="text-slate-600">/screen</code>. Click
+                    Update to save to the database.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {qaSlidesDirty ? (
+                    <span className="text-xs font-medium text-amber-800">Unsaved edits</span>
+                  ) : (
+                    <span className="text-xs text-slate-500">Saved</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleUpdateQaSlides}
+                    disabled={!qaSlidesDirty || status === 'Updating...'}
+                    title={
+                      qaSlidesDirty
+                        ? 'Save Q&amp;A slide copy'
+                        : 'Edit a field above to enable'
+                    }
+                    className="whitespace-nowrap rounded-lg border border-emerald-600/50 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-500"
+                  >
+                    Update
+                  </button>
+                </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-lg border border-slate-200 bg-white p-3">
@@ -1499,8 +1537,8 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                     <span className="text-xs text-slate-500">Title</span>
                     <input
                       type="text"
-                      value={qaSlideshowSlides[0]?.title ?? ''}
-                      onChange={(e) => patchQaSlide(0, { title: e.target.value })}
+                      value={qaSlideshowSlidesDraft[0]?.title ?? ''}
+                      onChange={(e) => patchQaSlideDraft(0, { title: e.target.value })}
                       className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
                     />
                   </label>
@@ -1512,8 +1550,8 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                       <span className="text-xs text-slate-500">Title</span>
                       <input
                         type="text"
-                        value={qaSlideshowSlides[1]?.title ?? ''}
-                        onChange={(e) => patchQaSlide(1, { title: e.target.value })}
+                        value={qaSlideshowSlidesDraft[1]?.title ?? ''}
+                        onChange={(e) => patchQaSlideDraft(1, { title: e.target.value })}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
                       />
                     </label>
@@ -1521,8 +1559,8 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                       <span className="text-xs text-slate-500">Subtitle</span>
                       <input
                         type="text"
-                        value={qaSlideshowSlides[1]?.subtitle ?? ''}
-                        onChange={(e) => patchQaSlide(1, { subtitle: e.target.value })}
+                        value={qaSlideshowSlidesDraft[1]?.subtitle ?? ''}
+                        onChange={(e) => patchQaSlideDraft(1, { subtitle: e.target.value })}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
                       />
                     </label>
@@ -1536,8 +1574,8 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                     <span className="text-xs text-slate-500">Line above QR</span>
                     <input
                       type="text"
-                      value={qaSlideshowSlides[2]?.title ?? ''}
-                      onChange={(e) => patchQaSlide(2, { title: e.target.value })}
+                      value={qaSlideshowSlidesDraft[2]?.title ?? ''}
+                      onChange={(e) => patchQaSlideDraft(2, { title: e.target.value })}
                       className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
                     />
                   </label>
@@ -1548,8 +1586,8 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                     <span className="text-xs text-slate-500">Headline (e.g. Thank You)</span>
                     <input
                       type="text"
-                      value={qaSlideshowSlides[3]?.title ?? ''}
-                      onChange={(e) => patchQaSlide(3, { title: e.target.value })}
+                      value={qaSlideshowSlidesDraft[3]?.title ?? ''}
+                      onChange={(e) => patchQaSlideDraft(3, { title: e.target.value })}
                       className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
                     />
                   </label>
