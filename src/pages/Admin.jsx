@@ -1292,6 +1292,56 @@ export default function Admin() {
               </p>
             </div>
 
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-xs font-medium uppercase tracking-wide text-slate-600">
+                Prompts
+              </span>
+              <button
+                type="button"
+                onClick={handleResetPrompts}
+                disabled={
+                  status === 'Updating...' ||
+                  !promptSequence?.[0] ||
+                  slideshowActive ||
+                  qaSlideshowActive
+                }
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Reset to first prompt
+              </button>
+              <button
+                type="button"
+                onClick={handlePreviousPrompt}
+                disabled={
+                  status === 'Updating...' ||
+                  !promptSequence?.length ||
+                  slideshowActive ||
+                  qaSlideshowActive
+                }
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous prompt
+              </button>
+              <button
+                type="button"
+                onClick={handleNextPrompt}
+                disabled={
+                  status === 'Updating...' ||
+                  !promptSequence?.length ||
+                  slideshowActive ||
+                  qaSlideshowActive
+                }
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next prompt
+              </button>
+              {slideshowActive || qaSlideshowActive ? (
+                <span className="text-xs text-amber-800">
+                  Turn off slideshow modes to change prompts
+                </span>
+              ) : null}
+            </div>
+
             <div className="mt-4 space-y-5">
               {panelists.map((storedValue, i) => {
                 // Screen uses 1 = Strongly Agree (right), 5 = Strongly Disagree (left).
@@ -1468,56 +1518,7 @@ export default function Admin() {
                 </button>
               </div>
             </div>
-            <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
-              <span className="mr-1 text-xs font-medium uppercase tracking-wide text-slate-500">
-                Live prompt
-              </span>
-              <button
-                type="button"
-                onClick={handleResetPrompts}
-                disabled={
-                  status === 'Updating...' ||
-                  !promptSequence?.[0] ||
-                  slideshowActive ||
-                  qaSlideshowActive
-                }
-                className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Reset to first prompt
-              </button>
-              <button
-                type="button"
-                onClick={handlePreviousPrompt}
-                disabled={
-                  status === 'Updating...' ||
-                  !promptSequence?.length ||
-                  slideshowActive ||
-                  qaSlideshowActive
-                }
-                className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Previous prompt
-              </button>
-              <button
-                type="button"
-                onClick={handleNextPrompt}
-                disabled={
-                  status === 'Updating...' ||
-                  !promptSequence?.length ||
-                  slideshowActive ||
-                  qaSlideshowActive
-                }
-                className="rounded-lg border border-indigo-400/40 bg-indigo-500/90 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next prompt
-              </button>
-              {slideshowActive || qaSlideshowActive ? (
-                <span className="text-xs text-amber-200/80">
-                  Turn off slideshow modes to change prompts
-                </span>
-              ) : null}
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="mb-4 grid gap-4 border-b border-white/10 pb-4 md:grid-cols-3">
               <div className="rounded-lg border border-white/10 bg-black/20 p-3">
                 <div className="text-xs text-slate-400">Previous</div>
                 <div className="mt-1 text-sm text-slate-100">{previousPrompt}</div>
