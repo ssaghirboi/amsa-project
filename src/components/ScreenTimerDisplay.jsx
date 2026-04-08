@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { formatScreenTimer, screenTimerGlowT } from '../constants/screenTimer'
 
+/** Matches QR image: `w-48 sm:w-52` in BigScreen. */
+const TIMER_WIDTH_CLASS = 'w-48 sm:w-52 max-w-full'
+
 /**
  * Live countdown from `endMs` (epoch ms). Grey by default; in the last 10s ramps to a gold glow.
+ * When `endMs` is null (reset), shows an idle state so the block stays visible above the QR.
  */
 export function ScreenTimerDisplay({ endMs }) {
   const [, setTick] = useState(0)
@@ -12,7 +16,26 @@ export function ScreenTimerDisplay({ endMs }) {
     return () => window.clearInterval(id)
   }, [endMs])
 
-  if (endMs == null) return null
+  if (endMs == null) {
+    return (
+      <div
+        className={`${TIMER_WIDTH_CLASS} pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-3 py-3 text-center shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20`}
+        role="status"
+        aria-label="Timer reset — not running"
+      >
+        <div className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500">
+          Time
+        </div>
+        <div
+          className="mt-1 text-4xl font-bold tabular-nums text-slate-500 sm:text-5xl"
+          style={{ fontVariantNumeric: 'tabular-nums' }}
+        >
+          —:—
+        </div>
+        <div className="mt-1 text-[0.65rem] font-medium tracking-wide text-slate-600">Reset</div>
+      </div>
+    )
+  }
 
   const remaining = Math.max(0, endMs - Date.now())
   const label = formatScreenTimer(remaining)
@@ -28,7 +51,7 @@ export function ScreenTimerDisplay({ endMs }) {
 
   return (
     <div
-      className="pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-5 py-3 text-center tabular-nums tracking-tight shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 transition-[color,box-shadow,text-shadow] duration-300 ease-out"
+      className={`${TIMER_WIDTH_CLASS} pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-3 py-3 text-center tabular-nums tracking-tight shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 transition-[color,box-shadow,text-shadow] duration-300 ease-out`}
       style={{
         color,
         textShadow:

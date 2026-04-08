@@ -735,10 +735,8 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      <div className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] flex flex-col items-end gap-3 pointer-events-none">
-        {screenTimerEndMs != null ? (
-          <ScreenTimerDisplay endMs={screenTimerEndMs} />
-        ) : null}
+      <div className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] flex w-48 flex-col items-stretch gap-3 pointer-events-none sm:w-52">
+        <ScreenTimerDisplay endMs={screenTimerEndMs} />
         {!slideshowActive && !qaSlideshowActive ? (
           <div
             className="rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20"
