@@ -1,8 +1,6 @@
 /**
- * Opinion-hand SVGs for the first presentation slide (Jubilee opener).
- * Left column top→bottom: Strongly Agree, Neutral, Disagree (reference layout).
- * Right column: Agree (top), Strongly Disagree (bottom).
- * Reorder imports in this file if assets don’t match labels.
+ * Opinion-hand SVGs — left: Strongly Agree → Neutral → Disagree; right: Agree → Strongly Disagree.
+ * Swap import lines if colors don’t match labels.
  */
 import signStronglyAgree from '../assets/IS GOD REAL (Business Card US Portrait).svg?url'
 import signDisagree from '../assets/IS GOD REAL (Business Card US Portrait) (1).svg?url'
@@ -11,8 +9,8 @@ import signAgree from '../assets/IS GOD REAL (Business Card US Portrait) (3).svg
 import signStronglyDisagree from '../assets/IS GOD REAL (Business Card US Portrait) (4).svg?url'
 
 /**
- * Positions tuned to reference: signs hang past screen edges; left column staggered
- * (top green most “in”, middle yellow most clipped, bottom red between). Right: top + bottom.
+ * Reference layout: three evenly stepped on the left, two on the right (top / bottom),
+ * arms past the viewport edge; slight arc framing the center title.
  */
 export const JUBILEE_OPENER_SIGNS = [
   {
@@ -20,34 +18,34 @@ export const JUBILEE_OPENER_SIGNS = [
     label: 'Strongly Agree',
     src: signStronglyAgree,
     className:
-      'z-10 left-[-6%] top-[5%] w-[min(60vw,25rem)] sm:left-[-4%] sm:top-[7%] sm:w-[min(56vw,27rem)] md:left-[-3%] md:w-[min(52vw,29rem)] rotate-[10deg]',
+      'z-[15] left-[-12%] top-[6%] w-[min(36vw,17rem)] sm:left-[-8%] sm:top-[8%] sm:w-[min(34vw,18rem)] md:left-[-6%] md:w-[min(32vw,19rem)] rotate-[14deg]',
   },
   {
     key: 'neutral',
     label: 'Neutral',
     src: signNeutral,
     className:
-      'z-10 left-[-24%] top-[36%] w-[min(58vw,24rem)] sm:left-[-20%] sm:top-[38%] sm:w-[min(54vw,26rem)] md:left-[-16%] md:w-[min(50vw,28rem)] -rotate-[5deg]',
+      'z-[15] left-[-22%] top-[38%] w-[min(35vw,16.5rem)] sm:left-[-18%] sm:top-[40%] sm:w-[min(33vw,17.5rem)] md:left-[-14%] md:w-[min(31vw,18.5rem)] rotate-[2deg]',
   },
   {
     key: 'disagree',
     label: 'Disagree',
     src: signDisagree,
     className:
-      'z-10 left-[-14%] top-[64%] w-[min(60vw,25rem)] sm:left-[-11%] sm:top-[66%] sm:w-[min(56vw,27rem)] md:left-[-8%] md:w-[min(52vw,29rem)] rotate-[8deg]',
+      'z-[15] left-[-14%] top-[68%] w-[min(36vw,17rem)] sm:left-[-10%] sm:top-[70%] sm:w-[min(34vw,18rem)] md:left-[-7%] md:w-[min(32vw,19rem)] -rotate-[11deg]',
   },
   {
     key: 'agree',
     label: 'Agree',
     src: signAgree,
     className:
-      'z-10 right-[-10%] top-[7%] w-[min(58vw,24rem)] sm:right-[-7%] sm:top-[9%] sm:w-[min(54vw,26rem)] md:right-[-5%] md:w-[min(50vw,28rem)] -rotate-[9deg]',
+      'z-[15] right-[-12%] top-[8%] w-[min(35vw,16.5rem)] sm:right-[-8%] sm:top-[10%] sm:w-[min(33vw,17.5rem)] md:right-[-6%] md:w-[min(31vw,18.5rem)] -rotate-[12deg]',
   },
   {
     key: 'strongly-disagree',
     label: 'Strongly Disagree',
     src: signStronglyDisagree,
     className:
-      'z-10 right-[-18%] top-[60%] w-[min(60vw,25rem)] sm:right-[-14%] sm:top-[62%] sm:w-[min(56vw,27rem)] md:right-[-10%] md:w-[min(52vw,29rem)] rotate-[9deg]',
+      'z-[15] right-[-20%] top-[64%] w-[min(36vw,17rem)] sm:right-[-14%] sm:top-[66%] sm:w-[min(34vw,18rem)] md:right-[-10%] md:w-[min(32vw,19rem)] rotate-[12deg]',
   },
 ]
