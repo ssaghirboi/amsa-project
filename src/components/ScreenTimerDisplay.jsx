@@ -22,15 +22,15 @@ export function ScreenTimerDisplay({ endMs }) {
     const idleLabel = formatScreenTimerFullDuration()
     return (
       <div
-        className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-full pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-4 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20`}
+        className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-full pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-3 py-2.5 text-center shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:px-4 sm:py-3`}
         role="status"
         aria-label={`Timer idle — ${idleLabel}`}
       >
-        <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-500">
+        <div className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-500 sm:text-[0.7rem]">
           Time
         </div>
         <div
-          className="mt-1.5 text-5xl font-bold tabular-nums text-slate-500 sm:text-6xl"
+          className="mt-1 text-3xl font-bold tabular-nums text-slate-500 sm:text-4xl"
           style={{ fontVariantNumeric: 'tabular-nums' }}
         >
           {idleLabel}
@@ -53,7 +53,7 @@ export function ScreenTimerDisplay({ endMs }) {
 
   return (
     <div
-      className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-full pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-4 py-4 text-center tabular-nums tracking-tight shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 transition-[color,box-shadow,text-shadow] duration-300 ease-out`}
+      className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-full pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-3 py-2.5 text-center tabular-nums tracking-tight shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 transition-[color,box-shadow,text-shadow] duration-300 ease-out sm:px-4 sm:py-3`}
       style={{
         color,
         textShadow:
@@ -69,11 +69,11 @@ export function ScreenTimerDisplay({ endMs }) {
       aria-live="polite"
       aria-label={`Time remaining ${label}`}
     >
-      <div className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-slate-500">
+      <div className="text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-500 sm:text-[0.7rem]">
         Time
       </div>
       <div
-        className="mt-1.5 text-5xl font-bold tabular-nums sm:text-6xl"
+        className="mt-1 text-3xl font-bold tabular-nums sm:text-4xl"
         style={{ fontVariantNumeric: 'tabular-nums' }}
       >
         {label}

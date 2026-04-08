@@ -635,6 +635,8 @@ export default function BigScreen() {
     (!slideshowActive && !qaSlideshowActive) ||
     (qaSlideshowActive && (qaSlideshowIndex === 0 || qaSlideshowIndex === 2))
 
+  const debateShowsFixedQrRail = !slideshowActive && !qaSlideshowActive
+
   const debateContent = (
     <>
       <div className="relative min-h-screen text-slate-200">
@@ -647,7 +649,9 @@ export default function BigScreen() {
           <EventBranding logoSrc={screenEventLogo} variant="presentationCorner" className="shrink-0" />
         </div>
         <div
-          className="mx-auto flex min-h-screen w-full max-w-[min(96vw,90rem)] flex-col px-2 pb-10 pt-[clamp(8rem,22vh,13rem)] transition-opacity duration-400 ease-in-out sm:px-5 lg:px-8"
+          className={`mx-auto flex min-h-screen w-full max-w-[min(96vw,90rem)] flex-col px-2 pb-10 pt-[clamp(8rem,22vh,13rem)] transition-opacity duration-400 ease-in-out sm:px-5 lg:px-8 ${
+            debateShowsFixedQrRail ? 'md:pr-60' : ''
+          }`}
           style={{
             opacity: presentationOffFade,
             pointerEvents: showOverlay || presentationOffTransition ? 'none' : undefined,
@@ -741,20 +745,20 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] -translate-y-1/2 flex-col items-end justify-center gap-4">
+      <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] max-w-[min(14rem,calc(100vw-2rem))] -translate-y-1/2 flex-col items-end justify-center gap-2 sm:gap-3">
         {showScreenTimerWithQr ? <ScreenTimerDisplay endMs={screenTimerEndMs} /> : null}
         {!slideshowActive && !qaSlideshowActive ? (
           <div
-            className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-[calc(100vw-2rem)] shrink-0 rounded-2xl border border-slate-600/60 bg-slate-900/95 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:p-4`}
+            className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} w-full shrink-0 rounded-2xl border border-slate-600/60 bg-slate-900/95 p-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:p-3`}
             aria-hidden
           >
-            <div className="text-center text-sm font-semibold tracking-tight text-slate-100 sm:text-base">
+            <div className="text-center text-xs font-semibold tracking-tight text-slate-100 sm:text-sm">
               Share your thoughts
             </div>
             <img
               src={qrDoesGodExist}
               alt=""
-              className="mt-2 w-full max-w-full rounded-xl bg-slate-800 object-contain aspect-square sm:mt-3"
+              className="mt-1.5 w-full max-w-full rounded-lg bg-slate-800 object-contain aspect-square sm:mt-2"
               draggable={false}
             />
           </div>
