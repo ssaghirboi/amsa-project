@@ -54,3 +54,13 @@ const STEPS = [
 export function getSliderPositionStep(value) {
   return STEPS[sliderValueToColumnIndex(value)] ?? STEPS[2]
 }
+
+/**
+ * Horizontal thumb position (%) from the left, matching `DebateSliderGrid` (value rounded 1–5).
+ */
+export function sliderValueToThumbPercent(value) {
+  const v = typeof value === 'number' ? value : Number(value)
+  const clamped = Number.isFinite(v) ? Math.max(1, Math.min(5, Math.round(v))) : 1
+  const colFromLeft = 5 - clamped
+  return ((colFromLeft + 0.5) / 5) * 100
+}
