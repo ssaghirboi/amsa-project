@@ -128,6 +128,25 @@ export default function Admin() {
 
   const PANELIST_ICON_BUCKET = 'panelist-icons'
 
+  /** Used in realtime: avoid overwriting slide text drafts when other fields write to `event_state`. */
+  const presentationSlidesSavedRef = useRef(presentationSlides)
+  const presentationSlidesDraftRef = useRef(presentationSlidesDraft)
+  const qaSlidesSavedRef = useRef(qaSlideshowSlides)
+  const qaSlidesDraftRef = useRef(qaSlideshowSlidesDraft)
+
+  useEffect(() => {
+    presentationSlidesSavedRef.current = presentationSlides
+  }, [presentationSlides])
+  useEffect(() => {
+    presentationSlidesDraftRef.current = presentationSlidesDraft
+  }, [presentationSlidesDraft])
+  useEffect(() => {
+    qaSlidesSavedRef.current = qaSlideshowSlides
+  }, [qaSlideshowSlides])
+  useEffect(() => {
+    qaSlidesDraftRef.current = qaSlideshowSlidesDraft
+  }, [qaSlideshowSlidesDraft])
+
   useEffect(() => {
     panelistsRef.current = panelists
   }, [panelists])
@@ -347,13 +366,29 @@ export default function Admin() {
       }
 
       if (shouldSyncPresentationSlidesFromRemote()) {
+        const prevSavedNorm = mergePresentationSlidesFromRemote(
+          presentationSlidesSavedRef.current,
+        )
+        const draftNorm = mergePresentationSlidesFromRemote(
+          presentationSlidesDraftRef.current,
+        )
+        const hasUnsavedPresentationEdits =
+          JSON.stringify(prevSavedNorm) !== JSON.stringify(draftNorm)
         setPresentationSlides(mergedPres)
-        setPresentationSlidesDraft(mergedPres.map((s) => ({ ...s })))
+        if (!hasUnsavedPresentationEdits) {
+          setPresentationSlidesDraft(mergedPres.map((s) => ({ ...s })))
+        }
       }
       if (shouldSyncQaSlidesFromRemote()) {
         const mq = mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null)
+        const prevSavedNorm = mergeQaSlidesFromRemote(qaSlidesSavedRef.current)
+        const draftNorm = mergeQaSlidesFromRemote(qaSlidesDraftRef.current)
+        const hasUnsavedQaEdits =
+          JSON.stringify(prevSavedNorm) !== JSON.stringify(draftNorm)
         setQaSlideshowSlides(mq)
-        setQaSlideshowSlidesDraft(mq.map((s) => ({ ...s })))
+        if (!hasUnsavedQaEdits) {
+          setQaSlideshowSlidesDraft(mq.map((s) => ({ ...s })))
+        }
       }
       setDebateRevealAck(Boolean(next.debateRevealAck))
       setScreenTimerEndMs(next.screenTimerEndMs ?? null)
