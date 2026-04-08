@@ -1,9 +1,8 @@
-import eventTitleLogo from '../assets/IS GOD REAL (A4).svg?url'
 import { JUBILEE_OPENER_SIGNS } from '../constants/jubileeOpenerAssets'
 
 /**
- * First presentation slide: AMSA header + “Inspired by Jubilee” + large edge-hanging signs
- * + centered white event title graphic (“Does God Exist” / IS GOD REAL artwork).
+ * First presentation slide: AMSA header + “Inspired by Jubilee” + opinion signs
+ * + centered “DOES GOD EXIST” title (reference layout).
  */
 export function PresentationJubileeOpener({ slide }) {
   const presenterLine =
@@ -26,19 +25,21 @@ export function PresentationJubileeOpener({ slide }) {
         </p>
       </header>
 
-      <div className="relative mt-2 min-h-[min(52vh,400px)] flex-1 overflow-hidden sm:mt-4 md:min-h-[min(56vh,460px)]">
-        {/* Center: white event title (IS GOD REAL / Does God Exist artwork) */}
+      <div className="relative mt-2 min-h-[min(56vh,420px)] flex-1 overflow-hidden sm:mt-3 md:min-h-[min(58vh,480px)]">
+        {/* Center title — reference: DOES / EXIST sans, GOD larger serif + glow */}
         <div
-          className="pointer-events-none absolute left-1/2 top-[48%] z-30 w-[min(82vw,24rem)] -translate-x-1/2 -translate-y-1/2 sm:top-1/2 sm:w-[min(76vw,30rem)] md:w-[min(70vw,36rem)] lg:w-[min(64vw,42rem)]"
+          className="pointer-events-none absolute left-1/2 top-[50%] z-30 w-[min(92vw,40rem)] -translate-x-1/2 -translate-y-1/2 text-center"
           aria-hidden
         >
-          <img
-            src={eventTitleLogo}
-            alt=""
-            className="h-auto w-full brightness-0 invert drop-shadow-[0_6px_32px_rgba(0,0,0,0.45)]"
-            draggable={false}
-          />
+          <p className="font-sans text-[clamp(1.5rem,5.2vw,2.75rem)] font-bold uppercase leading-[1.05] tracking-[0.04em] text-white drop-shadow-[0_0_18px_rgba(255,255,255,0.35)]">
+            <span>DOES </span>
+            <span className="inline-block align-baseline font-serif text-[clamp(2.25rem,8.5vw,5rem)] font-bold normal-case tracking-normal text-white drop-shadow-[0_0_32px_rgba(255,255,255,0.55)]">
+              GOD
+            </span>
+            <span> EXIST</span>
+          </p>
         </div>
+
         {JUBILEE_OPENER_SIGNS.map((s) => (
           <img
             key={s.key}
