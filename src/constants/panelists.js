@@ -4,18 +4,18 @@
  */
 /** MC console only — shorter legacy labels. */
 export const PANELIST_DISPLAY_NAMES_MC = [
-  'Logan Johnson (Christian)',
-  'Attaul Wahab (Muslim)',
-  'Anil Gupta (Hindu)',
+  'Paul Verhoef (Christian)',
+  'Imam Musawar Bajwa (Islamic)',
+  'Dr. Tinu Ruparell (Hindu)',
   'Roy Alexander (Atheist)',
 ]
 
 /** Admin, Big Screen, Ask, Audience, etc. */
 export const PANELIST_DISPLAY_NAMES = [
-  'Logan Johnson (Pentecostal Christian)',
-  'Attaul Wahab (Ahmadi Muslim)',
-  'Anil Gupta (Advaita Hindu)',
-  'Roy Alexander (Atheist/Agnostic)',
+  'Paul Verhoef (Christian Perspective)',
+  'Imam Musawar Bajwa (Islamic Perspective)',
+  'Dr. Tinu Ruparell (Hindu Perspective)',
+  'Roy Alexander (Atheist / Agnostic Perspective)',
 ]
 
 /** Stored in `questions.target_panelist` and `mc_questions.panelists` for non-directed submissions. */
