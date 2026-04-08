@@ -238,8 +238,6 @@ export default function McPage() {
       }
     }
 
-    applyLatestRef.current = apply
-
     ;(async () => {
       setStatus('Connecting…')
       setError('')

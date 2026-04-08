@@ -1,4 +1,4 @@
-import eventLogoSvg from '../assets/IS GOD REAL (A4).svg?url'
+import eventLogoSvg from '../assets/IS GOD REAL (Print Flyer).svg?url'
 
 /**
  * Official event logo (SVG). Height-capped so it never dominates the viewport.
@@ -8,7 +8,7 @@ import eventLogoSvg from '../assets/IS GOD REAL (A4).svg?url'
  * - presentationCorner: slideshow — top-left mark (large)
  * - mc: MC dashboard — top-left logo sized to clear control row (no overlap)
  *
- * @param {string} [logoSrc] — optional asset URL; defaults to IS GOD REAL (A4). BigScreen passes Print Flyer.
+ * @param {string} [logoSrc] — optional asset URL; defaults to Print Flyer asset. BigScreen may pass the same.
  */
 export function EventBranding({
   className = '',
