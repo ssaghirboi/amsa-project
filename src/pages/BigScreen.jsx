@@ -630,6 +630,11 @@ export default function BigScreen() {
     </div>
   );
 
+  /** Countdown only when a QR is shown: debate (fixed QR) or Q&A deck slides 0 & 2 (center QRs). Hidden during intro presentation slideshow. */
+  const showScreenTimerWithQr =
+    (!slideshowActive && !qaSlideshowActive) ||
+    (qaSlideshowActive && (qaSlideshowIndex === 0 || qaSlideshowIndex === 2))
+
   const debateContent = (
     <>
       <div className="relative min-h-screen text-slate-200">
@@ -737,7 +742,7 @@ export default function BigScreen() {
           ? slideshowContent
           : debateContent}
       <div className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] flex flex-col items-end gap-4 pointer-events-none">
-        <ScreenTimerDisplay endMs={screenTimerEndMs} />
+        {showScreenTimerWithQr ? <ScreenTimerDisplay endMs={screenTimerEndMs} /> : null}
         {!slideshowActive && !qaSlideshowActive ? (
           <div
             className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20`}
