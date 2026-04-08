@@ -5,7 +5,7 @@ import {
   fetchCurrentEventState,
   subscribeToEventState,
 } from '../supabase/eventState'
-import { mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
+import { QA_SLIDE_COUNT, mergeQaSlidesFromRemote } from '../constants/qaSlideshow'
 
 export default function PromptPage() {
   const [prompt, setPrompt] = useState('')
@@ -61,7 +61,7 @@ export default function PromptPage() {
 
   return (
     <div className="relative min-h-[100dvh] min-h-screen bg-[#010101] text-slate-100">
-      {!(qaSlideshowActive && qaSlideshowIndex === 3) ? (
+      {!(qaSlideshowActive && qaSlideshowIndex === QA_SLIDE_COUNT - 1) ? (
         <div
           className="pointer-events-none fixed z-20 left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))]"
           aria-hidden
@@ -80,15 +80,11 @@ export default function PromptPage() {
               {qaSlideshowSlides[1]?.subtitle ?? ''}
             </p>
           </div>
-        ) : qaSlideshowActive && qaSlideshowIndex === 2 ? (
-          <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.25rem,9vw,6.5rem)] font-semibold leading-[1.08] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
-            {qaSlideshowSlides[2]?.title ?? ''}
-          </p>
-        ) : qaSlideshowActive && qaSlideshowIndex === 3 ? (
+        ) : qaSlideshowActive && qaSlideshowIndex === QA_SLIDE_COUNT - 1 ? (
           <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-center justify-center text-center lg:max-w-[min(100%,85rem)]">
             <EventBranding variant="presentationHero" centered className="w-full max-w-[min(92vw,40rem)]" />
             <p className="mt-6 max-w-2xl text-balance text-[clamp(1.25rem,4vw,2.5rem)] font-medium leading-snug tracking-wide text-slate-400 sm:mt-8">
-              {qaSlideshowSlides[3]?.title ?? ''}
+              {qaSlideshowSlides[2]?.title ?? ''}
             </p>
           </div>
         ) : (

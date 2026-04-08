@@ -1668,7 +1668,7 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                   </button>
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div className="rounded-lg border border-slate-200 bg-white p-3">
                   <div className="mb-2 text-xs font-medium text-slate-600">Slide 1 · Audience Q&amp;A + QR</div>
                   <label className="block space-y-1">
@@ -1705,27 +1705,13 @@ alter table public.event_state add column if not exists qa_slideshow_index int d
                   </div>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-white p-3">
-                  <div className="mb-2 text-xs font-medium text-slate-600">
-                    Slide 3 · Humanity First QR (image is fixed in app)
-                  </div>
-                  <label className="block space-y-1">
-                    <span className="text-xs text-slate-500">Line above QR</span>
-                    <input
-                      type="text"
-                      value={qaSlideshowSlidesDraft[2]?.title ?? ''}
-                      onChange={(e) => patchQaSlideDraft(2, { title: e.target.value })}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
-                    />
-                  </label>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white p-3">
-                  <div className="mb-2 text-xs font-medium text-slate-600">Slide 4 · Logo hero + thank you</div>
+                  <div className="mb-2 text-xs font-medium text-slate-600">Slide 3 · Logo hero + thank you</div>
                   <label className="block space-y-1">
                     <span className="text-xs text-slate-500">Headline (e.g. Thank You)</span>
                     <input
                       type="text"
-                      value={qaSlideshowSlidesDraft[3]?.title ?? ''}
-                      onChange={(e) => patchQaSlideDraft(3, { title: e.target.value })}
+                      value={qaSlideshowSlidesDraft[2]?.title ?? ''}
+                      onChange={(e) => patchQaSlideDraft(2, { title: e.target.value })}
                       className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
                     />
                   </label>

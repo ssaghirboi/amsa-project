@@ -18,7 +18,7 @@ export const QA_SLIDE_KIND = {
 }
 
 /** Number of slides in the Q&A end deck. */
-export const QA_SLIDE_COUNT = 4
+export const QA_SLIDE_COUNT = 3
 
 export function clampQaSlideIndex(raw) {
   if (typeof raw === 'boolean') return raw ? 1 : 0
@@ -70,10 +70,6 @@ const DEFAULT_SLIDES = [
     title: QA_EJAZ_TITLE,
     subtitle: QA_EJAZ_SUBTITLE,
   },
-  {
-    kind: QA_SLIDE_KIND.HUMANITY_QR,
-    title: 'Humanity First club at UCalgary',
-  },
   { kind: QA_SLIDE_KIND.HERO_THANKS, title: 'Thank You' },
 ]
 
@@ -88,7 +84,9 @@ export function mergeQaSlidesFromRemote(raw) {
   }
 
   return defaults.map((def, i) => {
-    const partial = arr[i]
+    /** Legacy 4-slide deck: indices 0–1 unchanged; old thank-you was at index 3 (index 2 was Humanity QR). */
+    const partial =
+      i === 2 && arr.length >= 4 ? arr[3] ?? arr[2] : arr[i]
     if (!partial || typeof partial !== 'object') return { ...def }
     const next = { ...def }
     if (partial.kind != null) next.kind = String(partial.kind)

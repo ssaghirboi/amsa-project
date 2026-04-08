@@ -16,7 +16,14 @@ export const PRESENTATION_SLIDES = [
     title: 'Recitation of the Holy Quran',
     subtitle: '',
   },
-  /** Slide 4 — all four panelists (names + perspectives), stacked */
+  /** Slide 4 — Saghir */
+  {
+    kind: 'segment',
+    id: 'saghir-president-line',
+    title: 'Saghir Saeed',
+    subtitle: 'President of AMSA',
+  },
+  /** Slide 5 — all four panelists (names + perspectives), stacked */
   {
     kind: 'segment',
     id: 'panelists-all',
@@ -28,13 +35,6 @@ export const PRESENTATION_SLIDES = [
       { title: 'Roy Alexander', subtitle: 'Atheist / Agnostic Perspective' },
       { title: 'Tinu Ruparell', subtitle: 'Hindu Perspective' },
     ],
-  },
-  /** Slide 5 — Saghir */
-  {
-    kind: 'segment',
-    id: 'saghir-president-line',
-    title: 'Saghir Saeed',
-    subtitle: 'President of AMSA',
   },
   /** Slide 6 — same hero layout + tagline as slide 1 */
   { kind: 'hero', tagline: 'Inspired by Jubilee' },

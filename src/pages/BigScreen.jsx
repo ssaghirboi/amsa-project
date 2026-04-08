@@ -5,7 +5,6 @@ import { EventBranding } from '../components/EventBranding'
 import { ScreenTimerDisplay } from '../components/ScreenTimerDisplay'
 import screenEventLogo from '../assets/IS GOD REAL (Print Flyer).svg?url'
 import qrDoesGodExist from '../assets/qr-doesgodexist.png'
-import qrHumanityFirstUcalgary from '../assets/qr-humanity-first-ucalgary.png'
 import {
   PRESENTATION_SLIDE_STALE_ECHO_MS,
   PRESENTATION_SLIDE_COUNT,
@@ -562,20 +561,6 @@ export default function BigScreen() {
             {qaSlideshowSlides[1]?.subtitle ?? ''}
           </p>
         </div>
-      ) : qaSlideshowIndex === 2 ? (
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-8 pt-[clamp(6.5rem,18vh,11rem)]">
-          <div className="flex flex-col items-center gap-8 sm:gap-10">
-            <h1 className="max-w-4xl text-balance text-center text-3xl font-semibold tracking-tight text-slate-100 sm:text-4xl md:text-5xl lg:text-6xl">
-              {qaSlideshowSlides[2]?.title ?? ''}
-            </h1>
-            <img
-              src={qrHumanityFirstUcalgary}
-              alt=""
-              className="h-[min(52vmin,24rem)] w-[min(52vmin,24rem)] max-w-[92vw] rounded-2xl bg-white shadow-[0_18px_50px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/10"
-              draggable={false}
-            />
-          </div>
-        </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))] sm:pb-12">
           <div className="flex max-w-[min(96vw,48rem)] flex-col items-center">
@@ -586,7 +571,7 @@ export default function BigScreen() {
               className="w-full shrink-0"
             />
             <p className="mt-6 max-w-2xl text-balance text-center text-xl font-medium tracking-wide text-slate-400 sm:mt-8 sm:text-2xl md:text-3xl lg:text-4xl">
-              {qaSlideshowSlides[3]?.title ?? ''}
+              {qaSlideshowSlides[2]?.title ?? ''}
             </p>
           </div>
         </div>
@@ -650,10 +635,10 @@ export default function BigScreen() {
     </div>
   );
 
-  /** Countdown only when a QR is shown: debate (fixed QR) or Q&A deck slides 0 & 2 (center QRs). Hidden during intro presentation slideshow. */
+  /** Countdown only when a QR is shown: debate (fixed QR) or Q&A deck slide 0 (center QR). Hidden during intro presentation slideshow. */
   const showScreenTimerWithQr =
     (!slideshowActive && !qaSlideshowActive) ||
-    (qaSlideshowActive && (qaSlideshowIndex === 0 || qaSlideshowIndex === 2))
+    (qaSlideshowActive && qaSlideshowIndex === 0)
 
   const debateShowsFixedQrRail = !slideshowActive && !qaSlideshowActive
 
