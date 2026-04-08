@@ -6,16 +6,16 @@
 export const PANELIST_DISPLAY_NAMES_MC = [
   'Paul Verhoef (Christian)',
   'Musawar Bajwa (Islamic)',
-  'Tinu Ruparell (Hindu)',
   'Roy Alexander (Atheist)',
+  'Tinu Ruparell (Hindu)',
 ]
 
 /** Admin, Big Screen, Ask, Audience, etc. */
 export const PANELIST_DISPLAY_NAMES = [
   'Paul Verhoef (Christian Perspective)',
   'Musawar Bajwa (Islamic Perspective)',
-  'Tinu Ruparell (Hindu Perspective)',
   'Roy Alexander (Atheist / Agnostic Perspective)',
+  'Tinu Ruparell (Hindu Perspective)',
 ]
 
 /** Stored in `questions.target_panelist` and `mc_questions.panelists` for non-directed submissions. */

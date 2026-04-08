@@ -30,19 +30,19 @@ export const PRESENTATION_SLIDES = [
     title: 'Paul Verhoef',
     subtitle: 'Christian Perspective',
   },
-  /** Slide 6 — Hindu perspective */
-  {
-    kind: 'segment',
-    id: 'speaker-4',
-    title: 'Tinu Ruparell',
-    subtitle: 'Hindu Perspective',
-  },
-  /** Slide 7 — Atheist / agnostic perspective */
+  /** Slide 6 — Atheist / agnostic perspective (Roy; before Hindu in deck order) */
   {
     kind: 'segment',
     id: 'speaker-atheist',
     title: 'Roy Alexander',
     subtitle: 'Atheist / Agnostic Perspective',
+  },
+  /** Slide 7 — Hindu perspective (Tinu) */
+  {
+    kind: 'segment',
+    id: 'speaker-4',
+    title: 'Tinu Ruparell',
+    subtitle: 'Hindu Perspective',
   },
   /** Slide 8 — Saghir Saeed intro */
   {
