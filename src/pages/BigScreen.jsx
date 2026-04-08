@@ -487,6 +487,7 @@ export default function BigScreen() {
     ] ?? presentationSlides[0]
   const cornerLayout =
     logoSlide.kind === 'segment' ||
+    (Array.isArray(logoSlide.rows) && logoSlide.rows.length > 0) ||
     (logoSlide.title != null && logoSlide.subtitle != null)
 
   // Debate / slideshow “strip” layout: same top-centre slot + size (not top-left).
@@ -616,14 +617,33 @@ export default function BigScreen() {
             key={`segment-${logoSlide.id ?? slideshowIndex}`}
             className="presentation-hero-text relative z-10 flex min-h-[min(50dvh,28rem)] flex-1 flex-col items-center justify-center px-2 pb-8 pt-[clamp(6rem,16vh,10rem)] text-center sm:pt-[clamp(6rem,14vh,9rem)]"
           >
-            <h1 className="max-w-[min(100%,96vw)] text-balance text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-100">
-              {logoSlide.title}
-            </h1>
-            {String(logoSlide.subtitle ?? '').trim() !== '' ? (
-              <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-400 sm:mt-6 md:mt-7">
-                {logoSlide.subtitle}
-              </p>
-            ) : null}
+            {Array.isArray(logoSlide.rows) && logoSlide.rows.length > 0 ? (
+              <div className="flex w-full max-w-4xl flex-col items-center gap-7 sm:gap-9 md:gap-10">
+                {logoSlide.rows.map((row, rowIdx) => (
+                  <div key={rowIdx} className="w-full text-center">
+                    <h2 className="text-balance text-[clamp(1.05rem,min(4.2vw,4.5vh),2.35rem)] font-semibold leading-snug tracking-tight text-slate-100">
+                      {row.title}
+                    </h2>
+                    {String(row.subtitle ?? '').trim() !== '' ? (
+                      <p className="mt-2 max-w-[min(100%,96vw)] text-pretty text-[clamp(0.85rem,min(2.8vw,3.2vh),1.65rem)] text-slate-400 sm:mt-2.5">
+                        {row.subtitle}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <h1 className="max-w-[min(100%,96vw)] text-balance text-[clamp(1.15rem,min(5.5vw,6vh),3.75rem)] font-semibold leading-tight tracking-tight text-slate-100">
+                  {logoSlide.title}
+                </h1>
+                {String(logoSlide.subtitle ?? '').trim() !== '' ? (
+                  <p className="mt-5 max-w-[min(100%,96vw)] whitespace-nowrap text-[clamp(0.95rem,min(3.2vw,4vh),2.25rem)] text-slate-400 sm:mt-6 md:mt-7">
+                    {logoSlide.subtitle}
+                  </p>
+                ) : null}
+              </>
+            )}
           </div>
         )}
       </div>

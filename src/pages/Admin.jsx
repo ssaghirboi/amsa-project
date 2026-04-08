@@ -525,6 +525,15 @@ export default function Admin() {
     setPresentationSlidesDraft(mergePresentationSlidesFromRemote(next))
   }
 
+  const patchPresentationSlideRowDraft = (slideIndex, rowIndex, partial) => {
+    const slide = presentationSlidesDraft[slideIndex]
+    if (!slide || !Array.isArray(slide.rows)) return
+    const nextRows = slide.rows.map((r, j) =>
+      j === rowIndex ? { ...r, ...partial } : r,
+    )
+    patchPresentationSlideDraft(slideIndex, { rows: nextRows })
+  }
+
   const patchQaSlideDraft = (index, partial) => {
     const next = qaSlideshowSlidesDraft.map((s, i) =>
       i === index ? { ...s, ...partial } : s,
@@ -1125,11 +1134,17 @@ export default function Admin() {
               {presentationSlidesDraft.map((slide, i) => (
                 <div
                   key={`${slide.kind}-${slide.id ?? i}`}
-                  className="rounded-lg border border-slate-200 bg-white p-3"
+                  className={`rounded-lg border border-slate-200 bg-white p-3 ${
+                    slide.id === 'panelists-all' ? 'sm:col-span-2' : ''
+                  }`}
                 >
                   <div className="mb-2 text-xs font-medium text-slate-600">
                     Slide {i + 1} ·{' '}
-                    {slide.kind === 'hero' ? 'Hero' : 'Title card'}
+                    {slide.kind === 'hero'
+                      ? 'Hero'
+                      : slide.id === 'panelists-all'
+                        ? 'All panelists'
+                        : 'Title card'}
                   </div>
                   {slide.kind === 'hero' ? (
                     <label className="block space-y-1">
@@ -1144,6 +1159,45 @@ export default function Admin() {
                         placeholder="Leave empty for no line"
                       />
                     </label>
+                  ) : Array.isArray(slide.rows) && slide.rows.length > 0 ? (
+                    <div className="space-y-3">
+                      {slide.rows.map((row, ri) => (
+                        <div
+                          key={ri}
+                          className="rounded-lg border border-slate-200 bg-slate-50/90 p-2.5"
+                        >
+                          <div className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">
+                            Speaker {ri + 1}
+                          </div>
+                          <label className="block space-y-1">
+                            <span className="text-xs text-slate-500">Name</span>
+                            <input
+                              type="text"
+                              value={row.title ?? ''}
+                              onChange={(e) =>
+                                patchPresentationSlideRowDraft(i, ri, {
+                                  title: e.target.value,
+                                })
+                              }
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                          </label>
+                          <label className="mt-2 block space-y-1">
+                            <span className="text-xs text-slate-500">Subtitle</span>
+                            <input
+                              type="text"
+                              value={row.subtitle ?? ''}
+                              onChange={(e) =>
+                                patchPresentationSlideRowDraft(i, ri, {
+                                  subtitle: e.target.value,
+                                })
+                              }
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       <label className="block space-y-1">

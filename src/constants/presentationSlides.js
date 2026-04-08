@@ -16,49 +16,27 @@ export const PRESENTATION_SLIDES = [
     title: 'Recitation of the Holy Quran',
     subtitle: '',
   },
-  /** Slide 4 — Islamic perspective */
+  /** Slide 4 — all four panelists (names + perspectives), stacked */
   {
     kind: 'segment',
-    id: 'speaker-2',
-    title: 'Musawar Bajwa',
-    subtitle: 'Islamic Perspective',
+    id: 'panelists-all',
+    title: '',
+    subtitle: '',
+    rows: [
+      { title: 'Paul Verhoef', subtitle: 'Christian Perspective' },
+      { title: 'Musawar Bajwa', subtitle: 'Islamic Perspective' },
+      { title: 'Roy Alexander', subtitle: 'Atheist / Agnostic Perspective' },
+      { title: 'Tinu Ruparell', subtitle: 'Hindu Perspective' },
+    ],
   },
-  /** Slide 5 — Christian perspective */
-  {
-    kind: 'segment',
-    id: 'speaker-3',
-    title: 'Paul Verhoef',
-    subtitle: 'Christian Perspective',
-  },
-  /** Slide 6 — Atheist / agnostic perspective (Roy; before Hindu in deck order) */
-  {
-    kind: 'segment',
-    id: 'speaker-atheist',
-    title: 'Roy Alexander',
-    subtitle: 'Atheist / Agnostic Perspective',
-  },
-  /** Slide 7 — Hindu perspective (Tinu) */
-  {
-    kind: 'segment',
-    id: 'speaker-4',
-    title: 'Tinu Ruparell',
-    subtitle: 'Hindu Perspective',
-  },
-  /** Slide 8 — Saghir Saeed intro */
-  {
-    kind: 'segment',
-    id: 'saghir-saeed',
-    title: 'Saghir Saeed',
-    subtitle: 'President of AMSA',
-  },
-  /** Slide 9 — name + role (repeat) */
+  /** Slide 5 — Saghir */
   {
     kind: 'segment',
     id: 'saghir-president-line',
     title: 'Saghir Saeed',
     subtitle: 'President of AMSA',
   },
-  /** Slide 10 — same hero layout + tagline as slide 1 */
+  /** Slide 6 — same hero layout + tagline as slide 1 */
   { kind: 'hero', tagline: 'Inspired by Jubilee' },
 ]
 
@@ -144,14 +122,29 @@ export function mergePresentationSlidesFromRemote(raw) {
           tagline === '' || tagline === undefined ? null : String(tagline),
       }
     }
+    const title =
+      patch.title !== undefined ? String(patch.title) : def.title
+    const subtitle =
+      patch.subtitle !== undefined ? String(patch.subtitle) : def.subtitle
+    if (Array.isArray(def.rows) && def.rows.length > 0) {
+      const patchRows = Array.isArray(patch.rows) ? patch.rows : null
+      const rows = def.rows.map((rowDef, ri) => {
+        const pr =
+          patchRows && patchRows[ri] && typeof patchRows[ri] === 'object'
+            ? patchRows[ri]
+            : null
+        return {
+          title: pr?.title !== undefined ? String(pr.title) : rowDef.title,
+          subtitle:
+            pr?.subtitle !== undefined ? String(pr.subtitle) : rowDef.subtitle,
+        }
+      })
+      return { ...def, title, subtitle, rows }
+    }
     return {
       ...def,
-      title:
-        patch.title !== undefined ? String(patch.title) : def.title,
-      subtitle:
-        patch.subtitle !== undefined
-          ? String(patch.subtitle)
-          : def.subtitle,
+      title,
+      subtitle,
     }
   })
 }
