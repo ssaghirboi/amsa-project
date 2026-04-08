@@ -1,13 +1,7 @@
 /** Pre-event slides on /screen (slideshow mode). Index clamped in eventState to this length. */
 export const PRESENTATION_SLIDES = [
-  /** Slide 1 — Jubilee opener: header + opinion signs (see PresentationJubileeOpener) */
-  {
-    kind: 'jubileeSigns',
-    id: 'jubilee-opener',
-    presenterLine: 'THE AHMADIYYA MUSLIM STUDENTS ASSOCIATION PRESENTS',
-    inspiredPrefix: 'INSPIRED BY',
-    inspiredHighlight: 'Jubilee',
-  },
+  /** Slide 1 — hero logo + tagline */
+  { kind: 'hero', tagline: 'Inspired by Jubilee' },
   /** Slide 2 — title card: Does God Exist? */
   {
     kind: 'segment',
@@ -129,33 +123,11 @@ export function mergePresentationSlidesFromRemote(raw) {
       if (!patch) {
         return { ...def }
       }
-    } else if (def.kind === 'jubileeSigns' && def.id) {
-      patch = byId.get(String(def.id)) ?? null
-      if (!patch) {
-        return { ...def }
-      }
     } else {
       patch = i < arr.length ? arr[i] : null
     }
     if (!patch || typeof patch !== 'object') {
       return { ...def }
-    }
-    if (def.kind === 'jubileeSigns') {
-      return {
-        ...def,
-        presenterLine:
-          patch.presenterLine !== undefined
-            ? String(patch.presenterLine)
-            : def.presenterLine,
-        inspiredPrefix:
-          patch.inspiredPrefix !== undefined
-            ? String(patch.inspiredPrefix)
-            : def.inspiredPrefix,
-        inspiredHighlight:
-          patch.inspiredHighlight !== undefined
-            ? String(patch.inspiredHighlight)
-            : def.inspiredHighlight,
-      }
     }
     if (def.kind === 'hero') {
       const tagline =
