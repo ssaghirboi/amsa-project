@@ -120,7 +120,6 @@ export default function BigScreen() {
   const slideshowIndexAppliedRef = useRef(0)
   const qaSlideshowIndexAppliedRef = useRef(0)
   const presentationSlideStaleIgnoreUntilRef = useRef(0)
-  const qaSlideStaleIgnoreUntilRef = useRef(0)
 
   function applyEventStateFromRemote(next) {
     if (next.mcQuestions?.skipDebateIntro === true) {
@@ -155,33 +154,19 @@ export default function BigScreen() {
         Date.now() + 800,
       )
     }
-    const skipPres =
-      Boolean(next.slideshowActive) &&
-      Date.now() < presentationSlideStaleIgnoreUntilRef.current &&
-      si < slideshowIndexAppliedRef.current &&
-      slideshowIndexAppliedRef.current - si <= 4
-    if (!skipPres) {
-      if (Boolean(next.slideshowActive) && si > slideshowIndexAppliedRef.current) {
-        presentationSlideStaleIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
-      }
-      slideshowIndexAppliedRef.current = si
-      setSlideshowIndex(si)
+    // Always apply the remote index (including Previous). An earlier version skipped updates
+    // during the echo window when si < applied, which blocked legitimate backward navigation
+    // on the big screen while the MC could still step back.
+    if (Boolean(next.slideshowActive) && si > slideshowIndexAppliedRef.current) {
+      presentationSlideStaleIgnoreUntilRef.current = Date.now() + PRESENTATION_SLIDE_STALE_ECHO_MS
     }
+    slideshowIndexAppliedRef.current = si
+    setSlideshowIndex(si)
 
     setQaSlideshowActive(Boolean(next.qaSlideshowActive))
 
     const qaIdx = clampQaSlideIndex(next.qaSlideshowIndex ?? 0)
-    const skipQa =
-      Boolean(next.qaSlideshowActive) &&
-      Date.now() < qaSlideStaleIgnoreUntilRef.current &&
-      qaIdx !== qaSlideshowIndexAppliedRef.current
-    if (!skipQa) {
-      if (Boolean(next.qaSlideshowActive) && qaIdx !== qaSlideshowIndexAppliedRef.current) {
-        qaSlideStaleIgnoreUntilRef.current = Date.now() + 420
-      }
-      qaSlideshowIndexAppliedRef.current = qaIdx
-      setQaSlideshowIndex(qaIdx)
-    }
+    setQaSlideshowIndex(qaIdx)
     setPresentationSlides(presentationSlidesMerged)
     setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
   }
