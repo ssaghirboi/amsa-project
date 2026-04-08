@@ -377,6 +377,7 @@ export default function McPage() {
         qaSlideshowIndex: 0,
         mcQuestions: emptyMcQuestions(nextPrompt),
         debateRevealAck: false,
+        screenTimerEndMs: null,
       })
       setStatus('Live')
     } catch (e) {
@@ -416,6 +417,7 @@ export default function McPage() {
         qaSlideshowIndex: 0,
         mcQuestions: nextMc,
         debateRevealAck: false,
+        screenTimerEndMs: null,
       })
       setStatus('Live')
     } catch (e) {
@@ -455,6 +457,7 @@ export default function McPage() {
         qaSlideshowIndex: 0,
         mcQuestions: emptyMcQuestions(prevPromptText, { skipDebateIntro: true }),
         debateRevealAck: false,
+        screenTimerEndMs: null,
       })
       setStatus('Live')
     } catch (e) {

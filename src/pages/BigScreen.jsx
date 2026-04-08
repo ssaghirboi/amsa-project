@@ -19,6 +19,7 @@ import {
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
 import { supabase } from '../supabaseClient'
+import { BIG_SCREEN_TIMER_QR_WIDTH_CLASS } from '../constants/screenTimer'
 import { fetchCurrentEventState, subscribeToEventState } from '../supabase/eventState'
 
 /** FLIP handoff: fullscreen intro card → in-flow prompt anchor (shared with admin Reveal step). */
@@ -735,20 +736,20 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      <div className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] flex w-48 flex-col items-stretch gap-3 pointer-events-none sm:w-52">
+      <div className="fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] flex flex-col items-end gap-4 pointer-events-none">
         <ScreenTimerDisplay endMs={screenTimerEndMs} />
         {!slideshowActive && !qaSlideshowActive ? (
           <div
-            className="rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20"
+            className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} rounded-2xl border border-slate-600/60 bg-slate-900/95 p-4 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20`}
             aria-hidden
           >
-            <div className="text-center text-sm font-semibold tracking-tight text-slate-100">
+            <div className="text-center text-sm font-semibold tracking-tight text-slate-100 sm:text-base">
               Share your thoughts
             </div>
             <img
               src={qrDoesGodExist}
               alt=""
-              className="mt-2.5 h-48 w-48 rounded-xl bg-slate-800 sm:h-52 sm:w-52"
+              className="mt-3 h-56 w-56 rounded-xl bg-slate-800 sm:h-64 sm:w-64"
               draggable={false}
             />
           </div>

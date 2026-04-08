@@ -451,12 +451,15 @@ export default function Admin() {
         slideshowIndex,
         qaSlideshowActive,
         qaSlideshowIndex,
-        screenTimerEndMs,
+        screenTimerEndMs: promptChanged ? null : screenTimerEndMs,
         debateRevealAck: promptChanged ? false : undefined,
       })
       panelistsProtectUntilRef.current = Date.now() + 800
       setStatus('Live')
-      if (promptChanged) setDebateRevealAck(false)
+      if (promptChanged) {
+        setDebateRevealAck(false)
+        setScreenTimerEndMs(null)
+      }
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
