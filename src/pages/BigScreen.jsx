@@ -103,7 +103,6 @@ export default function BigScreen() {
   const [error, setError] = useState('')
   /** Epoch ms when countdown reaches zero; synced from Admin via `event_state.screen_timer_end_ms`. */
   const [screenTimerEndMs, setScreenTimerEndMs] = useState(null)
-  const [debateTimerVisible, setDebateTimerVisible] = useState(true)
   const [debateElapsedSec, setDebateElapsedSec] = useState(0)
 
   /** Intro: typewriter → await admin Reveal → shrink to anchor; idle = normal layout */
@@ -178,7 +177,6 @@ export default function BigScreen() {
     setPresentationSlides(presentationSlidesMerged)
     setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
     setScreenTimerEndMs(next.screenTimerEndMs ?? null)
-    setDebateTimerVisible(next.debateTimerVisible !== false)
   }
 
   useEffect(() => {
@@ -484,21 +482,14 @@ export default function BigScreen() {
       introPhase === 'shrinking')
 
   useEffect(() => {
-    if (!debateTimerVisible || slideshowActive || qaSlideshowActive || showOverlay) return
+    if (slideshowActive || qaSlideshowActive || showOverlay) return
     const t0 = Date.now()
     setDebateElapsedSec(0)
     const id = window.setInterval(() => {
       setDebateElapsedSec(Math.floor((Date.now() - t0) / 1000))
     }, 1000)
     return () => clearInterval(id)
-  }, [
-    prompt,
-    debateTimerVisible,
-    slideshowActive,
-    qaSlideshowActive,
-    showOverlay,
-    introRestartKick,
-  ])
+  }, [prompt, slideshowActive, qaSlideshowActive, showOverlay, introRestartKick])
 
   const debateTimerLabel = `${String(Math.floor(debateElapsedSec / 60)).padStart(2, '0')}:${String(debateElapsedSec % 60).padStart(2, '0')}`
 
@@ -773,7 +764,7 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      {debateTimerVisible && !slideshowActive && !qaSlideshowActive && !showOverlay ? (
+      {!slideshowActive && !qaSlideshowActive && !showOverlay ? (
         <div
           className="pointer-events-none fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))]"
           aria-hidden

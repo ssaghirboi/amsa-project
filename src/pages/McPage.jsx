@@ -461,26 +461,26 @@ export default function McPage() {
 
         <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden sm:mt-4">
           <div className="flex min-h-0 flex-1 flex-row gap-3 overflow-hidden sm:gap-4">
-            <McSpectrumSidebar panelists={panelists} />
+            {!qaSlideshowActive ? <McSpectrumSidebar panelists={panelists} /> : null}
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               {qaSlideshowActive ? (
-                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
-                  <div className="flex h-[min(32vh,300px)] min-h-[140px] shrink-0 flex-col overflow-hidden sm:h-[min(34vh,320px)] sm:min-h-[160px]">
+                <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
+                  <div className="flex h-[min(20vh,200px)] min-h-[110px] shrink-0 flex-col overflow-hidden sm:h-[min(22vh,220px)] sm:min-h-[120px]">
                     <div className="min-h-0 flex-1 [&>div]:h-full [&>div]:min-h-0">
                       {mainStage}
                     </div>
                   </div>
                   <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-                    <div className="shrink-0 border-b border-white/10 px-3 py-2 sm:px-4">
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-emerald-300/90 sm:text-xs">
+                    <div className="shrink-0 border-b border-white/10 px-4 py-2.5 sm:px-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300/90 sm:text-sm">
                         Audience queue · {qaAudienceSorted.length}
                       </p>
                     </div>
-                    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:px-4 sm:py-3">
+                    <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
                       {qaAudienceSorted.length === 0 ? (
-                        <p className="py-2 text-sm text-slate-500">None pushed yet.</p>
+                        <p className="py-3 text-base text-slate-500">None pushed yet.</p>
                       ) : (
-                        <ul className="space-y-3">
+                        <ul className="space-y-4">
                           {qaAudienceSorted.map((item, idx) => (
                             <li
                               key={
@@ -488,22 +488,22 @@ export default function McPage() {
                                   ? `qa-${item.id}`
                                   : `qa-${idx}-${item.created_at}-${item.question_text?.slice(0, 48)}`
                               }
-                              className="rounded-xl border border-white/10 bg-black/35 px-3 py-3 sm:px-4"
+                              className="rounded-2xl border border-white/10 bg-black/35 px-4 py-4 sm:px-5 sm:py-5"
                             >
-                              <div className="flex flex-wrap items-start justify-between gap-2">
-                                <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-emerald-200/95">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <span className="rounded-md bg-emerald-500/15 px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-emerald-200/95 sm:text-xs">
                                   {displayNameForMcTarget(item.target_key)}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => removeQaAudienceItem(item)}
                                   disabled={status === 'Updating…'}
-                                  className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-[0.65rem] font-semibold uppercase text-slate-300 hover:bg-white/10 disabled:opacity-40"
+                                  className="rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-200 hover:bg-white/15 disabled:opacity-40 sm:px-4 sm:text-sm"
                                 >
                                   Remove
                                 </button>
                               </div>
-                              <p className="mt-2 text-pretty text-sm font-medium leading-snug text-slate-100 sm:text-base">
+                              <p className="mt-3 text-pretty text-base font-medium leading-relaxed text-slate-100 sm:text-lg">
                                 {item.question_text}
                               </p>
                             </li>
