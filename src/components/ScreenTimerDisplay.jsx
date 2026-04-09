@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   BIG_SCREEN_TIMER_QR_WIDTH_CLASS,
   formatScreenTimer,
   formatScreenTimerFullDuration,
   screenTimerGlowT,
 } from '../constants/screenTimer'
+import timerFinishSoundUrl from '../assets/Kids Cheering - Sound Effect (HD) - Gaming Sound FX (youtube).mp3'
 
 /**
  * Live countdown from `endMs` (epoch ms). White when idle or while running outside the last 10s;
@@ -12,6 +13,30 @@ import {
  */
 export function ScreenTimerDisplay({ endMs }) {
   const [, setTick] = useState(0)
+  const finishSoundPlayedForEndMs = useRef(null)
+
+  useEffect(() => {
+    if (endMs == null) {
+      finishSoundPlayedForEndMs.current = null
+      return undefined
+    }
+    const tryPlayFinish = () => {
+      if (Date.now() < endMs) return
+      if (finishSoundPlayedForEndMs.current === endMs) return
+      finishSoundPlayedForEndMs.current = endMs
+      try {
+        const audio = new Audio(timerFinishSoundUrl)
+        audio.volume = 0.85
+        void audio.play().catch(() => {})
+      } catch {
+        /* ignore */
+      }
+    }
+    tryPlayFinish()
+    const id = window.setInterval(tryPlayFinish, 200)
+    return () => window.clearInterval(id)
+  }, [endMs])
+
   useEffect(() => {
     if (endMs == null) return undefined
     const id = window.setInterval(() => setTick((n) => n + 1), 100)
