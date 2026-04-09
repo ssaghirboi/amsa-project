@@ -8,13 +8,31 @@ import {
 import timerFinishSoundUrl from '../assets/Vine boom sound effect - Business Goose (youtube).mp3'
 
 /**
- * Live countdown from `endMs` (epoch ms). White when idle or while running outside the last 10s;
- * in the last 10s ramps to gold (color + glow). When `endMs` is null, shows idle time above the QR.
+ * Live countdown from `endMs` (epoch ms). Color shifts white → gold linearly over the full 2:00.
+ * When `endMs` is null, shows idle time above the QR.
  * `playFinishSound`: only the event `/screen` should pass true so the finish MP3 plays there only.
  */
 export function ScreenTimerDisplay({ endMs, playFinishSound = false }) {
   const [, setTick] = useState(0)
   const finishSoundPlayedForEndMs = useRef(null)
+  const warmedAudioRef = useRef(null)
+
+  useEffect(() => {
+    if (!playFinishSound) {
+      warmedAudioRef.current = null
+      return undefined
+    }
+    try {
+      const a = new Audio(timerFinishSoundUrl)
+      a.preload = 'auto'
+      a.volume = 0.85
+      void a.load()
+      warmedAudioRef.current = a
+    } catch {
+      warmedAudioRef.current = null
+    }
+    return undefined
+  }, [playFinishSound])
 
   useEffect(() => {
     if (endMs == null) {
@@ -24,26 +42,38 @@ export function ScreenTimerDisplay({ endMs, playFinishSound = false }) {
     if (!playFinishSound) {
       return undefined
     }
-    const tryPlayFinish = () => {
-      if (Date.now() < endMs) return
+    const playFinish = () => {
       if (finishSoundPlayedForEndMs.current === endMs) return
       finishSoundPlayedForEndMs.current = endMs
       try {
-        const audio = new Audio(timerFinishSoundUrl)
-        audio.volume = 0.85
-        void audio.play().catch(() => {})
+        const warm = warmedAudioRef.current
+        if (warm) {
+          warm.currentTime = 0
+          void warm.play().catch(() => {})
+        } else {
+          const audio = new Audio(timerFinishSoundUrl)
+          audio.volume = 0.85
+          void audio.play().catch(() => {})
+        }
       } catch {
         /* ignore */
       }
     }
-    tryPlayFinish()
-    const id = window.setInterval(tryPlayFinish, 200)
-    return () => window.clearInterval(id)
+
+    const now = Date.now()
+    if (now >= endMs) {
+      playFinish()
+      return undefined
+    }
+
+    const delay = endMs - now
+    const timeoutId = window.setTimeout(playFinish, delay)
+    return () => window.clearTimeout(timeoutId)
   }, [endMs, playFinishSound])
 
   useEffect(() => {
     if (endMs == null) return undefined
-    const id = window.setInterval(() => setTick((n) => n + 1), 100)
+    const id = window.setInterval(() => setTick((n) => n + 1), 50)
     return () => window.clearInterval(id)
   }, [endMs])
 
@@ -82,7 +112,7 @@ export function ScreenTimerDisplay({ endMs, playFinishSound = false }) {
 
   return (
     <div
-      className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-full pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-4 py-3 text-center tabular-nums tracking-tight shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 transition-[color,box-shadow,text-shadow] duration-300 ease-out sm:px-5 sm:py-4`}
+      className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} max-w-full pointer-events-none select-none rounded-2xl border border-slate-600/50 bg-slate-900/90 px-4 py-3 text-center tabular-nums tracking-tight shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:px-5 sm:py-4`}
       style={{
         color,
         textShadow:
