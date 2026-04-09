@@ -10,14 +10,18 @@ import timerFinishSoundUrl from '../assets/Kids Cheering - Sound Effect (HD) - G
 /**
  * Live countdown from `endMs` (epoch ms). White when idle or while running outside the last 10s;
  * in the last 10s ramps to gold (color + glow). When `endMs` is null, shows idle time above the QR.
+ * `playFinishSound`: only the event `/screen` should pass true so the finish MP3 plays there only.
  */
-export function ScreenTimerDisplay({ endMs }) {
+export function ScreenTimerDisplay({ endMs, playFinishSound = false }) {
   const [, setTick] = useState(0)
   const finishSoundPlayedForEndMs = useRef(null)
 
   useEffect(() => {
     if (endMs == null) {
       finishSoundPlayedForEndMs.current = null
+      return undefined
+    }
+    if (!playFinishSound) {
       return undefined
     }
     const tryPlayFinish = () => {
@@ -35,7 +39,7 @@ export function ScreenTimerDisplay({ endMs }) {
     tryPlayFinish()
     const id = window.setInterval(tryPlayFinish, 200)
     return () => window.clearInterval(id)
-  }, [endMs])
+  }, [endMs, playFinishSound])
 
   useEffect(() => {
     if (endMs == null) return undefined
