@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { EventBranding } from '../components/EventBranding'
+import { ScreenTimerDisplay } from '../components/ScreenTimerDisplay'
 import { supabase } from '../supabaseClient'
 import {
   fetchCurrentEventState,
@@ -14,6 +15,7 @@ export default function PromptPage() {
   const [qaSlideshowSlides, setQaSlideshowSlides] = useState(() =>
     mergeQaSlidesFromRemote(null),
   )
+  const [screenTimerEndMs, setScreenTimerEndMs] = useState(null)
 
   useEffect(() => {
     let unsubscribe = null
@@ -25,6 +27,7 @@ export default function PromptPage() {
         setQaSlideshowActive(Boolean(current.qaSlideshowActive))
         setQaSlideshowIndex(current.qaSlideshowIndex ?? 0)
         setQaSlideshowSlides(mergeQaSlidesFromRemote(current.qaSlideshowSlides ?? null))
+        setScreenTimerEndMs(current.screenTimerEndMs ?? null)
       }
     })()
 
@@ -33,6 +36,7 @@ export default function PromptPage() {
       setQaSlideshowActive(Boolean(next.qaSlideshowActive))
       setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
       setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
+      setScreenTimerEndMs(next.screenTimerEndMs ?? null)
     })
 
     const pollMs = 2500
@@ -44,6 +48,7 @@ export default function PromptPage() {
             setQaSlideshowActive(Boolean(next.qaSlideshowActive))
             setQaSlideshowIndex(next.qaSlideshowIndex ?? 0)
             setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
+            setScreenTimerEndMs(next.screenTimerEndMs ?? null)
           }
         })
         .catch(() => {})
@@ -59,8 +64,10 @@ export default function PromptPage() {
     ? prompt.trim()
     : 'Waiting for the current prompt…'
 
+  const showPromptTimer = !qaSlideshowActive
+
   return (
-    <div className="relative min-h-[100dvh] min-h-screen bg-[#010101] text-slate-100">
+    <div className="relative flex min-h-[100dvh] min-h-screen flex-col bg-[#010101] text-slate-100">
       {!(qaSlideshowActive && qaSlideshowIndex === QA_SLIDE_COUNT - 1) ? (
         <div
           className="pointer-events-none fixed z-20 left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))]"
@@ -70,28 +77,38 @@ export default function PromptPage() {
         </div>
       ) : null}
 
-      <main className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center px-3 pb-16 pt-[clamp(8rem,22vh,14rem)] sm:px-5 sm:pb-20 md:px-8 lg:px-12">
-        {qaSlideshowActive && qaSlideshowIndex === 1 ? (
-          <div className="w-full max-w-[min(100%,92vw)] space-y-6 text-center lg:max-w-[min(100%,85rem)]">
-            <p className="text-balance text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
-              {qaSlideshowSlides[1]?.title ?? ''}
+      <main className="flex min-h-0 w-full flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 items-center justify-center px-3 pb-8 pt-[clamp(8rem,22vh,14rem)] sm:px-5 sm:pb-10 md:px-8 lg:px-12">
+          {qaSlideshowActive && qaSlideshowIndex === 1 ? (
+            <div className="w-full max-w-[min(100%,92vw)] space-y-6 text-center lg:max-w-[min(100%,85rem)]">
+              <p className="text-balance text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50">
+                {qaSlideshowSlides[1]?.title ?? ''}
+              </p>
+              <p className="text-balance text-[clamp(1.25rem,4vw,2.5rem)] font-medium leading-snug text-slate-400">
+                {qaSlideshowSlides[1]?.subtitle ?? ''}
+              </p>
+            </div>
+          ) : qaSlideshowActive && qaSlideshowIndex === QA_SLIDE_COUNT - 1 ? (
+            <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-center justify-center text-center lg:max-w-[min(100%,85rem)]">
+              <EventBranding variant="presentationHero" centered className="w-full max-w-[min(92vw,40rem)]" />
+              <p className="mt-6 max-w-2xl text-balance text-[clamp(1.25rem,4vw,2.5rem)] font-medium leading-snug tracking-wide text-slate-400 sm:mt-8">
+                {qaSlideshowSlides[2]?.title ?? ''}
+              </p>
+            </div>
+          ) : (
+            <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
+              {qaSlideshowActive ? qaSlideshowSlides[0]?.title ?? '' : debateText}
             </p>
-            <p className="text-balance text-[clamp(1.25rem,4vw,2.5rem)] font-medium leading-snug text-slate-400">
-              {qaSlideshowSlides[1]?.subtitle ?? ''}
-            </p>
+          )}
+        </div>
+
+        {showPromptTimer ? (
+          <div className="shrink-0 border-t border-white/10 bg-[#010101]/95 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:px-5 sm:pt-4">
+            <div className="mx-auto flex w-full max-w-lg justify-center">
+              <ScreenTimerDisplay endMs={screenTimerEndMs} />
+            </div>
           </div>
-        ) : qaSlideshowActive && qaSlideshowIndex === QA_SLIDE_COUNT - 1 ? (
-          <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-center justify-center text-center lg:max-w-[min(100%,85rem)]">
-            <EventBranding variant="presentationHero" centered className="w-full max-w-[min(92vw,40rem)]" />
-            <p className="mt-6 max-w-2xl text-balance text-[clamp(1.25rem,4vw,2.5rem)] font-medium leading-snug tracking-wide text-slate-400 sm:mt-8">
-              {qaSlideshowSlides[2]?.title ?? ''}
-            </p>
-          </div>
-        ) : (
-          <p className="w-full max-w-[min(100%,92vw)] text-balance text-center text-[clamp(2.75rem,11vw,8rem)] font-semibold leading-[1.06] tracking-tight text-slate-50 lg:max-w-[min(100%,85rem)]">
-            {qaSlideshowActive ? qaSlideshowSlides[0]?.title ?? '' : debateText}
-          </p>
-        )}
+        ) : null}
       </main>
     </div>
   )
