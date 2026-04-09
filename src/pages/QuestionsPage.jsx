@@ -14,6 +14,7 @@ import { mergePresentationSlidesFromRemote } from '../constants/presentationSlid
 import {
   DEFAULT_PROMPT_SEQUENCE,
   fetchCurrentEventState,
+  shouldMcQuestionsMigrate,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
@@ -92,6 +93,7 @@ export default function QuestionsPage() {
   const [queueWriteBusy, setQueueWriteBusy] = useState(false)
   const [clearStatus, setClearStatus] = useState('')
   const [lastPromptSeen, setLastPromptSeen] = useState('')
+  const [mcQuestionsColumnMissing, setMcQuestionsColumnMissing] = useState(false)
 
   useEffect(() => {
     let unsub = null
@@ -162,6 +164,7 @@ export default function QuestionsPage() {
     const apply = (next) => {
       setEventPrompt(next.prompt ?? '')
       setEventState(next)
+      setMcQuestionsColumnMissing(shouldMcQuestionsMigrate())
     }
 
     ;(async () => {
@@ -217,7 +220,7 @@ export default function QuestionsPage() {
   }
 
   const persistQaQueue = async (nextQueueRaw) => {
-    if (!eventState) return
+    if (!eventState || mcQuestionsColumnMissing) return
     const payload = mcQuestionsPayloadWithQueue(nextQueueRaw)
     if (!payload) return
     setPushError('')
@@ -330,6 +333,10 @@ export default function QuestionsPage() {
 
   const pushToMc = async (panelKey, q) => {
     if (!eventState) return
+    if (mcQuestionsColumnMissing) {
+      setPushError('Database is missing the mc_questions column — use the setup note at the top of this page.')
+      return
+    }
     setPushError('')
     try {
       const basePanelists =
@@ -402,7 +409,7 @@ export default function QuestionsPage() {
   }
 
   const removeQaAudienceFromMc = async (item) => {
-    if (!eventState) return
+    if (!eventState || mcQuestionsColumnMissing) return
     const queue = qaQueue.filter((x) => !audienceQueueItemsMatch(x, item))
     await persistQaQueue(queue)
   }
@@ -513,7 +520,7 @@ export default function QuestionsPage() {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        disabled={!eventState || queueWriteBusy || index === 0}
+                        disabled={!eventState || mcQuestionsColumnMissing || queueWriteBusy || index === 0}
                         onClick={() => moveQueueSlot(index, -1)}
                         className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="Move up in queue"
@@ -522,7 +529,9 @@ export default function QuestionsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={!eventState || queueWriteBusy || index >= qaQueue.length - 1}
+                        disabled={
+                          !eventState || mcQuestionsColumnMissing || queueWriteBusy || index >= qaQueue.length - 1
+                        }
                         onClick={() => moveQueueSlot(index, 1)}
                         className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="Move down in queue"
@@ -531,7 +540,7 @@ export default function QuestionsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={!eventState || queueWriteBusy}
+                        disabled={!eventState || mcQuestionsColumnMissing || queueWriteBusy}
                         onClick={() => removeQaAudienceFromMc(item)}
                         className="touch-manipulation rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -581,6 +590,21 @@ export default function QuestionsPage() {
                 </div>
               </div>
             </div>
+
+        {mcQuestionsColumnMissing ? (
+          <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-950">
+            <p className="font-medium text-amber-950">Push to MC needs a Supabase column</p>
+            <p className="mt-1 text-amber-900/90">
+              Your project&apos;s{' '}
+              <code className="rounded bg-black/10 px-1 py-0.5 text-[0.8em] text-amber-950">event_state</code>{' '}
+              table must store the audience queue. In Supabase → SQL Editor, run:
+            </p>
+            <code className="mt-2 block overflow-x-auto rounded-lg bg-black/10 px-3 py-2 text-xs text-amber-950">
+              alter table public.event_state add column if not exists mc_questions jsonb default null;
+            </code>
+            <p className="mt-2 text-amber-900/90">Then refresh this page. After that, pushes and the queue will save correctly.</p>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="mt-4 rounded-xl border border-red-500/25 bg-red-500/5 px-4 py-3 text-sm text-red-900">
@@ -641,7 +665,7 @@ export default function QuestionsPage() {
                               {isQuestionInQaQueue(p.key, q) ? (
                                 <button
                                   type="button"
-                                  disabled={queueWriteBusy || !eventState}
+                                  disabled={queueWriteBusy || !eventState || mcQuestionsColumnMissing}
                                   onClick={() => {
                                     const item = qaQueueItemForQuestion(p.key, q)
                                     if (item) removeQaAudienceFromMc(item)
@@ -657,20 +681,23 @@ export default function QuestionsPage() {
                                   disabled={
                                     queueWriteBusy ||
                                     !eventState ||
+                                    mcQuestionsColumnMissing ||
                                     (hasPromptColumn &&
                                       activePromptKey &&
                                       hasPromptSnapshot(q) &&
                                       normalizePrompt(q.prompt) !== activePromptKey)
                                   }
                                   title={
-                                    !eventState
-                                      ? 'Connecting to event state…'
-                                      : hasPromptColumn &&
-                                          activePromptKey &&
-                                          hasPromptSnapshot(q) &&
-                                          normalizePrompt(q.prompt) !== activePromptKey
-                                        ? 'This question was submitted under a different prompt.'
-                                        : 'Add this question to the MC Q&A queue'
+                                    mcQuestionsColumnMissing
+                                      ? 'Add mc_questions to event_state (see banner above)'
+                                      : !eventState
+                                        ? 'Connecting to event state…'
+                                        : hasPromptColumn &&
+                                            activePromptKey &&
+                                            hasPromptSnapshot(q) &&
+                                            normalizePrompt(q.prompt) !== activePromptKey
+                                          ? 'This question was submitted under a different prompt.'
+                                          : 'Add this question to the MC Q&A queue'
                                   }
                                   className="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
