@@ -32,6 +32,8 @@ let debateRevealAckColumnAvailable = null
 let mcSlideNotesColumnAvailable = null
 /** Set after fetch: DB has `screen_timer_end_ms` (Admin → big screen countdown). */
 let screenTimerEndMsColumnAvailable = null
+/** Set after fetch: DB has `debate_timer_visible` (show segment timer on /screen during debate). */
+let debateTimerVisibleColumnAvailable = null
 
 const SELECT_BASE =
   'id,current_prompt,panelist_1_pos,panelist_2_pos,panelist_3_pos,panelist_4_pos'
@@ -47,8 +49,9 @@ const PANELIST_ICON_COLUMNS_SELECT = PANELIST_ICON_COLUMNS.join(',')
 
 const SELECT_VARIANTS = [
   // With MC notes + debate reveal + full Q&A (add columns in Supabase if missing)
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack,mc_slide_notes,screen_timer_end_ms,debate_timer_visible`,
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack,mc_slide_notes,screen_timer_end_ms`,
-  // Same as above when `screen_timer_end_ms` is not migrated yet
+  `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack,mc_slide_notes,debate_timer_visible`,
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack,mc_slide_notes`,
   // With MC + Q&A slideshow + per-slide copy + debate reveal (add columns in Supabase if missing)
   `${SELECT_BASE},${PANELIST_ICON_COLUMNS_SELECT},prompt_sequence,slideshow_active,slideshow_index,presentation_slides,mc_questions,qa_slideshow_active,qa_slideshow_index,qa_slideshow_slides,debate_reveal_ack,screen_timer_end_ms`,
@@ -153,6 +156,12 @@ function isMissingScreenTimerColumnError(error) {
   return /screen_timer_end_ms/i.test(msg) && /does not exist/i.test(msg)
 }
 
+function isMissingDebateTimerVisibleColumnError(error) {
+  if (!error) return false
+  const msg = String(error.message || '')
+  return /debate_timer_visible/i.test(msg) && /does not exist/i.test(msg)
+}
+
 /** `false` after fetch detected no `prompt_sequence` column. */
 export function shouldPromptSequenceMigrate() {
   return promptSequenceColumnAvailable === false
@@ -206,6 +215,11 @@ export function shouldMcSlideNotesMigrate() {
 /** `false` after fetch detected no `screen_timer_end_ms` column. */
 export function shouldScreenTimerMigrate() {
   return screenTimerEndMsColumnAvailable === false
+}
+
+/** `false` after fetch detected no `debate_timer_visible` column. */
+export function shouldDebateTimerVisibleMigrate() {
+  return debateTimerVisibleColumnAvailable === false
 }
 
 /** Only merge `presentationSlides` from Supabase when the column exists (avoids wiping local edits). */
@@ -316,6 +330,10 @@ export function deriveEventStateFromRow(row) {
   const mcSlideNotes = normalizeMcSlideNotes(row.mc_slide_notes)
   const mcSlideNotesRemote =
     row != null && Object.prototype.hasOwnProperty.call(row, 'mc_slide_notes')
+  const debateTimerVisible =
+    row != null && Object.prototype.hasOwnProperty.call(row, 'debate_timer_visible')
+      ? row.debate_timer_visible !== false
+      : true
 
   let screenTimerEndMs = null
   if (row != null && Object.prototype.hasOwnProperty.call(row, 'screen_timer_end_ms')) {
@@ -341,6 +359,7 @@ export function deriveEventStateFromRow(row) {
     debateRevealAck,
     mcSlideNotes,
     screenTimerEndMs,
+    debateTimerVisible,
     meta: {
       id: row.id,
       mcSlideNotesColumnAvailable: mcSlideNotesRemote,
@@ -372,6 +391,7 @@ export async function fetchCurrentEventState(supabase) {
       debateRevealAckColumnAvailable = cols.includes('debate_reveal_ack')
       mcSlideNotesColumnAvailable = cols.includes('mc_slide_notes')
       screenTimerEndMsColumnAvailable = cols.includes('screen_timer_end_ms')
+      debateTimerVisibleColumnAvailable = cols.includes('debate_timer_visible')
 
       const row = Array.isArray(data) ? data[0] : data
       return (
@@ -390,6 +410,7 @@ export async function fetchCurrentEventState(supabase) {
           debateRevealAck: false,
           mcSlideNotes: {},
           screenTimerEndMs: null,
+          debateTimerVisible: true,
           meta: {
             id: EVENT_STATE_ID,
             mcSlideNotesColumnAvailable: false,
@@ -460,6 +481,8 @@ export async function writeEventState(
     mcSlideNotes,
     /** Omit to leave unchanged; `null` clears the big-screen countdown. Epoch ms when timer hits zero. */
     screenTimerEndMs,
+    /** Omit to leave DB unchanged; when false, hide the debate segment timer on /screen. */
+    debateTimerVisible,
   },
 ) {
   const sequence =
@@ -548,6 +571,10 @@ export async function writeEventState(
       const n = Number(screenTimerEndMs)
       payload.screen_timer_end_ms = Number.isFinite(n) && n > 0 ? Math.round(n) : null
     }
+  }
+
+  if (debateTimerVisibleColumnAvailable !== false && debateTimerVisible !== undefined) {
+    payload.debate_timer_visible = Boolean(debateTimerVisible)
   }
 
   let { error } = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
@@ -655,6 +682,17 @@ export async function writeEventState(
   ) {
     screenTimerEndMsColumnAvailable = false
     delete payload.screen_timer_end_ms
+    const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
+    error = second.error
+  }
+
+  if (
+    error &&
+    isMissingDebateTimerVisibleColumnError(error) &&
+    debateTimerVisibleColumnAvailable !== false
+  ) {
+    debateTimerVisibleColumnAvailable = false
+    delete payload.debate_timer_visible
     const second = await supabase.from('event_state').upsert(payload, { onConflict: 'id' })
     error = second.error
   }

@@ -464,9 +464,13 @@ export default function McPage() {
             <McSpectrumSidebar panelists={panelists} />
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               {qaSlideshowActive ? (
-                <>
-                  {mainStage}
-                  <div className="mt-3 flex max-h-[38vh] min-h-0 shrink-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/20 sm:mt-4">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden sm:gap-4">
+                  <div className="flex h-[min(32vh,300px)] min-h-[140px] shrink-0 flex-col overflow-hidden sm:h-[min(34vh,320px)] sm:min-h-[160px]">
+                    <div className="min-h-0 flex-1 [&>div]:h-full [&>div]:min-h-0">
+                      {mainStage}
+                    </div>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/20">
                     <div className="shrink-0 border-b border-white/10 px-3 py-2 sm:px-4">
                       <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-emerald-300/90 sm:text-xs">
                         Audience queue · {qaAudienceSorted.length}
@@ -508,7 +512,7 @@ export default function McPage() {
                       )}
                     </div>
                   </div>
-                </>
+                </div>
               ) : (
                 mainStage
               )}

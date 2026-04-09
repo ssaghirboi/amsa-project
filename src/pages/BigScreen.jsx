@@ -103,6 +103,8 @@ export default function BigScreen() {
   const [error, setError] = useState('')
   /** Epoch ms when countdown reaches zero; synced from Admin via `event_state.screen_timer_end_ms`. */
   const [screenTimerEndMs, setScreenTimerEndMs] = useState(null)
+  const [debateTimerVisible, setDebateTimerVisible] = useState(true)
+  const [debateElapsedSec, setDebateElapsedSec] = useState(0)
 
   /** Intro: typewriter → await admin Reveal → shrink to anchor; idle = normal layout */
   const [introPhase, setIntroPhase] = useState('idle') // 'idle' | 'typing' | 'awaitingReveal' | 'shrinking'
@@ -176,6 +178,7 @@ export default function BigScreen() {
     setPresentationSlides(presentationSlidesMerged)
     setQaSlideshowSlides(mergeQaSlidesFromRemote(next.qaSlideshowSlides ?? null))
     setScreenTimerEndMs(next.screenTimerEndMs ?? null)
+    setDebateTimerVisible(next.debateTimerVisible !== false)
   }
 
   useEffect(() => {
@@ -480,6 +483,25 @@ export default function BigScreen() {
       introPhase === 'awaitingReveal' ||
       introPhase === 'shrinking')
 
+  useEffect(() => {
+    if (!debateTimerVisible || slideshowActive || qaSlideshowActive || showOverlay) return
+    const t0 = Date.now()
+    setDebateElapsedSec(0)
+    const id = window.setInterval(() => {
+      setDebateElapsedSec(Math.floor((Date.now() - t0) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [
+    prompt,
+    debateTimerVisible,
+    slideshowActive,
+    qaSlideshowActive,
+    showOverlay,
+    introRestartKick,
+  ])
+
+  const debateTimerLabel = `${String(Math.floor(debateElapsedSec / 60)).padStart(2, '0')}:${String(debateElapsedSec % 60).padStart(2, '0')}`
+
   const logoSlide =
     presentationSlides[
       clampPresentationSlideIndex(
@@ -751,6 +773,21 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
+      {debateTimerVisible && !slideshowActive && !qaSlideshowActive && !showOverlay ? (
+        <div
+          className="pointer-events-none fixed z-[60] bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))]"
+          aria-hidden
+        >
+          <div className="rounded-2xl border border-slate-600/60 bg-slate-900/95 px-4 py-3 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20">
+            <div className="text-center text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Segment
+            </div>
+            <div className="mt-1 text-center font-mono text-2xl font-semibold tabular-nums tracking-tight text-slate-100 sm:text-3xl">
+              {debateTimerLabel}
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] max-w-[min(24rem,calc(100vw-2rem))] -translate-y-1/2 flex-col items-end justify-center gap-2 sm:gap-3">
         {showScreenTimerWithQr ? <ScreenTimerDisplay endMs={screenTimerEndMs} /> : null}
         {!slideshowActive && !qaSlideshowActive ? (

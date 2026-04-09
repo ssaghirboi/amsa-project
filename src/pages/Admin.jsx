@@ -27,6 +27,7 @@ import {
   shouldDebateRevealAckMigrate,
   shouldMcSlideNotesMigrate,
   shouldScreenTimerMigrate,
+  shouldDebateTimerVisibleMigrate,
   subscribeToEventState,
   writeEventState,
 } from '../supabase/eventState'
@@ -108,9 +109,12 @@ export default function Admin() {
   const [showDebateRevealMigrateBanner, setShowDebateRevealMigrateBanner] = useState(false)
   const [showMcSlideNotesMigrateBanner, setShowMcSlideNotesMigrateBanner] = useState(false)
   const [showScreenTimerMigrateBanner, setShowScreenTimerMigrateBanner] = useState(false)
+  const [showDebateTimerMigrateBanner, setShowDebateTimerMigrateBanner] = useState(false)
   /** Epoch ms when the big-screen countdown ends; persisted in `event_state.screen_timer_end_ms`. */
   const [screenTimerEndMs, setScreenTimerEndMs] = useState(null)
   const [debateRevealAck, setDebateRevealAck] = useState(false)
+  /** When true, /screen shows the debate segment timer during the debate view. */
+  const [debateTimerVisible, setDebateTimerVisible] = useState(true)
 
   const writeContextRef = useRef({
     prompt: '',
@@ -124,6 +128,7 @@ export default function Admin() {
     qaSlideshowActive: false,
     qaSlideshowIndex: 0,
     screenTimerEndMs: null,
+    debateTimerVisible: true,
   })
 
   const PANELIST_ICON_BUCKET = 'panelist-icons'
@@ -185,6 +190,7 @@ export default function Admin() {
       qaSlideshowActive,
       qaSlideshowIndex,
       screenTimerEndMs,
+      debateTimerVisible,
     }
   }, [
     prompt,
@@ -198,6 +204,7 @@ export default function Admin() {
     qaSlideshowActive,
     qaSlideshowIndex,
     screenTimerEndMs,
+    debateTimerVisible,
   ])
 
   const uploadPanelistIcon = async (panelIndex, file) => {
@@ -242,6 +249,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs,
+        debateTimerVisible,
       })
       setStatus('Live')
     } catch (e) {
@@ -298,6 +306,7 @@ export default function Admin() {
           setQaSlideshowSlidesDraft(mergedQa.map((s) => ({ ...s })))
           setDebateRevealAck(Boolean(current.debateRevealAck))
           setScreenTimerEndMs(current.screenTimerEndMs ?? null)
+          setDebateTimerVisible(current.debateTimerVisible !== false)
           if (current.promptSequence?.length) {
             setPromptSequence(current.promptSequence)
             setPromptSequenceDraft([...current.promptSequence])
@@ -316,6 +325,7 @@ export default function Admin() {
         setShowDebateRevealMigrateBanner(shouldDebateRevealAckMigrate())
         setShowMcSlideNotesMigrateBanner(shouldMcSlideNotesMigrate())
         setShowScreenTimerMigrateBanner(shouldScreenTimerMigrate())
+        setShowDebateTimerMigrateBanner(shouldDebateTimerVisibleMigrate())
       } catch (e) {
         setStatus('Live (with local defaults)')
         setError(e?.message || String(e))
@@ -328,6 +338,7 @@ export default function Admin() {
         setShowDebateRevealMigrateBanner(false)
         setShowMcSlideNotesMigrateBanner(false)
         setShowScreenTimerMigrateBanner(false)
+        setShowDebateTimerMigrateBanner(false)
       }
     })()
 
@@ -392,6 +403,7 @@ export default function Admin() {
       }
       setDebateRevealAck(Boolean(next.debateRevealAck))
       setScreenTimerEndMs(next.screenTimerEndMs ?? null)
+      setDebateTimerVisible(next.debateTimerVisible !== false)
       if (!next.promptSequence?.length) return
       const remote = next.promptSequence.map((s) => String(s))
       setPromptSequence((prev) => {
@@ -453,6 +465,7 @@ export default function Admin() {
         qaSlideshowActive: ctx.qaSlideshowActive,
         qaSlideshowIndex: ctx.qaSlideshowIndex,
         screenTimerEndMs: ctx.screenTimerEndMs,
+        debateTimerVisible: ctx.debateTimerVisible,
         debateRevealAck: undefined,
       })
       panelistsProtectUntilRef.current = Date.now() + 800
@@ -500,6 +513,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs: promptChanged ? null : screenTimerEndMs,
+        debateTimerVisible,
         debateRevealAck: promptChanged ? false : undefined,
       })
       panelistsProtectUntilRef.current = Date.now() + 800
@@ -564,6 +578,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex: qaSlideshowIndexLive,
         screenTimerEndMs: screenTimerEndMsLive,
+        debateTimerVisible,
       })
       setPresentationSlides(normalized)
       setPresentationSlidesDraft(normalized.map((s) => ({ ...s })))
@@ -598,6 +613,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex: qaSlideshowIndexLive,
         screenTimerEndMs: screenTimerEndMsLive,
+        debateTimerVisible,
       })
       setQaSlideshowSlides(normalized)
       setQaSlideshowSlidesDraft(normalized.map((s) => ({ ...s })))
@@ -687,11 +703,41 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs,
+        debateTimerVisible,
       })
       setStatus('Live')
     } catch (e) {
       setError(e?.message || String(e))
       setStatus('Live (write failed)')
+    }
+  }
+
+  const handleToggleDebateTimer = async () => {
+    const next = !debateTimerVisible
+    await cancelPendingPresentationSlideSave()
+    setDebateTimerVisible(next)
+    setStatus('Updating...')
+    try {
+      await writeEventState(supabase, {
+        prompt,
+        panelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive,
+        qaSlideshowIndex,
+        screenTimerEndMs,
+        debateTimerVisible: next,
+      })
+      setStatus('Live')
+      setShowDebateTimerMigrateBanner(shouldDebateTimerVisibleMigrate())
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+      setDebateTimerVisible(!next)
     }
   }
 
@@ -718,6 +764,7 @@ export default function Admin() {
         qaSlideshowActive: next ? false : qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs,
+        debateTimerVisible,
       })
       setStatus('Live')
       setShowSlideshowMigrateBanner(shouldSlideshowMigrate())
@@ -757,6 +804,7 @@ export default function Admin() {
         qaSlideshowActive: next,
         qaSlideshowIndex: nextQaIdx,
         screenTimerEndMs,
+        debateTimerVisible,
       })
       setStatus('Live')
       setShowQaSlideshowMigrateBanner(
@@ -799,6 +847,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs,
+        debateTimerVisible,
       })
       setStatus('Live')
     } catch (e) {
@@ -831,6 +880,7 @@ export default function Admin() {
         qaSlideshowActive: true,
         qaSlideshowIndex: next,
         screenTimerEndMs,
+        debateTimerVisible,
       })
       setStatus('Live')
     } catch (e) {
@@ -859,6 +909,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs: end,
+        debateTimerVisible,
       })
       setStatus('Live')
       setShowScreenTimerMigrateBanner(shouldScreenTimerMigrate())
@@ -885,6 +936,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs: null,
+        debateTimerVisible,
       })
       setStatus('Live')
       setShowScreenTimerMigrateBanner(shouldScreenTimerMigrate())
@@ -920,6 +972,7 @@ export default function Admin() {
         qaSlideshowActive,
         qaSlideshowIndex,
         screenTimerEndMs,
+        debateTimerVisible,
         debateRevealAck: true,
       })
       setStatus('Live')
@@ -1012,6 +1065,19 @@ export default function Admin() {
                   alter table public.event_state add column if not exists screen_timer_end_ms bigint;
                 </code>{' '}
                 Then refresh. The timer on <code className="text-slate-600">/screen</code> syncs from this column.
+              </p>
+            </div>
+          ) : null}
+          {showDebateTimerMigrateBanner ? (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-900">
+              <p className="font-medium text-amber-950">Debate segment timer toggle is not saved to the database yet</p>
+              <p className="mt-1 text-amber-900/90">
+                In Supabase → SQL Editor, run:{' '}
+                <code className="rounded bg-black/15 px-1.5 py-0.5 text-xs">
+                  alter table public.event_state add column if not exists debate_timer_visible boolean default true;
+                </code>{' '}
+                Then refresh. Visibility of the segment timer on <code className="text-slate-600">/screen</code> will
+                sync.
               </p>
             </div>
           ) : null}
@@ -1495,7 +1561,7 @@ export default function Admin() {
                 )}
                 <span className="text-xs text-slate-400">One field per slide</span>
               </div>
-              <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto sm:justify-start">
+              <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto sm:justify-start">
                 <button
                   type="button"
                   onClick={addPromptRow}
@@ -1515,6 +1581,19 @@ export default function Admin() {
                   className="whitespace-nowrap rounded-lg border border-indigo-400/50 bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-slate-700 disabled:text-slate-400"
                 >
                   Update
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleDebateTimer}
+                  disabled={status === 'Updating...'}
+                  title="Show or hide the segment timer on the event screen during debate (bottom-left)."
+                  className={
+                    debateTimerVisible
+                      ? 'whitespace-nowrap rounded-lg border border-sky-400/50 bg-sky-500/90 px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-sky-400 disabled:opacity-60'
+                      : 'whitespace-nowrap rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/10 disabled:opacity-60'
+                  }
+                >
+                  Timer {debateTimerVisible ? 'ON' : 'OFF'}
                 </button>
               </div>
             </div>
