@@ -71,7 +71,7 @@ function PanelistLabelStack({ rowBlock, theme }) {
     : 'max-w-[min(100%,18rem)] text-balance text-center text-lg font-semibold uppercase leading-tight tracking-[0.12em] text-slate-800 sm:text-xl md:text-2xl'
 
   const lineClass = isDark
-    ? 'max-w-[min(100%,18rem)] text-balance text-center text-[0.68rem] font-medium uppercase leading-snug tracking-[0.14em] text-[#707070] sm:text-xs md:text-sm'
+    ? 'max-w-[min(100%,18rem)] text-balance text-center text-[0.68rem] font-normal uppercase leading-snug tracking-[0.14em] text-white sm:text-xs md:text-sm'
     : 'max-w-[min(100%,18rem)] text-balance text-center text-[0.7rem] font-medium uppercase leading-snug tracking-[0.12em] text-slate-600 sm:text-xs'
 
   return (
