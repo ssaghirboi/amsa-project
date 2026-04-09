@@ -194,8 +194,15 @@ export default function QuestionsPage() {
   const activePromptKey = normalizePrompt(eventPrompt)
 
   const mcQuestionsPayloadWithQueue = (nextQueueRaw) => {
-    if (!eventState || !pushed) return null
+    if (!eventState) return null
     const nextQueue = normalizeQaAudienceQueue(nextQueueRaw)
+    if (!pushed) {
+      return {
+        prompt: String(eventState.prompt ?? ''),
+        panelists: getEmptyMcQuestionSlots(),
+        qaAudienceQueue: nextQueue,
+      }
+    }
     return {
       prompt: String(eventState.prompt ?? ''),
       panelists: {
@@ -210,7 +217,7 @@ export default function QuestionsPage() {
   }
 
   const persistQaQueue = async (nextQueueRaw) => {
-    if (!eventState || !pushed || !qaMode) return
+    if (!eventState) return
     const payload = mcQuestionsPayloadWithQueue(nextQueueRaw)
     if (!payload) return
     setPushError('')
@@ -323,7 +330,6 @@ export default function QuestionsPage() {
 
   const pushToMc = async (panelKey, q) => {
     if (!eventState) return
-    if (!qaMode) return
     setPushError('')
     try {
       const basePanelists =
@@ -396,10 +402,8 @@ export default function QuestionsPage() {
   }
 
   const removeQaAudienceFromMc = async (item) => {
-    if (!eventState || !pushed || !qaMode) return
-    const queue = normalizeQaAudienceQueue(pushed.qaAudienceQueue).filter(
-      (x) => !audienceQueueItemsMatch(x, item),
-    )
+    if (!eventState) return
+    const queue = qaQueue.filter((x) => !audienceQueueItemsMatch(x, item))
     await persistQaQueue(queue)
   }
 
@@ -474,11 +478,9 @@ export default function QuestionsPage() {
             <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-600">
               MC queue
             </h2>
-            {!qaMode ? (
-              <p className="mt-2 text-xs text-slate-600">
-                Same order as the MC screen. Reorder and remove when Q&amp;A is active on the MC.
-              </p>
-            ) : null}
+            <p className="mt-2 text-xs text-slate-600">
+              Same order as the MC audience queue. Push from the bank, then reorder or remove anytime.
+            </p>
             <p className="mt-1 text-xs text-slate-500">
               {qaQueue.length === 0
                 ? 'Nothing pushed yet'
@@ -511,7 +513,7 @@ export default function QuestionsPage() {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        disabled={!qaMode || queueWriteBusy || index === 0}
+                        disabled={!eventState || queueWriteBusy || index === 0}
                         onClick={() => moveQueueSlot(index, -1)}
                         className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="Move up in queue"
@@ -520,7 +522,7 @@ export default function QuestionsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={!qaMode || queueWriteBusy || index >= qaQueue.length - 1}
+                        disabled={!eventState || queueWriteBusy || index >= qaQueue.length - 1}
                         onClick={() => moveQueueSlot(index, 1)}
                         className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="Move down in queue"
@@ -529,7 +531,7 @@ export default function QuestionsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={!qaMode || queueWriteBusy}
+                        disabled={!eventState || queueWriteBusy}
                         onClick={() => removeQaAudienceFromMc(item)}
                         className="touch-manipulation rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -559,9 +561,9 @@ export default function QuestionsPage() {
                     </h1>
                     {!qaMode ? (
                       <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                        Question bank: newest first, grouped by General and each speaker. During debate,
-                        questions stay here; when Q&amp;A starts on the MC page, use &quot;Push to MC&quot;
-                        to send them to the screen.
+                        Question bank: newest first, grouped by General and each speaker. Use
+                        &quot;Push to MC&quot; anytime to line up the audience queue on the MC screen
+                        (including before Q&amp;A goes live).
                       </p>
                     ) : null}
                   </div>
@@ -627,7 +629,7 @@ export default function QuestionsPage() {
                           <div
                             key={q.id ?? `${q.created_at}-${q.question_text}`}
                             className={`rounded-xl border bg-slate-50 px-4 py-3 ${
-                              qaMode && isQuestionInQaQueue(p.key, q)
+                              isQuestionInQaQueue(p.key, q)
                                 ? 'border-emerald-500/55'
                                 : 'border-slate-200'
                             }`}
@@ -636,10 +638,10 @@ export default function QuestionsPage() {
                               {q.question_text}
                             </div>
                             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                              {qaMode && isQuestionInQaQueue(p.key, q) ? (
+                              {isQuestionInQaQueue(p.key, q) ? (
                                 <button
                                   type="button"
-                                  disabled={queueWriteBusy}
+                                  disabled={queueWriteBusy || !eventState}
                                   onClick={() => {
                                     const item = qaQueueItemForQuestion(p.key, q)
                                     if (item) removeQaAudienceFromMc(item)
@@ -648,7 +650,7 @@ export default function QuestionsPage() {
                                 >
                                   Remove from MC
                                 </button>
-                              ) : qaMode ? (
+                              ) : (
                                 <button
                                   type="button"
                                   onClick={() => pushToMc(p.key, q)}
@@ -674,10 +676,6 @@ export default function QuestionsPage() {
                                 >
                                   Push to MC
                                 </button>
-                              ) : (
-                                <span className="text-xs text-slate-500">
-                                  Queue for the MC when Q&amp;A slideshow is active.
-                                </span>
                               )}
                               {q.created_at ? (
                                 <div className="text-[0.7rem] font-medium uppercase tracking-[0.18em] text-slate-500">
