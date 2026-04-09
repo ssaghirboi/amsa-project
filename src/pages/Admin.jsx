@@ -10,7 +10,7 @@ import {
   clampQaSlideIndex,
   mergeQaSlidesFromRemote,
 } from '../constants/qaSlideshow'
-import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
+import { PANELIST_DISPLAY_NAMES, getEmptyMcQuestionSlots } from '../constants/panelists'
 import { supabase } from '../supabaseClient'
 import {
   DEFAULT_PROMPT_SEQUENCE,
@@ -645,12 +645,56 @@ export default function Admin() {
   }
 
   /** Jump back to the first slideshow prompt and reset sliders to neutral (3). */
-  const handleResetPrompts = () => {
-    const firstPrompt = promptSequence[0]
+  const handleResetPrompts = async () => {
+    if (!Array.isArray(promptSequence) || promptSequence.length === 0) return
+    const firstPrompt = String(promptSequence[0] ?? '')
     const resetPanelists = [3, 3, 3, 3]
     setPrompt(firstPrompt)
     setPanelists(resetPanelists)
-    commit(firstPrompt, resetPanelists)
+    panelistsRef.current = resetPanelists
+
+    await cancelPendingPresentationSlideSave()
+    setStatus('Updating...')
+    setError('')
+    try {
+      const fresh = await fetchCurrentEventState(supabase).catch(() => null)
+      const prev = fresh?.mcQuestions
+      let mergedMc
+      if (prev && typeof prev === 'object' && !Array.isArray(prev)) {
+        mergedMc = { ...prev, introRestartToken: Date.now() }
+      } else {
+        mergedMc = {
+          prompt: firstPrompt,
+          panelists: getEmptyMcQuestionSlots(),
+          qaAudienceQueue: [],
+          introRestartToken: Date.now(),
+        }
+      }
+
+      await writeEventState(supabase, {
+        prompt: firstPrompt,
+        panelists: resetPanelists,
+        panelistIcons,
+        promptSequence,
+        presentationSlides,
+        qaSlideshowSlides,
+        slideshowActive,
+        slideshowIndex,
+        qaSlideshowActive,
+        qaSlideshowIndex,
+        mcQuestions: mergedMc,
+        screenTimerEndMs: null,
+        debateTimerVisible: true,
+        debateRevealAck: false,
+      })
+      panelistsProtectUntilRef.current = Date.now() + 800
+      setStatus('Live')
+      setDebateRevealAck(false)
+      setScreenTimerEndMs(null)
+    } catch (e) {
+      setError(e?.message || String(e))
+      setStatus('Live (write failed)')
+    }
   }
 
   const updatePromptAt = (index, value) => {
@@ -1279,7 +1323,7 @@ export default function Admin() {
                 onClick={handleResetPrompts}
                 disabled={
                   status === 'Updating...' ||
-                  !promptSequence?.[0] ||
+                  !promptSequence?.length ||
                   slideshowActive ||
                   qaSlideshowActive
                 }
