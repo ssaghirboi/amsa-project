@@ -5,7 +5,7 @@ import {
   formatScreenTimerFullDuration,
   screenTimerGlowT,
 } from '../constants/screenTimer'
-import timerFinishSoundUrl from '../assets/Kids Cheering - Sound Effect (HD) - Gaming Sound FX (youtube).mp3'
+import timerFinishSoundUrl from '../assets/Vine boom sound effect - Business Goose (youtube).mp3'
 
 /**
  * Live countdown from `endMs` (epoch ms). White when idle or while running outside the last 10s;
