@@ -67,6 +67,7 @@ function getNextPrompt(current, sequence) {
 function presentationSlideLabel(slide) {
   if (!slide) return '—'
   if (slide.kind === 'hero') return String(slide.tagline ?? '').trim() || 'Hero'
+  if (Array.isArray(slide.rows) && slide.rows.length > 0) return 'Panelists'
   return String(slide.title ?? '').trim() || '—'
 }
 
@@ -393,6 +394,21 @@ export default function McPage() {
             <p className="max-w-4xl text-balance text-[clamp(1.35rem,3.8vw,2.5rem)] font-medium leading-tight text-slate-200">
               {currentSlide.tagline || ' '}
             </p>
+          ) : Array.isArray(currentSlide?.rows) && currentSlide.rows.length > 0 ? (
+            <div className="flex w-full max-w-4xl flex-col items-center gap-6 sm:gap-8 md:gap-9">
+              {currentSlide.rows.map((row, rowIdx) => (
+                <div key={rowIdx} className="w-full text-center">
+                  <h2 className="text-balance text-[clamp(1.05rem,min(4vw,4vh),2.35rem)] font-semibold leading-snug tracking-tight text-slate-50">
+                    {row.title}
+                  </h2>
+                  {String(row.subtitle ?? '').trim() !== '' ? (
+                    <p className="mt-2 max-w-[min(100%,96vw)] text-pretty text-[clamp(0.85rem,min(2.8vw,3.2vh),1.65rem)] text-slate-400 sm:mt-2.5">
+                      {row.subtitle}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="max-w-4xl space-y-4">
               <h2 className="text-balance text-[clamp(1.5rem,4vw,2.75rem)] font-semibold leading-tight text-slate-50">
