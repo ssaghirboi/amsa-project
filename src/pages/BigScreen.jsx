@@ -638,10 +638,11 @@ export default function BigScreen() {
     </div>
   );
 
-  /** Countdown only on the debate screen (fixed QR rail). Hidden during presentation slideshow and Q&A end deck. */
-  const showScreenTimerWithQr = !slideshowActive && !qaSlideshowActive
+  /** Timer + QR only after Admin Reveal (`debate_reveal_ack`); hidden during intro prompt / awaiting Reveal. */
+  const debateUiAfterReveal =
+    !slideshowActive && !qaSlideshowActive && debateRevealAck
 
-  const debateShowsFixedQrRail = !slideshowActive && !qaSlideshowActive
+  const debateShowsFixedQrRail = debateUiAfterReveal
 
   const debateContent = (
     <>
@@ -751,11 +752,9 @@ export default function BigScreen() {
         : slideshowActive
           ? slideshowContent
           : debateContent}
-      <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] max-w-[min(24rem,calc(100vw-2rem))] -translate-y-1/2 flex-col items-end justify-center gap-2 sm:gap-3">
-        {showScreenTimerWithQr ? (
+      {debateUiAfterReveal ? (
+        <div className="pointer-events-none fixed right-[max(1rem,env(safe-area-inset-right))] top-1/2 z-[60] flex max-h-[min(92vh,100dvh)] max-w-[min(24rem,calc(100vw-2rem))] -translate-y-1/2 flex-col items-end justify-center gap-2 sm:gap-3">
           <ScreenTimerDisplay endMs={screenTimerEndMs} playFinishSound />
-        ) : null}
-        {!slideshowActive && !qaSlideshowActive ? (
           <div
             className={`${BIG_SCREEN_TIMER_QR_WIDTH_CLASS} w-full shrink-0 rounded-2xl border border-slate-600/60 bg-slate-900/95 p-3 shadow-[0_10px_28px_rgba(0,0,0,0.45)] ring-1 ring-slate-500/20 sm:p-4`}
             aria-hidden
@@ -770,8 +769,8 @@ export default function BigScreen() {
               draggable={false}
             />
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   )
 }
