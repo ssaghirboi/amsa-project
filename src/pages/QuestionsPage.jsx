@@ -469,76 +469,79 @@ export default function QuestionsPage() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <div className="flex min-h-screen flex-col lg:flex-row">
-        {qaMode ? (
-          <aside className="order-first w-full shrink-0 border-b border-slate-200 bg-white lg:order-none lg:w-[min(22rem,92vw)] lg:border-b-0 lg:border-r lg:border-slate-200">
-            <div className="sticky top-0 z-10 max-h-[min(50vh,28rem)] overflow-y-auto px-4 py-5 lg:max-h-[100dvh]">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-600">
-                MC queue
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                {qaQueue.length === 0
-                  ? 'Nothing pushed yet'
-                  : `${qaQueue.length} ${qaQueue.length === 1 ? 'question' : 'questions'} · order matches the MC screen`}
+        <aside className="order-first w-full shrink-0 border-b border-slate-200 bg-white lg:order-none lg:w-[min(22rem,92vw)] lg:border-b-0 lg:border-r lg:border-slate-200">
+          <div className="sticky top-0 z-10 max-h-[min(50vh,28rem)] overflow-y-auto px-4 py-5 lg:max-h-[100dvh]">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-600">
+              MC queue
+            </h2>
+            {!qaMode ? (
+              <p className="mt-2 text-xs text-slate-600">
+                Same order as the MC screen. Reorder and remove when Q&amp;A is active on the MC.
               </p>
-              <ul className="mt-4 space-y-2">
-                {qaQueue.length === 0 ? (
-                  <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-8 text-center text-sm text-slate-500">
-                    Push questions from the bank to add them here.
+            ) : null}
+            <p className="mt-1 text-xs text-slate-500">
+              {qaQueue.length === 0
+                ? 'Nothing pushed yet'
+                : `${qaQueue.length} ${qaQueue.length === 1 ? 'question' : 'questions'} · order matches the MC screen`}
+            </p>
+            <ul className="mt-4 space-y-2">
+              {qaQueue.length === 0 ? (
+                <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-8 text-center text-sm text-slate-500">
+                  Push questions from the bank to add them here.
+                </li>
+              ) : (
+                qaQueue.map((item, index) => (
+                  <li
+                    key={
+                      item.id != null
+                        ? `mcq-${String(item.id)}-${index}`
+                        : `mcq-${index}-${item.created_at}-${String(item.question_text).slice(0, 40)}`
+                    }
+                    className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex min-w-0 rounded-lg bg-indigo-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-indigo-900">
+                        {displayNameForMcTarget(item.target_key)}
+                      </span>
+                      <span className="text-[0.65rem] font-medium text-slate-400">#{index + 1}</span>
+                    </div>
+                    <p className="mt-2 line-clamp-4 text-sm leading-snug text-slate-800">
+                      {item.question_text}
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={!qaMode || queueWriteBusy || index === 0}
+                        onClick={() => moveQueueSlot(index, -1)}
+                        className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Move up in queue"
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!qaMode || queueWriteBusy || index >= qaQueue.length - 1}
+                        onClick={() => moveQueueSlot(index, 1)}
+                        className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Move down in queue"
+                      >
+                        Down
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!qaMode || queueWriteBusy}
+                        onClick={() => removeQaAudienceFromMc(item)}
+                        className="touch-manipulation rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </li>
-                ) : (
-                  qaQueue.map((item, index) => (
-                    <li
-                      key={
-                        item.id != null
-                          ? `mcq-${String(item.id)}-${index}`
-                          : `mcq-${index}-${item.created_at}-${String(item.question_text).slice(0, 40)}`
-                      }
-                      className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex min-w-0 rounded-lg bg-indigo-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-indigo-900">
-                          {displayNameForMcTarget(item.target_key)}
-                        </span>
-                        <span className="text-[0.65rem] font-medium text-slate-400">#{index + 1}</span>
-                      </div>
-                      <p className="mt-2 line-clamp-4 text-sm leading-snug text-slate-800">
-                        {item.question_text}
-                      </p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          disabled={queueWriteBusy || index === 0}
-                          onClick={() => moveQueueSlot(index, -1)}
-                          className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Move up in queue"
-                        >
-                          Up
-                        </button>
-                        <button
-                          type="button"
-                          disabled={queueWriteBusy || index >= qaQueue.length - 1}
-                          onClick={() => moveQueueSlot(index, 1)}
-                          className="touch-manipulation rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Move down in queue"
-                        >
-                          Down
-                        </button>
-                        <button
-                          type="button"
-                          disabled={queueWriteBusy}
-                          onClick={() => removeQaAudienceFromMc(item)}
-                          className="touch-manipulation rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-800 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-          </aside>
-        ) : null}
+                ))
+              )}
+            </ul>
+          </div>
+        </aside>
 
         <div className="min-w-0 flex-1">
           <div className="mx-auto max-w-6xl px-3 py-6 sm:px-5 sm:py-8 lg:px-10">
