@@ -18,6 +18,17 @@ export const PANELIST_DISPLAY_NAMES = [
   'Tinu Ruparell (Hindu Perspective)',
 ]
 
+/**
+ * Big-screen debate row labels: name (white) + perspective lines (grey), centered stack — no parentheses.
+ * Used by `DebateSliderGrid` when `theme="dark"`.
+ */
+export const PANELIST_DEBATE_ROW_LABELS = [
+  { name: 'Paul Verhoef', perspectiveLines: ['Christian', 'Perspective'] },
+  { name: 'Musawar Bajwa', perspectiveLines: ['Islamic', 'Perspective'] },
+  { name: 'Roy Alexander', perspectiveLines: ['Atheist /', 'Agnostic', 'Perspective'] },
+  { name: 'Tinu Ruparell', perspectiveLines: ['Hindu', 'Perspective'] },
+]
+
 /** Stored in `questions.target_panelist` and `mc_questions.panelists` for non-directed submissions. */
 export const GENERAL_TARGET_KEY = 'General'
 

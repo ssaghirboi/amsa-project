@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { PANELIST_DISPLAY_NAMES } from '../constants/panelists'
+import { PANELIST_DEBATE_ROW_LABELS, PANELIST_DISPLAY_NAMES } from '../constants/panelists'
 import { PromptBox } from './PromptBox'
 
 const DEFAULT_ROW_LABELS = PANELIST_DISPLAY_NAMES
@@ -63,9 +63,45 @@ function valueToThumbPercent(value) {
   return ((colFromLeft + 0.5) / 5) * 100
 }
 
-function SliderRow({ value, rowLabel, showBorderBottom = true, theme = 'light' }) {
+/** Stacked big-screen label: bold white name, darker grey perspective lines, centered. */
+function PanelistLabelStack({ rowBlock, theme }) {
+  const isDark = theme === 'dark'
+  const nameClass = isDark
+    ? 'max-w-[min(100%,18rem)] text-balance text-center text-lg font-bold uppercase leading-tight tracking-[0.1em] text-white sm:text-xl md:text-2xl sm:tracking-[0.11em]'
+    : 'max-w-[min(100%,18rem)] text-balance text-center text-lg font-semibold uppercase leading-tight tracking-[0.12em] text-slate-800 sm:text-xl md:text-2xl'
+
+  const lineClass = isDark
+    ? 'max-w-[min(100%,18rem)] text-balance text-center text-[0.68rem] font-medium uppercase leading-snug tracking-[0.14em] text-[#707070] sm:text-xs md:text-sm'
+    : 'max-w-[min(100%,18rem)] text-balance text-center text-[0.7rem] font-medium uppercase leading-snug tracking-[0.12em] text-slate-600 sm:text-xs'
+
+  return (
+    <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+      <span
+        className={nameClass}
+        style={isDark ? { textShadow: '0 1px 2px rgba(0,0,0,0.75)' } : { textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}
+      >
+        {rowBlock.name}
+      </span>
+      {rowBlock.perspectiveLines.map((line, idx) => (
+        <span key={`${line}-${idx}`} className={lineClass}>
+          {line}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+function rowAriaLabel(rowBlock, rowLabelFallback) {
+  if (rowBlock?.perspectiveLines?.length) {
+    return `${rowBlock.name} ${rowBlock.perspectiveLines.join(' ')}`
+  }
+  return rowLabelFallback
+}
+
+function SliderRow({ value, rowBlock, rowLabel, showBorderBottom = true, theme = 'light' }) {
   const thumbLeftPct = valueToThumbPercent(value)
   const isDark = theme === 'dark'
+  const ariaRow = rowAriaLabel(rowBlock, rowLabel)
 
   return (
     <div className="group relative min-h-[7.5rem] w-full sm:min-h-[8.25rem]">
@@ -76,18 +112,22 @@ function SliderRow({ value, rowLabel, showBorderBottom = true, theme = 'light' }
       >
         {/* Mobile: centered above track (desktop labels sit in left margin beside table) */}
         <div className="pointer-events-none absolute left-0 right-0 top-1.5 z-20 flex justify-center md:hidden">
-          <span
-            className={`text-lg font-semibold uppercase tracking-[0.14em] sm:text-xl ${
-              isDark ? 'text-slate-100' : 'text-slate-800'
-            }`}
-            style={
-              isDark
-                ? { textShadow: '0 1px 3px rgba(0,0,0,0.85)' }
-                : { textShadow: '0 1px 0 rgba(255,255,255,0.8)' }
-            }
-          >
-            {rowLabel}
-          </span>
+          {rowBlock?.perspectiveLines?.length ? (
+            <PanelistLabelStack rowBlock={rowBlock} theme={theme} />
+          ) : (
+            <span
+              className={`max-w-[min(100%,18rem)] text-balance text-center text-lg font-semibold uppercase tracking-[0.14em] sm:text-xl ${
+                isDark ? 'text-slate-100' : 'text-slate-800'
+              }`}
+              style={
+                isDark
+                  ? { textShadow: '0 1px 3px rgba(0,0,0,0.85)' }
+                  : { textShadow: '0 1px 0 rgba(255,255,255,0.8)' }
+              }
+            >
+              {rowLabel}
+            </span>
+          )}
         </div>
 
         {/* Five column washes — full width */}
@@ -135,7 +175,7 @@ function SliderRow({ value, rowLabel, showBorderBottom = true, theme = 'light' }
             <div
               className="absolute top-1/2 z-[35] -translate-x-1/2 -translate-y-1/2 transition-[left] duration-500 ease-out"
               style={{ left: `${thumbLeftPct}%` }}
-              aria-label={`${rowLabel} position ${value} of 5`}
+              aria-label={`${ariaRow} position ${value} of 5`}
             >
               <div className="box-border h-9 w-9 rounded-full border-[3px] border-black bg-white shadow-[0_1px_0_rgba(255,255,255,0.35)_inset] sm:h-10 sm:w-10" />
             </div>
@@ -169,6 +209,11 @@ export function DebateSliderGrid({
   const labels = useMemo(() => {
     return panelists.map((_, i) => rowLabels[i] ?? `Panel ${i + 1}`)
   }, [panelists, rowLabels])
+
+  const rowBlocks = useMemo(() => {
+    if (!isDark) return null
+    return panelists.map((_, i) => PANELIST_DEBATE_ROW_LABELS[i] ?? null)
+  }, [isDark, panelists])
 
   return (
     <div className="mx-auto w-full max-w-[min(100%,90rem)]">
@@ -218,23 +263,32 @@ export function DebateSliderGrid({
       <div className="flex w-full justify-center px-2 sm:px-4">
         <div className="relative w-full max-w-[min(100%,90rem)]">
           {/* Desktop row labels in the left margin (not part of the table card) */}
-          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-2 hidden w-[17rem] flex-col items-end md:flex lg:mr-6 lg:w-[19rem]">
+          <div className="pointer-events-none absolute bottom-0 right-full top-0 z-10 mr-2 hidden w-[18rem] flex-col items-center md:flex lg:mr-6 lg:w-[20rem]">
             {/* Spacer matches the table header row height (incl. two-line “Strongly / Agree”) */}
             <div className="min-h-[7.25rem] shrink-0 sm:min-h-[8rem]" aria-hidden />
-            {labels.map((label, i) => (
-              <div
-                key={PANEL_VISUALS[i].key}
-                className="flex min-h-[7.5rem] items-center justify-end sm:min-h-[8.25rem]"
-              >
-                <span
-                  className={`text-right text-lg font-semibold uppercase leading-tight tracking-[0.12em] sm:text-xl md:text-2xl sm:tracking-[0.11em] ${
-                    isDark ? 'text-slate-100' : 'text-slate-800'
+            {labels.map((label, i) => {
+              const block = rowBlocks?.[i]
+              return (
+                <div
+                  key={PANEL_VISUALS[i].key}
+                  className={`flex min-h-[7.5rem] w-full items-center sm:min-h-[8.25rem] ${
+                    block?.perspectiveLines?.length ? 'justify-center' : 'justify-end'
                   }`}
                 >
-                  {label}
-                </span>
-              </div>
-            ))}
+                  {block?.perspectiveLines?.length ? (
+                    <PanelistLabelStack rowBlock={block} theme={theme} />
+                  ) : (
+                    <span
+                      className={`text-right text-lg font-semibold uppercase leading-tight tracking-[0.12em] sm:text-xl md:text-2xl sm:tracking-[0.11em] ${
+                        isDark ? 'text-slate-100' : 'text-slate-800'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           {/* Rounded table card only (no labels inside) */}
@@ -285,6 +339,7 @@ export function DebateSliderGrid({
                 <SliderRow
                   key={PANEL_VISUALS[i].key}
                   value={value}
+                  rowBlock={rowBlocks?.[i]?.perspectiveLines?.length ? rowBlocks[i] : null}
                   rowLabel={labels[i]}
                   showBorderBottom={i < panelists.length - 1}
                   theme={theme}
