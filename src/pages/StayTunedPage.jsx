@@ -7,7 +7,11 @@ export default function StayTunedPage() {
   return (
     <div className="flex min-h-[100dvh] min-h-screen flex-col items-center justify-center bg-[#010101] px-5 py-12 text-slate-100">
       <div className="flex w-full max-w-2xl flex-col items-center gap-10 text-center sm:max-w-3xl sm:gap-12">
-        <EventBranding variant="presentationHero" centered className="w-full" />
+        <EventBranding
+          variant="presentationHero"
+          centered
+          className="w-full [&_img]:!max-h-[min(68vh,32rem)] [&_img]:!max-w-[min(96vw,48rem)] sm:[&_img]:!max-h-[min(64vh,36rem)] sm:[&_img]:!max-w-[48rem] md:[&_img]:!max-h-[min(58vh,40rem)] md:[&_img]:!max-w-[52rem]"
+        />
 
         <div className="flex w-full flex-col items-center gap-6 text-balance sm:gap-8">
           <p className="text-lg font-medium text-slate-100 sm:text-xl md:text-2xl">
