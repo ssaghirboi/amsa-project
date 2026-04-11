@@ -55,7 +55,7 @@ export function EventBranding({
         className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
         decoding="async"
         fetchPriority="high"
-        {...(!logoSrc ? { width: 746, height: 447 } : {})}
+        {...(!logoSrc ? { width: 736, height: 442 } : {})}
       />
     </div>
   )

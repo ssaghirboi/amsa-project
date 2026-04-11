@@ -11,7 +11,7 @@ export default function StayTunedPage() {
           <EventBranding
             variant="presentationHero"
             centered
-            className="w-full max-w-[min(92vw,36rem)] sm:max-w-[40rem]"
+            className="!w-fit [&_img]:-translate-x-[5%]"
           />
         </div>
 
