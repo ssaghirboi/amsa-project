@@ -1,14 +1,14 @@
-import eventLogoSvg from '../assets/IS GOD REAL (Print Flyer).svg?url'
+import eventLogoDefault from '../assets/IS GOD REAL (Business Card US Portrait).png'
 
 /**
- * Official event logo (SVG). Height-capped so it never dominates the viewport.
+ * Official event logo. Height-capped so it never dominates the viewport.
  * - default: admin, audience, debate screen (compact header strip)
  * - presentation: pre-event slides header size (debate screen when not hero)
  * - presentationHero: slideshow — large centered logo
  * - presentationCorner: slideshow — top-left mark (large)
  * - mc: MC dashboard — top-left logo sized to clear control row (no overlap)
  *
- * @param {string} [logoSrc] — optional asset URL; defaults to Print Flyer asset. BigScreen may pass the same.
+ * @param {string} [logoSrc] — optional asset URL; defaults to Business Card portrait PNG. BigScreen may pass the same.
  */
 export function EventBranding({
   className = '',
@@ -16,7 +16,7 @@ export function EventBranding({
   variant = 'default',
   logoSrc,
 }) {
-  const src = logoSrc ?? eventLogoSvg
+  const src = logoSrc ?? eventLogoDefault
   const sizeClass =
     variant === 'presentationHero'
       ? // Slideshow: dominant center logo
@@ -55,7 +55,7 @@ export function EventBranding({
         className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
         decoding="async"
         fetchPriority="high"
-        {...(!logoSrc ? { width: 736, height: 442 } : {})}
+        {...(!logoSrc ? { width: 180, height: 108 } : {})}
       />
     </div>
   )
