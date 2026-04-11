@@ -6,7 +6,7 @@ import { EventBranding } from '../components/EventBranding'
 export default function StayTunedPage() {
   return (
     <div className="flex min-h-[100dvh] min-h-screen flex-col items-center justify-center bg-[#010101] px-5 py-12 text-slate-100">
-      <div className="flex w-full max-w-lg flex-col items-center gap-10 text-center sm:max-w-xl sm:gap-12">
+      <div className="flex w-full max-w-2xl flex-col items-center gap-10 text-center sm:max-w-3xl sm:gap-12">
         <EventBranding variant="presentationHero" centered className="w-full" />
 
         <div className="flex w-full flex-col items-center gap-6 text-balance sm:gap-8">

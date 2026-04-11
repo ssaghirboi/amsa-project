@@ -20,7 +20,7 @@ export function EventBranding({
   const sizeClass =
     variant === 'presentationHero'
       ? // Slideshow: dominant center logo
-        'max-h-[min(52vh,20rem)] max-w-[min(96vw,40rem)] sm:max-h-[min(48vh,24rem)] sm:max-w-[44rem] md:max-h-[min(45vh,26rem)]'
+        'max-h-[min(62vh,28rem)] max-w-[min(96vw,48rem)] sm:max-h-[min(58vh,32rem)] sm:max-w-[48rem] md:max-h-[min(54vh,36rem)] md:max-w-[52rem]'
       : variant === 'mc'
         ? // MC page: visible but short so status line never tucks under the mark
           'max-h-[6rem] max-w-[min(92vw,16rem)] sm:max-h-[6.75rem] sm:max-w-[17rem] md:max-h-[7.25rem] md:max-w-[18rem]'
