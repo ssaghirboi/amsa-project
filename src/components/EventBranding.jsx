@@ -1,5 +1,4 @@
-/** Vector logo (~68KB). Avoids the huge Print Flyer export (~800KB embedded rasters) that can trigger load/parse issues. */
-import eventLogoSvg from '../assets/IS GOD REAL (Business Card US Portrait).svg?url'
+import eventLogoSvg from '../assets/IS GOD REAL (Print Flyer).svg?url'
 
 /**
  * Official event logo (SVG). Height-capped so it never dominates the viewport.
@@ -9,7 +8,7 @@ import eventLogoSvg from '../assets/IS GOD REAL (Business Card US Portrait).svg?
  * - presentationCorner: slideshow — top-left mark (large)
  * - mc: MC dashboard — top-left logo sized to clear control row (no overlap)
  *
- * @param {string} [logoSrc] — optional asset URL; defaults to the Business Card portrait SVG. BigScreen may pass the same.
+ * @param {string} [logoSrc] — optional asset URL; defaults to Print Flyer asset. BigScreen may pass the same.
  */
 export function EventBranding({
   className = '',
@@ -56,7 +55,7 @@ export function EventBranding({
         className={`block h-auto w-auto max-w-full ${imgAlignClass} ${sizeClass}`}
         decoding="async"
         fetchPriority="high"
-        {...(!logoSrc ? { width: 79, height: 100 } : {})}
+        {...(!logoSrc ? { width: 746, height: 447 } : {})}
       />
     </div>
   )

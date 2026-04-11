@@ -3,7 +3,7 @@ import { DebateSliderGrid } from '../components/DebateSliderGrid'
 import { PromptBox } from '../components/PromptBox'
 import { EventBranding } from '../components/EventBranding'
 import { ScreenTimerDisplay } from '../components/ScreenTimerDisplay'
-import screenEventLogo from '../assets/IS GOD REAL (Business Card US Portrait).svg?url'
+import screenEventLogo from '../assets/IS GOD REAL (Print Flyer).svg?url'
 import qrDoesGodExist from '../assets/qr-doesgodexist.png'
 import {
   PRESENTATION_SLIDE_STALE_ECHO_MS,
